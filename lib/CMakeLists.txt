@@ -1,25 +1,23 @@
 
 include(GNUInstallDirs)
-file(GLOB JETBEEP_SOURCES *.cpp *.c)
-file(GLOB JETBEEP_INCLUDES *.h)
+file(GLOB_RECURSE JETBEEP_SOURCES *.cpp *.c)
+file(GLOB_RECURSE JETBEEP_INCLUDES *.h *.hpp)
+list(FILTER JETBEEP_SOURCES EXCLUDE REGEX "boost")
+
 set(BOOST_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/boost_1_71_0)
 
 add_library(jetbeep_obj OBJECT ${JETBEEP_SOURCES} ${JETBEEP_INCLUDES})
 target_include_directories(jetbeep_obj PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${BOOST_SOURCE_DIR})
 
 add_library(jetbeep SHARED ${JETBEEP_INCLUDES} $<TARGET_OBJECTS:jetbeep_obj>)
+
+if (APPLE) 
+	target_link_libraries(jetbeep "-framework IOKit" "-framework CoreFoundation")
+endif()
+
 target_include_directories(jetbeep PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 set_target_properties(jetbeep PROPERTIES
-  VERSION ${PROJECT_VERSION}
-  SOVERSION 0.1.0
-  PUBLIC_HEADER ${JETBEEP_INCLUDES}
-)
-
-add_library(jetbeep_static STATIC ${JETBEEP_INCLUDES} $<TARGET_OBJECTS:jetbeep_obj>)
-target_include_directories(jetbeep_static PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-
-set_target_properties(jetbeep_static PROPERTIES
   VERSION ${PROJECT_VERSION}
   SOVERSION 0.1.0
   PUBLIC_HEADER ${JETBEEP_INCLUDES}

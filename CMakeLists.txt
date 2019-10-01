@@ -5,5 +5,4 @@ add_definitions("-std=c++11")
 
 add_subdirectory(lib)
 
-enable_testing()
 add_subdirectory(examples)
