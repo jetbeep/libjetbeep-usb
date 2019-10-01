@@ -57,6 +57,8 @@ void DeviceDetection::DeviceAdded(void *refCon, io_iterator_t iterator) {
 	    	cout << "found jetbeep device, vid: " << vidPid.vid << " pid: " << vidPid.pid<< endl;
 	    }
 
+	    cout<< "device path: "<< detection->getDevicePath(service) << endl;
+
 	    IOObjectRelease(service); // yes, you have to release this
 	}
 }
@@ -135,4 +137,32 @@ VidPid DeviceDetection::getVidPid(const io_service_t &service) {
 	return_value.pid = pid;
 
 	return return_value;
+}
+
+string DeviceDetection::getDevicePath(const io_service_t &service) {
+	string result;
+
+	CFStringRef device_path = (CFStringRef) IORegistryEntrySearchCFProperty (service,
+	  kIOServicePlane,
+	  CFSTR (kIOCalloutDeviceKey),
+	  kCFAllocatorDefault,
+	  kIORegistryIterateRecursively );
+
+
+	if (!device_path) {
+		return string();
+	}
+
+	const char *ptr = CFStringGetCStringPtr(device_path, kCFStringEncodingUTF8);
+	size_t len = CFStringGetLength(device_path);
+
+	if (ptr != NULL && len != 0) {
+		result.assign(ptr, len);
+	}
+
+	if (device_path) {
+		CFRelease(device_path);
+	}
+
+	return result;
 }

@@ -36,6 +36,7 @@ namespace jetbeep {
 		IONotificationPortRef	_notify_port;
 
 		VidPid getVidPid(const io_service_t &service);
+		std::string getDevicePath(const io_service_t &service);
 
 		static void DeviceAdded(void *refCon, io_iterator_t iterator);
 
