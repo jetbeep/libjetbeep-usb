@@ -1,4 +1,5 @@
 #include "detection.h"
+
 #include <stdexcept>
 #include <iostream>
 
@@ -29,7 +30,7 @@ bool DeviceDetection::isValidVidPid(const VidPid &vidpid) {
 }
 
 DeviceDetection::DeviceDetection()
-:_loop(NULL), _iterator(0), _notify_port(NULL) {
+:_loop(NULL), _iterator(0), _notify_port(NULL), _log("detection") {
 
 }
 
@@ -49,15 +50,13 @@ void DeviceDetection::DeviceAdded(void *refCon, io_iterator_t iterator) {
 
 	while ((service = IOIteratorNext(iterator)))
 	{
-	    cout << "Hey, I found a service!" << endl;
-
 	    auto vidPid = detection->getVidPid(service);
 
 	    if (DeviceDetection::isValidVidPid(vidPid)) {
-	    	cout << "found jetbeep device, vid: " << vidPid.vid << " pid: " << vidPid.pid<< endl;
+	    	detection->_log.d() << "found jetbeep device, vid: " << vidPid.vid << " pid: " << vidPid.pid<< logger::endl;
 	    }
 
-	    cout<< "device path: "<< detection->getDevicePath(service) << endl;
+	    detection->_log.d() << "device path: "<< detection->getDevicePath(service) << logger::endl;
 
 	    IOObjectRelease(service); // yes, you have to release this
 	}
@@ -92,7 +91,7 @@ void DeviceDetection::setup() noexcept(false) {
 }
 
 void DeviceDetection::runLoop() {
-	DeviceAdded(NULL, _iterator);
+	DeviceAdded(this, _iterator);
 
 	CFRunLoopSourceRef runLoopSource = NULL;
 
@@ -102,8 +101,6 @@ void DeviceDetection::runLoop() {
 	CFRunLoopAddSource(_loop , runLoopSource, kCFRunLoopDefaultMode);
 
 	CFRunLoopRun();
-	cout<<"aw";
-	cout.flush();
 }
 
 VidPid DeviceDetection::getVidPid(const io_service_t &service) {

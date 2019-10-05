@@ -17,11 +17,11 @@ endif()
 
 target_include_directories(jetbeep PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-set_target_properties(jetbeep PROPERTIES
-  VERSION ${PROJECT_VERSION}
-  SOVERSION 0.1.0
-  PUBLIC_HEADER ${JETBEEP_INCLUDES}
-)
+#set_target_properties(jetbeep PROPERTIES
+#  VERSION ${PROJECT_VERSION}
+#  SOVERSION 0.1.0
+#  PUBLIC_HEADER ${JETBEEP_INCLUDES}
+#)
 
 install(TARGETS jetbeep
  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}

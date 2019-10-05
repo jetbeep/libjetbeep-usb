@@ -2,6 +2,7 @@
 #define JETBEEP_DEVICE_DETECTION_H
 
 #include "../utils/platform.h"
+#include "../utils/logger.h"
 
 #include <thread>
 #include <stdint.h>
@@ -29,6 +30,7 @@ namespace jetbeep {
 	static VidPid validVidPids[];
 	static bool isValidVidPid(const VidPid &vidpid);
 	private:
+		logger _log;
 #ifdef PLATFORM_OSX
 		CFRunLoopRef _loop;
 		io_iterator_t _iterator;

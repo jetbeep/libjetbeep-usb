@@ -2,6 +2,7 @@
 #define JETBEEP_USB_DRIVER__H
 
 #include "detection/detection.h"
+#include "utils/logger.h"
 
 typedef struct jetbeep_device_state_t {
 
