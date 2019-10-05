@@ -13,23 +13,23 @@
 #include <chrono>
 #include <stdint.h>
 
-using namespace jetbeep;
+using namespace JetBeep;
 using namespace std;
 using namespace std::chrono;
 using namespace boost;
 
-bool logger::cerr_enabled = false;
-bool logger::cout_enabled = false;
-logger_level logger::level = SILENT;
-thread_local logger_level logger::_thread_level = SILENT;
+bool Logger::cerr_enabled = false;
+bool Logger::cout_enabled = false;
+LoggerLevel Logger::level = SILENT;
+thread_local LoggerLevel Logger::m_thread_level = SILENT;
 
-logger& logger::endl(logger& a) {
-	if (logger::cout_enabled) {
+Logger& Logger::endl(Logger& a) {
+	if (Logger::cout_enabled) {
 		cout << std::endl;
 		cout.flush();
 	}
 
-	if (logger::cerr_enabled) {
+	if (Logger::cerr_enabled) {
 		cerr << std::endl;
 		cerr.flush();
 	}
@@ -37,17 +37,17 @@ logger& logger::endl(logger& a) {
 	return a;
 }
 
-logger::logger(const char *module_name):
-_module_name(module_name) {
+Logger::Logger(const char *module_name):
+m_module_name(module_name) {
 
 }
 
-logger& logger::output() {
+Logger& Logger::output() {
 	string level_str = "";
 	char time_str[40];
 	time_t now = time(nullptr);
 
-	switch (logger::_thread_level) {
+	switch (Logger::m_thread_level) {
 	case VERBOSE:
 		level_str = "[VERBOSE] "; break;
 	case DEBUG:
@@ -76,34 +76,34 @@ logger& logger::output() {
 		ms_ss << ms;
 	}
 
-	return *this << time_str << "." << ms_ss.str() << " " << level_str << "(" << _module_name << "): ";
+	return *this << time_str << "." << ms_ss.str() << " " << level_str << "(" << m_module_name << "): ";
 }
 
-logger& logger::v() {
-	logger::_thread_level = VERBOSE;
+Logger& Logger::v() {
+	Logger::m_thread_level = VERBOSE;
 	return output();
 }
 
-logger& logger::d() {
-	logger::_thread_level = DEBUG;
-
-	return output();
-}
-
-logger& logger::i() {
-	logger::_thread_level = INFO;
+Logger& Logger::d() {
+	Logger::m_thread_level = DEBUG;
 
 	return output();
 }
 
-logger& logger::w() {
-	logger::_thread_level = WARNING;
+Logger& Logger::i() {
+	Logger::m_thread_level = INFO;
 
 	return output();
 }
 
-logger& logger::e() {
-	logger::_thread_level = ERROR;
+Logger& Logger::w() {
+	Logger::m_thread_level = WARNING;
+
+	return output();
+}
+
+Logger& Logger::e() {
+	Logger::m_thread_level = ERROR;
 
 	return output();
 }

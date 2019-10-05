@@ -2,16 +2,16 @@
 #include "../lib/libjetbeep.h"
 
 using namespace std;
-using namespace jetbeep;
+using namespace JetBeep;
 
 int main() {
-logger::cout_enabled = true;
-logger::level = VERBOSE;
+Logger::cout_enabled = true;
+Logger::level = VERBOSE;
 
-logger log("main");
+Logger log("main");
 DeviceDetection d;
 
-log.i() << "starting device detection.." << logger::endl;
+log.i() << "starting device detection.." << Logger::endl;
 
 d.setup();
 cin.get();

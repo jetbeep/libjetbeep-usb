@@ -11,8 +11,8 @@
 #include <string>
 #include <iostream>
 
-namespace jetbeep {
-	enum logger_level {
+namespace JetBeep {
+	enum LoggerLevel {
 		VERBOSE = 0,
 		DEBUG,
 		INFO,
@@ -21,31 +21,31 @@ namespace jetbeep {
 		SILENT
 	};
 
-	class logger {
+	class Logger {
 	public:
-		logger(const char* module_name);
+		Logger(const char* module_name);
 
-		logger& v();
-		logger& d();
-		logger& i();
-		logger& w();
-		logger& e();
+		Logger& v();
+		Logger& d();
+		Logger& i();
+		Logger& w();
+		Logger& e();
 
-		static logger_level level;
-		static logger& endl(logger& a);
+		static LoggerLevel level;
+		static Logger& endl(Logger& a);
 
 		static bool cout_enabled;
 		static bool cerr_enabled;
 
-	    typedef logger& (*logger_manipulator)(logger&);
-	    logger& operator<<(logger_manipulator manip)
+	    typedef Logger& (*logger_manipulator)(Logger&);
+	    Logger& operator<<(logger_manipulator manip)
 	    {
 	        // call the function, and return it's value
 	        return manip(*this);
 	    }
 
-		template<class T> logger& operator << (const T &t) {
-			if (logger::_thread_level >= logger::level) {
+		template<class T> Logger& operator << (const T &t) {
+			if (Logger::m_thread_level >= Logger::level) {
 				coutValue(t);
 				cerrValue(t);
 			}
@@ -53,10 +53,10 @@ namespace jetbeep {
 			return *this;
 		}
 	private:
-		std::string _module_name;
-		logger& output();
+		std::string m_module_name;
+		Logger& output();
 
-		static thread_local logger_level _thread_level;
+		static thread_local LoggerLevel m_thread_level;
 
 		template<class T> void coutValue(T t) {
 			if (!cout_enabled) {

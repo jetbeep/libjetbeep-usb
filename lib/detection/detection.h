@@ -13,7 +13,7 @@
 #include <IOKit/IOKitLib.h>
 #endif
 
-namespace jetbeep {
+namespace JetBeep {
 	typedef struct VidPid {
 		uint16_t vid;
 		uint16_t pid;
@@ -26,16 +26,16 @@ namespace jetbeep {
 		virtual ~DeviceDetection();
 
 		void setup() noexcept(false);
-	static size_t vidPidCount;
-	static VidPid validVidPids[];
-	static bool isValidVidPid(const VidPid &vidpid);
+		static size_t vidPidCount;
+		static VidPid validVidPids[];
+		static bool isValidVidPid(const VidPid &vidpid);
 	private:
-		logger _log;
+		Logger m_log;
 #ifdef PLATFORM_OSX
-		CFRunLoopRef _loop;
-		io_iterator_t _iterator;
-		std::thread _thread;
-		IONotificationPortRef	_notify_port;
+		CFRunLoopRef m_loop;
+		io_iterator_t m_iterator;
+		std::thread m_thread;
+		IONotificationPortRef m_notify_port;
 
 		VidPid getVidPid(const io_service_t &service);
 		std::string getDevicePath(const io_service_t &service);

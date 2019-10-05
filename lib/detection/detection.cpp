@@ -13,7 +13,7 @@
 
 #include <boost/asio.hpp>
 
-using namespace jetbeep;
+using namespace JetBeep;
 using namespace std;
 using namespace boost::asio;
 
@@ -30,17 +30,17 @@ bool DeviceDetection::isValidVidPid(const VidPid &vidpid) {
 }
 
 DeviceDetection::DeviceDetection()
-:_loop(NULL), _iterator(0), _notify_port(NULL), _log("detection") {
+:m_loop(NULL), m_iterator(0), m_notify_port(NULL), m_log("detection") {
 
 }
 
 DeviceDetection::~DeviceDetection() {
-	if (_loop != NULL) {
-		CFRunLoopStop(_loop);
+	if (m_loop != NULL) {
+		CFRunLoopStop(m_loop);
 	}
 
-	if (_thread.joinable()) {
-		_thread.join();
+	if (m_thread.joinable()) {
+		m_thread.join();
 	}
 }
 
@@ -53,10 +53,10 @@ void DeviceDetection::DeviceAdded(void *refCon, io_iterator_t iterator) {
 	    auto vidPid = detection->getVidPid(service);
 
 	    if (DeviceDetection::isValidVidPid(vidPid)) {
-	    	detection->_log.d() << "found jetbeep device, vid: " << vidPid.vid << " pid: " << vidPid.pid<< logger::endl;
+	    	detection->m_log.d() << "found jetbeep device, vid: " << vidPid.vid << " pid: " << vidPid.pid<< Logger::endl;
 	    }
 
-	    detection->_log.d() << "device path: "<< detection->getDevicePath(service) << logger::endl;
+	    detection->m_log.d() << "device path: "<< detection->getDevicePath(service) << Logger::endl;
 
 	    IOObjectRelease(service); // yes, you have to release this
 	}
@@ -73,32 +73,32 @@ void DeviceDetection::setup() noexcept(false) {
 		throw runtime_error("unable to find USB class name");
 	}
 
-	_notify_port = IONotificationPortCreate(kIOMasterPortDefault);
+	m_notify_port = IONotificationPortCreate(kIOMasterPortDefault);
 
 	kr = IOServiceAddMatchingNotification(
-				_notify_port, // notifyPort
+				m_notify_port, // notifyPort
 				kIOFirstMatchNotification, // notificationType
 				matchingDict, // matching
 				DeviceAdded, // callback
 				this, // refCon
-				&_iterator // notification
+				&m_iterator // notification
 			);
 	if (kr != KERN_SUCCESS) {
 		throw runtime_error("unable to create matching notification");
 	}
 
-	_thread = thread(&DeviceDetection::runLoop, this);
+	m_thread = thread(&DeviceDetection::runLoop, this);
 }
 
 void DeviceDetection::runLoop() {
-	DeviceAdded(this, _iterator);
+	DeviceAdded(this, m_iterator);
 
 	CFRunLoopSourceRef runLoopSource = NULL;
 
-	runLoopSource = IONotificationPortGetRunLoopSource(_notify_port);
+	runLoopSource = IONotificationPortGetRunLoopSource(m_notify_port);
 
-	_loop = CFRunLoopGetCurrent();
-	CFRunLoopAddSource(_loop , runLoopSource, kCFRunLoopDefaultMode);
+	m_loop = CFRunLoopGetCurrent();
+	CFRunLoopAddSource(m_loop , runLoopSource, kCFRunLoopDefaultMode);
 
 	CFRunLoopRun();
 }
