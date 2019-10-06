@@ -18,14 +18,18 @@ static void deviceEvent(const DeviceEvent& event, const Device &device) {
 }
 
 int main() {
-Logger::cout_enabled = true;
-Logger::level = VERBOSE;
+	Logger::cout_enabled = true;
+	Logger::level = VERBOSE;
 
-DeviceDetection d(deviceEvent);
+	DeviceDetection d(deviceEvent);
 
-l.i() << "starting device detection.." << Logger::endl;
+	l.i() << "starting device detection.." << Logger::endl;
+	try {
+		d.setup();
+	} catch (const exception& e) {
+		l.e() << e.what() << Logger::endl;
+	}
 
-d.setup();
-cin.get();
+	cin.get();
   return 0;
 }

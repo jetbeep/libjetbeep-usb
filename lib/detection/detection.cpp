@@ -9,7 +9,7 @@
 #include <IOKit/usb/IOUSBLib.h>
 #include <IOKit/serial/IOSerialKeys.h>
 
-#include <boost/asio.hpp>
+#include "../boost_1_71_0/boost/asio.hpp"
 #include "detection.hpp"
 
 using namespace JetBeep;
