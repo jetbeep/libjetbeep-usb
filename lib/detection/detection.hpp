@@ -49,8 +49,8 @@ namespace JetBeep {
 		CFRunLoopRef m_loop;
 		io_iterator_t m_iterator;
 		std::thread m_thread;
-		IONotificationPortRef m_notify_port;
-		std::unordered_map<std::string, std::pair<Device, io_service_t>> m_tracked_devices;
+		IONotificationPortRef m_notifyPort;
+		std::unordered_map<std::string, std::pair<Device, io_service_t>> m_trackedDevices;
 
 		VidPid getVidPid(const io_service_t &service);
 		std::string getDevicePath(const io_service_t &service);

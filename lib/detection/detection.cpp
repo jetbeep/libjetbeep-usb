@@ -9,7 +9,7 @@
 #include <IOKit/usb/IOUSBLib.h>
 #include <IOKit/serial/IOSerialKeys.h>
 
-#include "../boost_1_71_0/boost/asio.hpp"
+#include <boost/asio.hpp>
 #include "detection.hpp"
 
 using namespace JetBeep;
@@ -29,7 +29,7 @@ bool DeviceDetection::isValidVidPid(const VidPid &vidpid) {
 }
 
 DeviceDetection::DeviceDetection(DeviceCallback callback)
-:m_loop(NULL), m_iterator(0), m_notify_port(NULL), m_log("detection"), callback(callback) {
+:m_loop(NULL), m_iterator(0), m_notifyPort(NULL), m_log("detection"), callback(callback) {
 
 }
 
@@ -42,7 +42,7 @@ DeviceDetection::~DeviceDetection() {
 		m_thread.join();
 	}
 
-	for (auto it = m_tracked_devices.begin(); it != m_tracked_devices.end(); ++it) {
+	for (auto it = m_trackedDevices.begin(); it != m_trackedDevices.end(); ++it) {
 		auto service = it->second.second;
 
 		IOObjectRelease(service);
@@ -63,7 +63,7 @@ void DeviceDetection::deviceAdded(void *refCon, io_iterator_t iterator) {
 	    	io_service_t remove_service;
 
 	    	kr = IOServiceAddInterestNotification(
-	    			detection->m_notify_port, // notifyPort
+	    			detection->m_notifyPort, // notifyPort
 					service, // service
 	    			kIOGeneralInterest, // interestType
 	    			deviceRemoved, // callback
@@ -77,7 +77,7 @@ void DeviceDetection::deviceAdded(void *refCon, io_iterator_t iterator) {
 	    		continue;
 	    	}
 
-	    	detection->m_tracked_devices[device.path] = make_pair(device, remove_service);
+	    	detection->m_trackedDevices[device.path] = make_pair(device, remove_service);
 
 	    	auto callback = detection->callback;
 
@@ -99,11 +99,11 @@ void DeviceDetection::deviceRemoved(void *refCon, io_service_t service, natural_
 	}
 
 	auto path = detection->getDevicePath(service);
-	auto devicePair = detection->m_tracked_devices[path];
+	auto devicePair = detection->m_trackedDevices[path];
 	auto device = devicePair.first;
 	auto notification = devicePair.second;
 
-	detection->m_tracked_devices.erase(path);
+	detection->m_trackedDevices.erase(path);
 
 	kr = IOObjectRelease(notification);
 
@@ -130,10 +130,10 @@ void DeviceDetection::setup() noexcept(false) {
 		throw runtime_error("unable to find USB class name");
 	}
 
-	m_notify_port = IONotificationPortCreate(kIOMasterPortDefault);
+	m_notifyPort = IONotificationPortCreate(kIOMasterPortDefault);
 
 	kr = IOServiceAddMatchingNotification(
-				m_notify_port, // notifyPort
+				m_notifyPort, // notifyPort
 				kIOFirstMatchNotification, // notificationType
 				matchingDict, // matching
 				deviceAdded, // callback
@@ -152,7 +152,7 @@ void DeviceDetection::runLoop() {
 
 	CFRunLoopSourceRef runLoopSource = NULL;
 
-	runLoopSource = IONotificationPortGetRunLoopSource(m_notify_port);
+	runLoopSource = IONotificationPortGetRunLoopSource(m_notifyPort);
 
 	m_loop = CFRunLoopGetCurrent();
 	CFRunLoopAddSource(m_loop , runLoopSource, kCFRunLoopDefaultMode);

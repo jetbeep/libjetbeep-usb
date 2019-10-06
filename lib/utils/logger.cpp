@@ -7,7 +7,7 @@
 
 #include <string>
 #include <iostream>
-#include "../boost_1_71_0/boost/thread.hpp"
+#include <boost/thread.hpp>
 #include <ctime>
 #include <chrono>
 #include <stdint.h>
@@ -18,18 +18,18 @@ using namespace std;
 using namespace std::chrono;
 using namespace boost;
 
-bool Logger::cerr_enabled = false;
-bool Logger::cout_enabled = false;
+bool Logger::cerrEnabled = false;
+bool Logger::coutEnabled = false;
 LoggerLevel Logger::level = SILENT;
-thread_local LoggerLevel Logger::m_thread_level = SILENT;
+thread_local LoggerLevel Logger::m_threadLevel = SILENT;
 
 Logger& Logger::endl(Logger& a) {
-	if (Logger::cout_enabled) {
+	if (Logger::coutEnabled) {
 		cout << std::endl;
 		cout.flush();
 	}
 
-	if (Logger::cerr_enabled) {
+	if (Logger::cerrEnabled) {
 		cerr << std::endl;
 		cerr.flush();
 	}
@@ -47,7 +47,7 @@ Logger& Logger::output() {
 	char time_str[40];
 	time_t now = time(nullptr);
 
-	switch (Logger::m_thread_level) {
+	switch (Logger::m_threadLevel) {
 	case VERBOSE:
 		level_str = "[VERBOSE] "; break;
 	case DEBUG:
@@ -80,30 +80,30 @@ Logger& Logger::output() {
 }
 
 Logger& Logger::v() {
-	Logger::m_thread_level = VERBOSE;
+	Logger::m_threadLevel = VERBOSE;
 	return output();
 }
 
 Logger& Logger::d() {
-	Logger::m_thread_level = DEBUG;
+	Logger::m_threadLevel = DEBUG;
 
 	return output();
 }
 
 Logger& Logger::i() {
-	Logger::m_thread_level = INFO;
+	Logger::m_threadLevel = INFO;
 
 	return output();
 }
 
 Logger& Logger::w() {
-	Logger::m_thread_level = WARNING;
+	Logger::m_threadLevel = WARNING;
 
 	return output();
 }
 
 Logger& Logger::e() {
-	Logger::m_thread_level = ERROR;
+	Logger::m_threadLevel = ERROR;
 
 	return output();
 }

@@ -18,7 +18,7 @@ static void deviceEvent(const DeviceEvent& event, const Device &device) {
 }
 
 int main() {
-	Logger::cout_enabled = true;
+	Logger::coutEnabled = true;
 	Logger::level = VERBOSE;
 
 	DeviceDetection d(deviceEvent);

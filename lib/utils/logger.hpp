@@ -34,8 +34,8 @@ namespace JetBeep {
 		static LoggerLevel level;
 		static Logger& endl(Logger& a);
 
-		static bool cout_enabled;
-		static bool cerr_enabled;
+		static bool coutEnabled;
+		static bool cerrEnabled;
 
 	    typedef Logger& (*logger_manipulator)(Logger&);
 	    Logger& operator<<(logger_manipulator manip)
@@ -45,7 +45,7 @@ namespace JetBeep {
 	    }
 
 		template<class T> Logger& operator << (const T &t) {
-			if (Logger::m_thread_level >= Logger::level) {
+			if (Logger::m_threadLevel >= Logger::level) {
 				coutValue(t);
 				cerrValue(t);
 			}
@@ -56,10 +56,10 @@ namespace JetBeep {
 		std::string m_module_name;
 		Logger& output();
 
-		static thread_local LoggerLevel m_thread_level;
+		static thread_local LoggerLevel m_threadLevel;
 
 		template<class T> void coutValue(T t) {
-			if (!cout_enabled) {
+			if (!coutEnabled) {
 				return;
 			}
 
@@ -67,7 +67,7 @@ namespace JetBeep {
 		}
 
 		template<class T> void cerrValue(T t) {
-			if (!cerr_enabled) {
+			if (!cerrEnabled) {
 				return;
 			}
 
