@@ -12,7 +12,13 @@
 			"thread": "cpp",
 			"__config": "cpp",
 			"__nullptr": "cpp",
-			"functional": "cpp"
+			"functional": "cpp",
+			"iosfwd": "cpp",
+			"string": "cpp",
+			"__tuple": "cpp",
+			"array": "cpp",
+			"algorithm": "cpp",
+			"random": "cpp"
 		}
 	}
 }

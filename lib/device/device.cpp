@@ -21,6 +21,9 @@ class Device::Impl {
     void close();
 
     void openSession();
+
+    vector<Barcode> barcodes;
+    int errorCode;
   private:
     string m_writeData;
     asio::streambuf m_readBuffer;
@@ -29,12 +32,51 @@ class Device::Impl {
     io_service m_io_service;
     io_service::work m_work;
     serial_port m_port;
-    thread m_thread;
+    thread m_thread;    
     void runLoop();
 
     void writeCompleted(const boost::system::error_code& ec, std::size_t bytes_transferred);
     void readCompleted(const boost::system::error_code& err);
+    void handleResponse(const string& response);
+    void notify(const DeviceEvent& event);
 };
+
+namespace DeviceResponses {
+  // responses
+  const string openSession = "OPEN_SESSION";
+  const string closeSession = "CLOSE_SESSION";
+  const string requestBarcodes = "REQUEST_BARCODES";
+  const string createPayment = "CREATE_PAYMENT";
+  const string cancelPayment = "CANCEL_PAYMENT";
+  const string confirmPayment = "CONFIRM_PAYMENT";
+  const string createPaymentToken = "CREATE_PAYMENT_TOKEN";
+
+  // events
+  const string mobileConnected = "MOBILE_CONNECTED";
+  const string mobileDisconnected = "MOBILE_DISCONNECTED";
+  const string barcodes = "BARCODES";
+  const string paymentSuccessful = "PAYMENT_SUCCESSFUL";
+  const string paymentError = "PAYMENT_ERROR";
+  const string paymentToken = "PAYMENT_TOKEN";
+
+  DeviceEvent toDeviceEvent(const string &event) {
+    if (event.compare(DeviceResponses::mobileConnected) == 0) {
+      return DeviceEvent::mobileConnected;
+    } else if (event.compare(DeviceResponses::mobileDisconnected) == 0) {
+      return DeviceEvent::mobileDisconnected;
+    } else if (event.compare(DeviceResponses::barcodes) == 0) {
+      return DeviceEvent::barcodes;
+    } else if (event.compare(DeviceResponses::paymentSuccessful) == 0) {
+      return DeviceEvent::paymentSuccessful;
+    } else if (event.compare(DeviceResponses::paymentError) == 0) {
+      return DeviceEvent::paymentError;
+    } else if (event.compare(DeviceResponses::paymentToken) == 0) {
+      return DeviceEvent::paymentToken;
+    } else {
+      throw runtime_error("invalid event string");
+    }
+  }
+}
 
 Device::Impl::Impl(DeviceCallback *callback):
 m_thread(&Device::Impl::runLoop, this), m_work(m_io_service), m_port(m_io_service), m_callback(callback), m_log("device") {
@@ -58,36 +100,81 @@ void Device::Impl::close() {
 }
 
 void Device::Impl::writeCompleted(const boost::system::error_code& error, std::size_t bytes_transferred) {
-  auto callback = *this->m_callback;
-
   if (error) {
+    errorCode = error.value();
+    notify(DeviceEvent::deviceError);
     m_log.e() << "write error: "<< error << Logger::endl;
-    if (callback != nullptr) {
-      DeviceEventParameters param;      
-      param.errorCode = error.value();      
-      callback(WRITE_ERROR, param);
-    }
     return;
   }      
 }
 
 void Device::Impl::readCompleted(const boost::system::error_code& error) {
-  auto callback = *this->m_callback;
-
-  if (error) {
+  if (error) {          
+    errorCode = error.value();
+    notify(DeviceEvent::deviceError);
     m_log.e() << "read error: "<< error << Logger::endl;
-    if (callback != nullptr) {
-      DeviceEventParameters param;      
-      param.errorCode = error.value();      
-      callback(WRITE_ERROR, param);
-    }
     return;
   }
   
   asio::streambuf::const_buffers_type bufs = m_readBuffer.data();
   string response(asio::buffers_begin(bufs), asio::buffers_begin(bufs) + m_readBuffer.size());
 
-  m_log.d() << "read: " << response << Logger::endl;
+  if (response.size() < 2) {
+    errorCode = -1;
+    notify(DeviceEvent::deviceError);
+    m_log.e() << "response size < 2" << Logger::endl;
+    return;
+  }
+
+  response = response.substr(0, response.size() - 2);
+  handleResponse(response);
+}
+
+void Device::Impl::handleResponse(const string &response) {
+  m_log.d() << "nrf rx: " << response << Logger::endl;
+
+  if (response.compare(0, DeviceResponses::openSession.size(), DeviceResponses::openSession) == 0 ||
+  response.compare(0, DeviceResponses::closeSession.size(), DeviceResponses::closeSession) == 0 ||
+  response.compare(0, DeviceResponses::requestBarcodes.size(), DeviceResponses::requestBarcodes) == 0 ||
+  response.compare(0, DeviceResponses::createPayment.size(), DeviceResponses::createPayment) == 0 ||
+  response.compare(0, DeviceResponses::cancelPayment.size(), DeviceResponses::cancelPayment) == 0 ||
+  response.compare(0, DeviceResponses::confirmPayment.size(), DeviceResponses::confirmPayment) == 0 || 
+  response.compare(0, DeviceResponses::createPaymentToken.size(), DeviceResponses::createPaymentToken) == 0
+  ) {
+    if (response.substr(response.size() - 2) == "ok") {
+      return;
+    } else {
+      errorCode = -1;
+      notify(DeviceEvent::protocolError);
+      return;
+    }
+  }
+
+  DeviceEvent event;
+  try {
+    event = DeviceResponses::toDeviceEvent(response);
+  } catch (...) {
+    errorCode = -2;
+    notify(DeviceEvent::protocolError);
+    return;
+  }
+
+  switch (event) {
+    case DeviceEvent::barcodes:
+      break;    
+    default:
+      break;
+  } 
+
+  notify(event);
+}
+
+void Device::Impl::notify(const DeviceEvent& event) {
+  auto callback = *m_callback;
+
+  if (callback != nullptr) {
+    callback(event);
+  }
 }
 
 void Device::Impl::openSession() {
@@ -115,3 +202,5 @@ Device::~Device() {}
 void Device::open(const string& path) { m_impl->open(path); }
 void Device::close() { m_impl->close(); }
 void Device::openSession() { m_impl->openSession(); }
+const vector<Barcode>& Device::barcodes() { return m_impl->barcodes; }
+int Device::errorCode() { return m_impl->errorCode; }
