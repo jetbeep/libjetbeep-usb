@@ -10,7 +10,7 @@
 #include <IOKit/serial/IOSerialKeys.h>
 
 #include <boost/asio.hpp>
-#include <detection/detection.hpp>
+#include "detection.hpp"
 
 using namespace JetBeep;
 using namespace std;

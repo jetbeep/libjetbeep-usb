@@ -1,22 +1,6 @@
 .DS_Store
 build
 
-CMakeLists.txt.user
-CMakeCache.txt
-CMakeFiles
-CMakeScripts
-Testing
-Makefile
-cmake_install.cmake
-cmake_uninstall.cmake
-install_manifest.txt
-compile_commands.json
-CTestTestfile.cmake
-_deps
-
-.cproject
-.project
-
 examples/jetbeep_usb_test
 lib/libjetbeep.0.1.0.dylib
 lib/libjetbeep.dylib
