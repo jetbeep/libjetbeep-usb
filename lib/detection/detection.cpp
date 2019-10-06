@@ -1,5 +1,3 @@
-#include "detection.h"
-
 #include <stdexcept>
 #include <iostream>
 
@@ -12,6 +10,7 @@
 #include <IOKit/serial/IOSerialKeys.h>
 
 #include <boost/asio.hpp>
+#include <detection/detection.hpp>
 
 using namespace JetBeep;
 using namespace std;
@@ -29,8 +28,8 @@ bool DeviceDetection::isValidVidPid(const VidPid &vidpid) {
 	return false;
 }
 
-DeviceDetection::DeviceDetection()
-:m_loop(NULL), m_iterator(0), m_notify_port(NULL), m_log("detection") {
+DeviceDetection::DeviceDetection(DeviceCallback callback)
+:m_loop(NULL), m_iterator(0), m_notify_port(NULL), m_log("detection"), callback(callback) {
 
 }
 
@@ -53,10 +52,13 @@ void DeviceDetection::DeviceAdded(void *refCon, io_iterator_t iterator) {
 	    auto vidPid = detection->getVidPid(service);
 
 	    if (DeviceDetection::isValidVidPid(vidPid)) {
-	    	detection->m_log.d() << "found jetbeep device, vid: " << vidPid.vid << " pid: " << vidPid.pid<< Logger::endl;
-	    }
+	    	Device device = { vidPid.vid, vidPid.pid, detection->getDevicePath(service) };
+	    	auto callback = detection->callback;
 
-	    detection->m_log.d() << "device path: "<< detection->getDevicePath(service) << Logger::endl;
+	    	if (callback != nullptr) {
+	    		callback(ADDED, device);
+	    	}
+	    }
 
 	    IOObjectRelease(service); // yes, you have to release this
 	}

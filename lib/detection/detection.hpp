@@ -1,12 +1,11 @@
 #ifndef JETBEEP_DEVICE_DETECTION_H
 #define JETBEEP_DEVICE_DETECTION_H
 
-#include "../utils/platform.h"
-#include "../utils/logger.h"
-
 #include <thread>
 #include <stdint.h>
 #include <stddef.h>
+#include "../utils/logger.hpp"
+#include "../utils/platform.hpp"
 
 #ifdef PLATFORM_OSX
 #include <CoreFoundation/CoreFoundation.h>
@@ -19,13 +18,27 @@ namespace JetBeep {
 		uint16_t pid;
 	} VidPid;
 
+	typedef enum DeviceEvent {
+		ADDED,
+		REMOVED
+	} DeviceEvent;
+
+	typedef struct Device {
+		uint16_t vid;
+		uint16_t pid;
+		std::string path;
+	} Device;
+
+	typedef void (*DeviceCallback)(const DeviceEvent&, const Device&);
 
 	class DeviceDetection {
 	public:
-		DeviceDetection();
+		DeviceDetection(DeviceCallback callback = nullptr);
 		virtual ~DeviceDetection();
 
 		void setup() noexcept(false);
+		DeviceCallback callback;
+
 		static size_t vidPidCount;
 		static VidPid validVidPids[];
 		static bool isValidVidPid(const VidPid &vidpid);

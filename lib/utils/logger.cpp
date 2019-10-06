@@ -5,13 +5,13 @@
  *      Author: oleh
  */
 
-#include "logger.h"
 #include <string>
 #include <iostream>
 #include <boost/thread.hpp>
 #include <ctime>
 #include <chrono>
 #include <stdint.h>
+#include <utils/logger.hpp>
 
 using namespace JetBeep;
 using namespace std;

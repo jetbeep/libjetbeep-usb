@@ -5,8 +5,8 @@
  *      Author: oleh
  */
 
-#ifndef LIB_UTILS_LOGGER_H_
-#define LIB_UTILS_LOGGER_H_
+#ifndef LIB_UTILS_LOGGER_HPP_
+#define LIB_UTILS_LOGGER_HPP_
 
 #include <string>
 #include <iostream>
@@ -77,4 +77,4 @@ namespace JetBeep {
 }
 
 
-#endif /* LIB_UTILS_LOGGER_H_ */
+#endif /* LIB_UTILS_LOGGER_HPP_ */
