@@ -3,6 +3,6 @@ target_include_directories(jetbeep_usb_test PUBLIC ${BOOST_SOURCE_DIR})
 
 target_link_libraries(jetbeep_usb_test $<TARGET_OBJECTS:jetbeep_obj>)
 
-if (APPLE) 
+if (APPLE)
 	target_link_libraries(jetbeep_usb_test "-framework IOKit" "-framework CoreFoundation")
 endif()

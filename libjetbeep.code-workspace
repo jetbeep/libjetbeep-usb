@@ -3,5 +3,15 @@
 		{
 			"path": "."
 		}
-	]
+	],
+	"settings": {
+		"files.associations": {
+			"new": "cpp",
+			"*.ipp": "cpp",
+			"utility": "cpp",
+			"thread": "cpp",
+			"__config": "cpp",
+			"__nullptr": "cpp"
+		}
+	}
 }

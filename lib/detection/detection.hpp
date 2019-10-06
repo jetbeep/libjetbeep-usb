@@ -1,17 +1,11 @@
 #ifndef JETBEEP_DEVICE_DETECTION_H
 #define JETBEEP_DEVICE_DETECTION_H
 
-#include <thread>
+#include <memory>
+#include <string>
 #include <stdint.h>
 #include <stddef.h>
-#include <unordered_map>
-#include "../utils/logger.hpp"
-#include "../utils/platform.hpp"
 
-#ifdef PLATFORM_OSX
-#include <CoreFoundation/CoreFoundation.h>
-#include <IOKit/IOKitLib.h>
-#endif
 
 namespace JetBeep {
 	typedef struct VidPid {
@@ -24,42 +18,29 @@ namespace JetBeep {
 		REMOVED
 	} DeviceEvent;
 
-	typedef struct Device {
+	typedef struct DeviceCandidate {
 		uint16_t vid;
 		uint16_t pid;
 		std::string path;
-	} Device;
+	} DeviceCandidate;
 
-	typedef void (*DeviceCallback)(const DeviceEvent&, const Device&);
+	typedef void (*DeviceDetectionCallback)(const DeviceEvent&, const DeviceCandidate&);
 
 	class DeviceDetection {
 	public:
-		DeviceDetection(DeviceCallback callback = nullptr);
+		DeviceDetection(DeviceDetectionCallback callback = nullptr);
 		virtual ~DeviceDetection();
 
-		void setup() noexcept(false);
-		DeviceCallback callback;
+		void start() noexcept(false);
+		void stop() noexcept(false);
+		DeviceDetectionCallback callback;
 
 		static size_t vidPidCount;
 		static VidPid validVidPids[];
 		static bool isValidVidPid(const VidPid &vidpid);
 	private:
-		Logger m_log;
-#ifdef PLATFORM_OSX
-		CFRunLoopRef m_loop;
-		io_iterator_t m_iterator;
-		std::thread m_thread;
-		IONotificationPortRef m_notifyPort;
-		std::unordered_map<std::string, std::pair<Device, io_service_t>> m_trackedDevices;
-
-		VidPid getVidPid(const io_service_t &service);
-		std::string getDevicePath(const io_service_t &service);
-
-		static void deviceAdded(void *refCon, io_iterator_t iterator);
-		static void deviceRemoved(void *refCon, io_service_t service, natural_t messageType, void *messageArgument);
-
-		void runLoop();
-#endif
+		class Impl;
+		std::unique_ptr<Impl> m_impl;
 	};
 }
 

@@ -2,8 +2,12 @@
 
 #ifdef PLATFORM_OSX
 #include "detection.hpp"
-#include <CoreFoundation/CoreFoundation.h>
+#include "../utils/logger.hpp"
 
+#include <thread>
+#include <unordered_map>
+
+#include <CoreFoundation/CoreFoundation.h>
 #include <IOKit/IOKitLib.h>
 #include <IOKit/IOMessage.h>
 #include <IOKit/IOCFPlugIn.h>
@@ -13,12 +17,43 @@
 using namespace JetBeep;
 using namespace std;
 
-DeviceDetection::DeviceDetection(DeviceCallback callback)
-:m_loop(NULL), m_iterator(0), m_notifyPort(NULL), m_log("detection"), callback(callback) {
+class DeviceDetection::Impl {
+  public:
+		Impl(DeviceDetectionCallback *callback);
+
+		void start();
+		void stop();
+
+		virtual ~Impl();
+	private:
+		DeviceDetectionCallback *m_callback;
+		Logger m_log;
+		CFRunLoopRef m_loop;
+		io_iterator_t m_iterator;
+		std::thread m_thread;
+		IONotificationPortRef m_notifyPort;
+		std::unordered_map<std::string, std::pair<DeviceCandidate, io_service_t>> m_trackedDevices;
+
+		VidPid getVidPid(const io_service_t &service);
+		std::string getDevicePath(const io_service_t &service);
+
+		static void deviceAdded(void *refCon, io_iterator_t iterator);
+		static void deviceRemoved(void *refCon, io_service_t service, natural_t messageType, void *messageArgument);
+
+		void runLoop();
+};
+
+
+DeviceDetection::Impl::Impl(DeviceDetectionCallback *callback)
+:m_callback(callback), m_loop(NULL), m_iterator(0), m_notifyPort(NULL), m_log("detection") {
 
 }
 
-DeviceDetection::~DeviceDetection() {
+DeviceDetection::Impl::~Impl() {
+	stop();
+}
+
+void DeviceDetection::Impl::stop() {
 	if (m_loop != NULL) {
 		CFRunLoopStop(m_loop);
 	}
@@ -34,17 +69,17 @@ DeviceDetection::~DeviceDetection() {
 	}
 }
 
-void DeviceDetection::deviceAdded(void *refCon, io_iterator_t iterator) {
+void DeviceDetection::Impl::deviceAdded(void *refCon, io_iterator_t iterator) {
 	io_service_t service;
 	kern_return_t kr;
-	DeviceDetection* detection = reinterpret_cast<DeviceDetection*>(refCon);
+	DeviceDetection::Impl* detection = reinterpret_cast<DeviceDetection::Impl*>(refCon);
 
 	while ((service = IOIteratorNext(iterator)))
 	{
 	    auto vidPid = detection->getVidPid(service);
 
 	    if (DeviceDetection::isValidVidPid(vidPid)) {
-	    	Device device = { vidPid.vid, vidPid.pid, detection->getDevicePath(service) };
+	    	DeviceCandidate device = { vidPid.vid, vidPid.pid, detection->getDevicePath(service) };
 	    	io_service_t remove_service;
 
 	    	kr = IOServiceAddInterestNotification(
@@ -64,7 +99,7 @@ void DeviceDetection::deviceAdded(void *refCon, io_iterator_t iterator) {
 
 	    	detection->m_trackedDevices[device.path] = make_pair(device, remove_service);
 
-	    	auto callback = detection->callback;
+	    	auto callback = *detection->m_callback;
 
 	    	if (callback != nullptr) {
 	    		callback(ADDED, device);
@@ -75,9 +110,9 @@ void DeviceDetection::deviceAdded(void *refCon, io_iterator_t iterator) {
 	}
 }
 
-void DeviceDetection::deviceRemoved(void *refCon, io_service_t service, natural_t messageType, void *messageArgument) {
+void DeviceDetection::Impl::deviceRemoved(void *refCon, io_service_t service, natural_t messageType, void *messageArgument) {
 	kern_return_t kr;
-	DeviceDetection* detection = reinterpret_cast<DeviceDetection*>(refCon);
+	DeviceDetection::Impl* detection = reinterpret_cast<DeviceDetection::Impl*>(refCon);
 
 	if (messageType != kIOMessageServiceIsTerminated) {
 		return;
@@ -97,17 +132,17 @@ void DeviceDetection::deviceRemoved(void *refCon, io_service_t service, natural_
 		return;
 	}
 
-	auto callback = detection->callback;
+	auto callback = *detection->m_callback;
 
 	if (callback != nullptr) {
 		callback(REMOVED, device);
 	}
 }
 
-void DeviceDetection::setup() noexcept(false) {
+void DeviceDetection::Impl::start() {
 	kern_return_t kr;
-	CFMutableDictionaryRef 	matchingDict;
-	CFRunLoopRef				gRunLoop;
+	CFMutableDictionaryRef matchingDict;
+	CFRunLoopRef gRunLoop;
 
 	matchingDict = IOServiceMatching(kIOSerialBSDServiceValue/*kIOUSBDeviceClassName*/);
 
@@ -129,13 +164,12 @@ void DeviceDetection::setup() noexcept(false) {
 		throw runtime_error("unable to create matching notification");
 	}
 
-	m_thread = thread(&DeviceDetection::runLoop, this);
+	m_thread = thread(&DeviceDetection::Impl::runLoop, this);
 }
 
-void DeviceDetection::runLoop() {
+void DeviceDetection::Impl::runLoop() {
 	deviceAdded(this, m_iterator);
-
-	CFRunLoopSourceRef runLoopSource = NULL;
+	CFRunLoopSourceRef runLoopSource = nullptr;
 
 	runLoopSource = IONotificationPortGetRunLoopSource(m_notifyPort);
 
@@ -145,7 +179,7 @@ void DeviceDetection::runLoop() {
 	CFRunLoopRun();
 }
 
-VidPid DeviceDetection::getVidPid(const io_service_t &service) {
+VidPid DeviceDetection::Impl::getVidPid(const io_service_t &service) {
 	int vid = 0, pid = 0;
 	CFTypeRef cf_vendor, cf_product;
 	VidPid return_value = { 0, 0 };
@@ -178,7 +212,7 @@ VidPid DeviceDetection::getVidPid(const io_service_t &service) {
 	return return_value;
 }
 
-string DeviceDetection::getDevicePath(const io_service_t &service) {
+string DeviceDetection::Impl::getDevicePath(const io_service_t &service) {
 	string result;
 
 	CFStringRef device_path = (CFStringRef) IORegistryEntrySearchCFProperty (service,
@@ -205,5 +239,15 @@ string DeviceDetection::getDevicePath(const io_service_t &service) {
 
 	return result;
 }
+
+// DeviceDetection
+
+DeviceDetection::DeviceDetection(DeviceDetectionCallback callback)
+: callback(callback), m_impl(new Impl(&this->callback)) {}
+
+DeviceDetection::~DeviceDetection() {}
+
+void DeviceDetection::start() { m_impl->start(); }
+void DeviceDetection::stop() { m_impl->stop(); }
 
 #endif

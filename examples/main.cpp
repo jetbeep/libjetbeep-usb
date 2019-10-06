@@ -6,7 +6,7 @@ using namespace JetBeep;
 
 Logger l("main");
 
-static void deviceEvent(const DeviceEvent& event, const Device &device) {
+static void deviceEvent(const DeviceEvent& event, const DeviceCandidate &device) {
 	string event_type;
 
 	if (event == ADDED) {
@@ -25,7 +25,7 @@ int main() {
 
 	l.i() << "starting device detection.." << Logger::endl;
 	try {
-		d.setup();
+		d.start();
 	} catch (const exception& e) {
 		l.e() << e.what() << Logger::endl;
 	}
