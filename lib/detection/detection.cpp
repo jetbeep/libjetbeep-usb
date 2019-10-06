@@ -41,10 +41,17 @@ DeviceDetection::~DeviceDetection() {
 	if (m_thread.joinable()) {
 		m_thread.join();
 	}
+
+	for (auto it = m_tracked_devices.begin(); it != m_tracked_devices.end(); ++it) {
+		auto service = it->second.second;
+
+		IOObjectRelease(service);
+	}
 }
 
-void DeviceDetection::DeviceAdded(void *refCon, io_iterator_t iterator) {
+void DeviceDetection::deviceAdded(void *refCon, io_iterator_t iterator) {
 	io_service_t service;
+	kern_return_t kr;
 	DeviceDetection* detection = reinterpret_cast<DeviceDetection*>(refCon);
 
 	while ((service = IOIteratorNext(iterator)))
@@ -53,6 +60,25 @@ void DeviceDetection::DeviceAdded(void *refCon, io_iterator_t iterator) {
 
 	    if (DeviceDetection::isValidVidPid(vidPid)) {
 	    	Device device = { vidPid.vid, vidPid.pid, detection->getDevicePath(service) };
+	    	io_service_t remove_service;
+
+	    	kr = IOServiceAddInterestNotification(
+	    			detection->m_notify_port, // notifyPort
+					service, // service
+	    			kIOGeneralInterest, // interestType
+	    			deviceRemoved, // callback
+	    			detection, // refCon
+	    			&remove_service // notification
+	    			);
+
+	    	if (KERN_SUCCESS != kr) {
+	    		detection->m_log.e() << "unable to add device remove callback: "<< kr << Logger::endl;
+	    		IOObjectRelease(service);
+	    		continue;
+	    	}
+
+	    	detection->m_tracked_devices[device.path] = make_pair(device, remove_service);
+
 	    	auto callback = detection->callback;
 
 	    	if (callback != nullptr) {
@@ -61,6 +87,35 @@ void DeviceDetection::DeviceAdded(void *refCon, io_iterator_t iterator) {
 	    }
 
 	    IOObjectRelease(service); // yes, you have to release this
+	}
+}
+
+void DeviceDetection::deviceRemoved(void *refCon, io_service_t service, natural_t messageType, void *messageArgument) {
+	kern_return_t kr;
+	DeviceDetection* detection = reinterpret_cast<DeviceDetection*>(refCon);
+
+	if (messageType != kIOMessageServiceIsTerminated) {
+		return;
+	}
+
+	auto path = detection->getDevicePath(service);
+	auto devicePair = detection->m_tracked_devices[path];
+	auto device = devicePair.first;
+	auto notification = devicePair.second;
+
+	detection->m_tracked_devices.erase(path);
+
+	kr = IOObjectRelease(notification);
+
+	if (KERN_SUCCESS != kr) {
+		detection->m_log.e() << "unable to relase service in deviceRemoved: " << kr << Logger::endl;
+		return;
+	}
+
+	auto callback = detection->callback;
+
+	if (callback != nullptr) {
+		callback(REMOVED, device);
 	}
 }
 
@@ -81,7 +136,7 @@ void DeviceDetection::setup() noexcept(false) {
 				m_notify_port, // notifyPort
 				kIOFirstMatchNotification, // notificationType
 				matchingDict, // matching
-				DeviceAdded, // callback
+				deviceAdded, // callback
 				this, // refCon
 				&m_iterator // notification
 			);
@@ -93,7 +148,7 @@ void DeviceDetection::setup() noexcept(false) {
 }
 
 void DeviceDetection::runLoop() {
-	DeviceAdded(this, m_iterator);
+	deviceAdded(this, m_iterator);
 
 	CFRunLoopSourceRef runLoopSource = NULL;
 

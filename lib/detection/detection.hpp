@@ -4,6 +4,7 @@
 #include <thread>
 #include <stdint.h>
 #include <stddef.h>
+#include <unordered_map>
 #include "../utils/logger.hpp"
 #include "../utils/platform.hpp"
 
@@ -49,11 +50,13 @@ namespace JetBeep {
 		io_iterator_t m_iterator;
 		std::thread m_thread;
 		IONotificationPortRef m_notify_port;
+		std::unordered_map<std::string, std::pair<Device, io_service_t>> m_tracked_devices;
 
 		VidPid getVidPid(const io_service_t &service);
 		std::string getDevicePath(const io_service_t &service);
 
-		static void DeviceAdded(void *refCon, io_iterator_t iterator);
+		static void deviceAdded(void *refCon, io_iterator_t iterator);
+		static void deviceRemoved(void *refCon, io_service_t service, natural_t messageType, void *messageArgument);
 
 		void runLoop();
 #endif

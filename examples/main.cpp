@@ -15,7 +15,7 @@ static void deviceEvent(const DeviceEvent& event, const Device &device) {
 		event_type = "removed: ";
 	}
 
-	l.i() << event_type << device.path << Logger::endl;
+	l.i() << event_type << device.path << " vid: " << device.vid << " pid: " << device.pid << Logger::endl;
 }
 
 int main() {
