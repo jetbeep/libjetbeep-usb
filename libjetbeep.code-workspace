@@ -11,7 +11,8 @@
 			"utility": "cpp",
 			"thread": "cpp",
 			"__config": "cpp",
-			"__nullptr": "cpp"
+			"__nullptr": "cpp",
+			"functional": "cpp"
 		}
 	}
 }

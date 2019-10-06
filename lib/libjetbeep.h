@@ -3,5 +3,6 @@
 
 #include "detection/detection.hpp"
 #include "utils/logger.hpp"
+#include "device/device.hpp"
 
 #endif

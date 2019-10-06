@@ -5,16 +5,19 @@ using namespace std;
 using namespace JetBeep;
 
 Logger l("main");
+Device d;
 
-static void deviceEvent(const DeviceEvent& event, const DeviceCandidate &device) {
+static void deviceEvent(const DeviceDetectionEvent& event, const DeviceCandidate &candidate) {
 	string event_type;
 
 	if (event == ADDED) {
 		event_type = "added: ";
+		d.open(candidate.path);
+		d.openSession();
 	} else {
 		event_type = "removed: ";
 	}
-	l.i() << event_type << device.path << " vid: " << device.vid << " pid: " << device.pid << Logger::endl;
+	l.i() << event_type << candidate.path << " vid: " << candidate.vid << " pid: " << candidate.pid << Logger::endl;
 }
 
 int main() {

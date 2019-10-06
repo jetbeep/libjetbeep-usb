@@ -6,17 +6,16 @@
 #include <stdint.h>
 #include <stddef.h>
 
-
 namespace JetBeep {
 	typedef struct VidPid {
 		uint16_t vid;
 		uint16_t pid;
 	} VidPid;
 
-	typedef enum DeviceEvent {
+	typedef enum DeviceDetectionEvent {
 		ADDED,
 		REMOVED
-	} DeviceEvent;
+	} DeviceDetectionEvent;
 
 	typedef struct DeviceCandidate {
 		uint16_t vid;
@@ -24,7 +23,7 @@ namespace JetBeep {
 		std::string path;
 	} DeviceCandidate;
 
-	typedef void (*DeviceDetectionCallback)(const DeviceEvent&, const DeviceCandidate&);
+	typedef void (*DeviceDetectionCallback)(const DeviceDetectionEvent&, const DeviceCandidate&);
 
 	class DeviceDetection {
 	public:
