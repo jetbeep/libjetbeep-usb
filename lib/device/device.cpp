@@ -1,5 +1,6 @@
 #include "device.hpp"
 #include "../utils/logger.hpp"
+#include "../utils/split.hpp"
 
 #include <thread>
 
@@ -24,6 +25,7 @@ class Device::Impl {
 
     vector<Barcode> barcodes;
     int errorCode;
+    string paymentToken;
   private:
     string m_writeData;
     asio::streambuf m_readBuffer;
@@ -131,17 +133,36 @@ void Device::Impl::readCompleted(const boost::system::error_code& error) {
 }
 
 void Device::Impl::handleResponse(const string &response) {
+  auto splitted = splitString(response);
+
   m_log.d() << "nrf rx: " << response << Logger::endl;
 
-  if (response.compare(0, DeviceResponses::openSession.size(), DeviceResponses::openSession) == 0 ||
-  response.compare(0, DeviceResponses::closeSession.size(), DeviceResponses::closeSession) == 0 ||
-  response.compare(0, DeviceResponses::requestBarcodes.size(), DeviceResponses::requestBarcodes) == 0 ||
-  response.compare(0, DeviceResponses::createPayment.size(), DeviceResponses::createPayment) == 0 ||
-  response.compare(0, DeviceResponses::cancelPayment.size(), DeviceResponses::cancelPayment) == 0 ||
-  response.compare(0, DeviceResponses::confirmPayment.size(), DeviceResponses::confirmPayment) == 0 || 
-  response.compare(0, DeviceResponses::createPaymentToken.size(), DeviceResponses::createPaymentToken) == 0
+  if (splitted.empty()) {
+    m_log.e() << "unable to split string..."<< Logger::endl;
+    errorCode = -2;
+    notify(DeviceEvent::protocolError);
+    return;
+  }
+
+  auto command = splitted.at(0);
+
+  if (command.compare(DeviceResponses::openSession) == 0 ||
+  command.compare(DeviceResponses::closeSession) == 0 ||
+  command.compare(DeviceResponses::requestBarcodes) == 0 ||
+  command.compare(DeviceResponses::createPayment) == 0 ||
+  command.compare(DeviceResponses::cancelPayment) == 0 ||
+  command.compare(DeviceResponses::confirmPayment) == 0 || 
+  command.compare(DeviceResponses::createPaymentToken) == 0
   ) {
-    if (response.substr(response.size() - 2) == "ok") {
+    if (splitted.size() != 2) {
+      m_log.e() << "invalid response split size: " << splitted.size() << Logger::endl;
+      errorCode = -3;
+      notify(DeviceEvent::protocolError);
+      return;
+    }
+    auto result = splitted.at(1);
+
+    if (result == "ok") {
       return;
     } else {
       errorCode = -1;
@@ -161,7 +182,34 @@ void Device::Impl::handleResponse(const string &response) {
 
   switch (event) {
     case DeviceEvent::barcodes:
-      break;    
+      barcodes.clear();
+
+      if (splitted.size() % 2 != 1) {
+        m_log.e() << "invalid response split size: " << splitted.size() << Logger::endl;
+        errorCode = -4;
+        notify(DeviceEvent::protocolError);
+        return;
+      }
+      
+      for (auto it = splitted.begin()++ ; it != splitted.end(); it += 2) {
+          auto it2 = it++;
+          string value = *it;
+          int type = atoi((*it2).c_str());
+          Barcode barcode = {value, type};
+
+          barcodes.push_back(barcode);
+      }
+      break;
+    case DeviceEvent::paymentToken:
+      if (splitted.size() != 2) {
+        m_log.e() << "invalid response split size: " << splitted.size() << Logger::endl;
+        errorCode = -4;
+        notify(DeviceEvent::protocolError);
+        return;
+      }
+
+      paymentToken = splitted.at(1);
+      break;
     default:
       break;
   } 
@@ -204,3 +252,4 @@ void Device::close() { m_impl->close(); }
 void Device::openSession() { m_impl->openSession(); }
 const vector<Barcode>& Device::barcodes() { return m_impl->barcodes; }
 int Device::errorCode() { return m_impl->errorCode; }
+const string& Device::paymentToken() { return m_impl->paymentToken; }

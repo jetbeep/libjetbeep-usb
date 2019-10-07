@@ -23,6 +23,7 @@ namespace JetBeep {
     
     DeviceCallback callback;
     const std::vector<Barcode>& barcodes();
+    const std::string& paymentToken();
     int errorCode();
   private:
     class Impl;
