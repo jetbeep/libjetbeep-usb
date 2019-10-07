@@ -19,11 +19,18 @@ namespace JetBeep {
     void openSession();
     void closeSession();
     void requestBarcodes();
-    void createPayment();
+    void cancelBarcodes();
+    void createPayment(uint32_t amount, const std::string& transactionId, const std::string& cashierId = "", 
+      const std::string& metadata = "");
+    void createPaymentToken(uint32_t amount, const std::string& transactionId, const std::string& cashierId = "", 
+      const std::string& metadata = "");
+    void cancelPayment();
+    void resetState();      
     
     DeviceCallback callback;
     const std::vector<Barcode>& barcodes();
     const std::string& paymentToken();
+    const std::string& paymentError();
     int errorCode();
   private:
     class Impl;

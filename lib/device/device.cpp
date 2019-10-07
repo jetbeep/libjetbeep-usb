@@ -26,6 +26,7 @@ class Device::Impl {
     vector<Barcode> barcodes;
     int errorCode;
     string paymentToken;
+    string paymentError;
   private:
     string m_writeData;
     asio::streambuf m_readBuffer;
@@ -48,10 +49,12 @@ namespace DeviceResponses {
   const string openSession = "OPEN_SESSION";
   const string closeSession = "CLOSE_SESSION";
   const string requestBarcodes = "REQUEST_BARCODES";
+  const string cancelBarcodes = "CANCEL_BARCODES";
   const string createPayment = "CREATE_PAYMENT";
   const string cancelPayment = "CANCEL_PAYMENT";
   const string confirmPayment = "CONFIRM_PAYMENT";
   const string createPaymentToken = "CREATE_PAYMENT_TOKEN";
+  const string resetState = "RESET_STATE";
 
   // events
   const string mobileConnected = "MOBILE_CONNECTED";
@@ -149,10 +152,12 @@ void Device::Impl::handleResponse(const string &response) {
   if (command.compare(DeviceResponses::openSession) == 0 ||
   command.compare(DeviceResponses::closeSession) == 0 ||
   command.compare(DeviceResponses::requestBarcodes) == 0 ||
+  command.compare(DeviceResponses::cancelBarcodes) == 0 ||
   command.compare(DeviceResponses::createPayment) == 0 ||
   command.compare(DeviceResponses::cancelPayment) == 0 ||
   command.compare(DeviceResponses::confirmPayment) == 0 || 
-  command.compare(DeviceResponses::createPaymentToken) == 0
+  command.compare(DeviceResponses::createPaymentToken) == 0 ||
+  command.compare(DeviceResponses::resetState) == 0
   ) {
     if (splitted.size() != 2) {
       m_log.e() << "invalid response split size: " << splitted.size() << Logger::endl;
@@ -210,6 +215,16 @@ void Device::Impl::handleResponse(const string &response) {
 
       paymentToken = splitted.at(1);
       break;
+    case DeviceEvent::paymentError:
+      if (splitted.size() != 2) {
+        m_log.e() << "invalid response split size: " << splitted.size() << Logger::endl;
+        errorCode = -4;
+        notify(DeviceEvent::protocolError);
+        return;
+      }
+
+      paymentError = splitted.at(1);
+      break;
     default:
       break;
   } 
@@ -253,3 +268,4 @@ void Device::openSession() { m_impl->openSession(); }
 const vector<Barcode>& Device::barcodes() { return m_impl->barcodes; }
 int Device::errorCode() { return m_impl->errorCode; }
 const string& Device::paymentToken() { return m_impl->paymentToken; }
+const string& Device::paymentError() { return m_impl->paymentError; }
