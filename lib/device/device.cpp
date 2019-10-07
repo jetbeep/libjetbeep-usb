@@ -21,7 +21,7 @@ class Device::Impl {
     void open(const string& path);
     void close();
 
-    void openSession();
+    void execute(const string& cmd);
 
     vector<Barcode> barcodes;
     int errorCode;
@@ -240,8 +240,8 @@ void Device::Impl::notify(const DeviceEvent& event) {
   }
 }
 
-void Device::Impl::openSession() {
-  m_writeData = "OPEN_SESSION\r\n";
+void Device::Impl::execute(const string &cmd) {
+  m_writeData = cmd;
   auto buffer = asio::buffer(m_writeData.c_str(), m_writeData.size());
   auto writeCallback = boost::bind(&Device::Impl::writeCompleted, this, 
     asio::placeholders::error, asio::placeholders::bytes_transferred);
@@ -264,7 +264,47 @@ Device::~Device() {}
 
 void Device::open(const string& path) { m_impl->open(path); }
 void Device::close() { m_impl->close(); }
-void Device::openSession() { m_impl->openSession(); }
+void Device::openSession() { m_impl->execute("OPEN_SESSION\r\n"); }
+void Device::closeSession() { m_impl->execute("CLOSE_SESSION\r\n"); }
+void Device::requestBarcodes() { m_impl->execute("REQUEST_BARCODES\r\n"); }
+void Device::cancelBarcodes() { m_impl->execute("CANCEL_BARCODES\r\n"); }
+
+void Device::createPayment(uint32_t amount, const std::string& transactionId, const std::string& cashierId, 
+  const std::string& metadata) {
+    ostringstream ss;
+
+    ss << "CREATE_PAYMENT " << transactionId;
+
+    if (cashierId != "") {
+      ss << " " << cashierId;
+
+      if (metadata != "") {
+        ss << " " << metadata;
+      }
+    }
+    ss << "\r\n";    
+    m_impl->execute(ss.str());
+}
+
+void Device::createPaymentToken(uint32_t amount, const std::string& transactionId, const std::string& cashierId, 
+  const std::string& metadata) {
+    ostringstream ss;
+
+    ss << "CREATE_PAYMENT_TOKEN " << transactionId;
+
+    if (cashierId != "") {
+      ss << " " << cashierId;
+
+      if (metadata != "") {
+        ss << " " << metadata;
+      }
+    }
+    ss << "\r\n";    
+    m_impl->execute(ss.str());
+}
+
+void Device::cancelPayment() { m_impl->execute("CANCEL_PAYMENT\r\n"); }
+void Device::resetState() { m_impl->execute("RESET_STATE\r\n"); }
 const vector<Barcode>& Device::barcodes() { return m_impl->barcodes; }
 int Device::errorCode() { return m_impl->errorCode; }
 const string& Device::paymentToken() { return m_impl->paymentToken; }
