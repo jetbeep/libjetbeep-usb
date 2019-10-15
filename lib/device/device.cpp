@@ -120,9 +120,12 @@ void Device::Impl::readCompleted(const boost::system::error_code& error) {
     m_log.e() << "read error: "<< error << Logger::endl;
     return;
   }
-  
+    
   asio::streambuf::const_buffers_type bufs = m_readBuffer.data();
   string response(asio::buffers_begin(bufs), asio::buffers_begin(bufs) + m_readBuffer.size());
+  
+  m_readBuffer.consume(m_readBuffer.size());    
+  async_read_until(m_port, m_readBuffer, "\r\n", boost::bind(&Device::Impl::readCompleted, this, asio::placeholders::error));
 
   if (response.size() < 2) {
     errorCode = -1;
@@ -241,6 +244,10 @@ void Device::Impl::notify(const DeviceEvent& event) {
 }
 
 void Device::Impl::execute(const string &cmd) {
+  if (!m_port.is_open()) {
+    throw runtime_error("port is not opened");
+  }
+
   m_writeData = cmd;
   auto buffer = asio::buffer(m_writeData.c_str(), m_writeData.size());
   auto writeCallback = boost::bind(&Device::Impl::writeCompleted, this, 
