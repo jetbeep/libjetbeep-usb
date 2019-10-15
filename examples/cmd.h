@@ -11,13 +11,16 @@ class Cmd {
 
     void process(const std::string& cmd, const std::vector<std::string>& params);
   private:
-    JetBeep::Logger _l;
-    JetBeep::Device _device;
+    JetBeep::Logger m_log;
+    JetBeep::Device m_device;
 
     void open(const std::vector<std::string> &params);
     void openSession();
     void closeSession();
     void close();
+    void requestBarcodes();
+    void createPayment(const std::vector<std::string> &params);
+    void createPaymentToken(const std::vector<std::string> &params);
 };
 
 #endif

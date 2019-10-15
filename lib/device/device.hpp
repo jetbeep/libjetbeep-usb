@@ -3,11 +3,14 @@
 
 #include "device_types.hpp"
 
+#include <unordered_map>
 #include <memory>
 #include <string>
 #include <vector>
 
-namespace JetBeep {  
+namespace JetBeep {
+  typedef std::unordered_map<std::string, std::string> PaymentMetadata;  
+  
   class Device {
   public:
     Device(DeviceCallback callback = nullptr);
@@ -21,9 +24,9 @@ namespace JetBeep {
     void requestBarcodes();
     void cancelBarcodes();
     void createPayment(uint32_t amount, const std::string& transactionId, const std::string& cashierId = "", 
-      const std::string& metadata = "");
+      const PaymentMetadata& metadata = PaymentMetadata());
     void createPaymentToken(uint32_t amount, const std::string& transactionId, const std::string& cashierId = "", 
-      const std::string& metadata = "");
+      const PaymentMetadata& metadata = PaymentMetadata());
     void cancelPayment();
     void resetState();      
     

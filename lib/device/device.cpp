@@ -123,7 +123,7 @@ void Device::Impl::readCompleted(const boost::system::error_code& error) {
     
   asio::streambuf::const_buffers_type bufs = m_readBuffer.data();
   string response(asio::buffers_begin(bufs), asio::buffers_begin(bufs) + m_readBuffer.size());
-  
+
   m_readBuffer.consume(m_readBuffer.size());    
   async_read_until(m_port, m_readBuffer, "\r\n", boost::bind(&Device::Impl::readCompleted, this, asio::placeholders::error));
 
@@ -248,6 +248,8 @@ void Device::Impl::execute(const string &cmd) {
     throw runtime_error("port is not opened");
   }
 
+  m_log.d() << "nrf tx: " << cmd.substr(0, cmd.size() - 2) << Logger::endl;
+
   m_writeData = cmd;
   auto buffer = asio::buffer(m_writeData.c_str(), m_writeData.size());
   auto writeCallback = boost::bind(&Device::Impl::writeCompleted, this, 
@@ -277,16 +279,22 @@ void Device::requestBarcodes() { m_impl->execute("REQUEST_BARCODES\r\n"); }
 void Device::cancelBarcodes() { m_impl->execute("CANCEL_BARCODES\r\n"); }
 
 void Device::createPayment(uint32_t amount, const std::string& transactionId, const std::string& cashierId, 
-  const std::string& metadata) {
+  const PaymentMetadata& metadata) {
     ostringstream ss;
 
-    ss << "CREATE_PAYMENT " << transactionId;
+    ss << "CREATE_PAYMENT " << amount << " " << transactionId;
 
     if (cashierId != "") {
       ss << " " << cashierId;
 
-      if (metadata != "") {
-        ss << " " << metadata;
+      if (!metadata.empty()) {
+        ss << " ";
+
+        for (auto it = metadata.begin(); it != metadata.end(); ++it) {
+          ss << (*it).first << ":" << (*it).second;           
+        }
+
+        ss << ";";  
       }
     }
     ss << "\r\n";    
@@ -294,16 +302,22 @@ void Device::createPayment(uint32_t amount, const std::string& transactionId, co
 }
 
 void Device::createPaymentToken(uint32_t amount, const std::string& transactionId, const std::string& cashierId, 
-  const std::string& metadata) {
+  const PaymentMetadata &metadata) {
     ostringstream ss;
 
-    ss << "CREATE_PAYMENT_TOKEN " << transactionId;
+    ss << "CREATE_PAYMENT_TOKEN " << amount << " " << transactionId;
 
     if (cashierId != "") {
       ss << " " << cashierId;
 
-      if (metadata != "") {
-        ss << " " << metadata;
+      if (!metadata.empty()) {
+        ss << " ";
+
+        for (auto it = metadata.begin(); it != metadata.end(); ++it) {
+          ss << (*it).first << ":" << (*it).second;           
+        }
+
+        ss << ";";    
       }
     }
     ss << "\r\n";    
