@@ -1,6 +1,9 @@
 #include <iostream>
+#include <algorithm>
+#include <cctype>
 #include "cmd.h"
 #include "../lib/libjetbeep.h"
+
 
 using namespace std;
 using namespace JetBeep;
@@ -8,16 +11,10 @@ using namespace JetBeep;
 Logger l("main");
 Device d;
 
-char asciitolower(char in) {
-    if (in <= 'Z' && in >= 'A')
-        return in - ('Z' - 'z');
-    return in;
-}
-
 string toLowerCase(const string& input) {
 	string result = input;
 
-	transform(result.begin(), result.end(), result.begin(), asciitolower);
+	transform(result.begin(), result.end(), result.begin(), (int (*)(int))std::tolower);
 	return result;
 }
 
