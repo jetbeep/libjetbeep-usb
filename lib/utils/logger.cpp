@@ -20,8 +20,8 @@ using namespace boost;
 
 bool Logger::cerrEnabled = false;
 bool Logger::coutEnabled = false;
-LoggerLevel Logger::level = SILENT;
-thread_local LoggerLevel Logger::m_threadLevel = SILENT;
+LoggerLevel Logger::level = LoggerLevel::silent;
+thread_local LoggerLevel Logger::m_threadLevel = LoggerLevel::silent;
 
 Logger& Logger::endl(Logger& a) {
 	if (Logger::coutEnabled) {
@@ -48,17 +48,17 @@ Logger& Logger::output() {
 	time_t now = time(nullptr);
 
 	switch (Logger::m_threadLevel) {
-	case VERBOSE:
+	case LoggerLevel::verbose:
 		level_str = "[VERBOSE] "; break;
-	case DEBUG:
+	case LoggerLevel::debug:
 		level_str = "[DEBUG]   "; break;
-	case INFO:
+	case LoggerLevel::info:
 		level_str = "[INFO]    "; break;
-	case WARNING:
+	case LoggerLevel::warning:
 		level_str = "[WARNING] "; break;
-	case ERROR:
+	case LoggerLevel::error:
 		level_str = "[ERROR]   "; break;
-	case SILENT:
+	case LoggerLevel::silent:
 		level_str = "[SILENT]  "; break;
 	default:
 		level_str = "[UNKNOWN] "; break;
@@ -80,30 +80,30 @@ Logger& Logger::output() {
 }
 
 Logger& Logger::v() {
-	Logger::m_threadLevel = VERBOSE;
+	Logger::m_threadLevel = LoggerLevel::verbose;
 	return output();
 }
 
 Logger& Logger::d() {
-	Logger::m_threadLevel = DEBUG;
+	Logger::m_threadLevel = LoggerLevel::debug;
 
 	return output();
 }
 
 Logger& Logger::i() {
-	Logger::m_threadLevel = INFO;
+	Logger::m_threadLevel = LoggerLevel::info;
 
 	return output();
 }
 
 Logger& Logger::w() {
-	Logger::m_threadLevel = WARNING;
+	Logger::m_threadLevel = LoggerLevel::warning;
 
 	return output();
 }
 
 Logger& Logger::e() {
-	Logger::m_threadLevel = ERROR;
+	Logger::m_threadLevel = LoggerLevel::error;
 
 	return output();
 }

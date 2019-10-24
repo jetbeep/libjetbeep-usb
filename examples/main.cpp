@@ -17,14 +17,16 @@ char asciitolower(char in) {
 string toLowerCase(const string& input) {
 	string result = input;
 
-	transform(result.begin(), result.end(), result.begin(), asciitolower);
+	for (int i = 0; i < result.size(); ++i) {
+		result[i] = asciitolower(result[i]);
+	}
 	return result;
 }
 
 static void deviceEvent(const DeviceDetectionEvent& event, const DeviceCandidate &candidate) {
 	string event_type;
 
-	if (event == ADDED) {
+	if (event == DeviceDetectionEvent::added) {
 		event_type = "added: ";
 	} else {
 		event_type = "removed: ";
@@ -34,7 +36,7 @@ static void deviceEvent(const DeviceDetectionEvent& event, const DeviceCandidate
 
 int main() {
 	Logger::coutEnabled = true;
-	Logger::level = VERBOSE;
+	Logger::level = LoggerLevel::verbose;
 	Cmd cmd;
 
 	DeviceDetection d(deviceEvent);

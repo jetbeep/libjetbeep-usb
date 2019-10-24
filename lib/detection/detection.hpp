@@ -12,9 +12,9 @@ namespace JetBeep {
 		uint16_t pid;
 	} VidPid;
 
-	typedef enum DeviceDetectionEvent {
-		ADDED,
-		REMOVED
+	typedef enum class DeviceDetectionEvent {
+		added,
+		removed
 	} DeviceDetectionEvent;
 
 	typedef struct DeviceCandidate {
