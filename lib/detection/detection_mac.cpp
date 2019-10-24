@@ -102,7 +102,7 @@ void DeviceDetection::Impl::deviceAdded(void *refCon, io_iterator_t iterator) {
 	    	auto callback = *detection->m_callback;
 
 	    	if (callback != nullptr) {
-	    		callback(ADDED, device);
+	    		callback(DeviceDetectionEvent::added, device);
 	    	}
 	    }
 
@@ -135,7 +135,7 @@ void DeviceDetection::Impl::deviceRemoved(void *refCon, io_service_t service, na
 	auto callback = *detection->m_callback;
 
 	if (callback != nullptr) {
-		callback(REMOVED, device);
+		callback(DeviceDetectionEvent::removed, device);
 	}
 }
 
