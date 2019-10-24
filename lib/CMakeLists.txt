@@ -17,6 +17,7 @@ if (APPLE)
 	target_link_libraries(jetbeep "-framework IOKit" "-framework CoreFoundation")
 elseif(UNIX AND NOT APPLE)
     target_link_libraries(jetbeep "-lpthread")
+    target_link_libraries(jetbeep "-ludev")
 elseif(WIN32)
 endif()
 
