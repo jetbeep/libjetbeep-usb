@@ -12,7 +12,7 @@ class Cmd {
     void process(const std::string& cmd, const std::vector<std::string>& params);
   private:
     JetBeep::Logger m_log;
-    JetBeep::Device m_device;
+    JetBeep::SerialDevice m_device;
 
     void open(const std::vector<std::string> &params);
     void openSession();

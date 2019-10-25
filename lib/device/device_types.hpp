@@ -16,11 +16,6 @@ namespace JetBeep {
     paymentToken
   };
 
-  struct Barcode {
-    std::string value;
-    int type;
-  };
-
   typedef void (*DeviceCallback)(const DeviceEvent &);
 }
 

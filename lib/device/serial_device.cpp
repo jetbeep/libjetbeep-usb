@@ -1,4 +1,4 @@
-#include "device.hpp"
+#include "serial_device.hpp"
 #include "../utils/logger.hpp"
 #include "../utils/split.hpp"
 
@@ -13,7 +13,7 @@ using namespace std;
 using namespace boost;
 using namespace boost::asio;
 
-class Device::Impl {
+class SerialDevice::Impl {
   public:
     Impl(DeviceCallback *callback);
     virtual ~Impl(); 
@@ -83,28 +83,28 @@ namespace DeviceResponses {
   }
 }
 
-Device::Impl::Impl(DeviceCallback *callback):
-m_thread(&Device::Impl::runLoop, this), m_work(m_io_service), m_port(m_io_service), m_callback(callback), m_log("device") {
+SerialDevice::Impl::Impl(DeviceCallback *callback):
+m_thread(&SerialDevice::Impl::runLoop, this), m_work(m_io_service), m_port(m_io_service), m_callback(callback), m_log("device") {
 
 }
 
-Device::Impl::~Impl() {
+SerialDevice::Impl::~Impl() {
   m_io_service.stop();
   m_thread.join();
 }
 
-void Device::Impl::open(const string& path) {
+void SerialDevice::Impl::open(const string& path) {
   m_port.open(path);
   m_port.set_option(serial_port_base::baud_rate(9600));
 
-  async_read_until(m_port, m_readBuffer, "\r\n", boost::bind(&Device::Impl::readCompleted, this, asio::placeholders::error));
+  async_read_until(m_port, m_readBuffer, "\r\n", boost::bind(&SerialDevice::Impl::readCompleted, this, asio::placeholders::error));
 }
 
-void Device::Impl::close() {
+void SerialDevice::Impl::close() {
   m_port.close();
 }
 
-void Device::Impl::writeCompleted(const boost::system::error_code& error, std::size_t bytes_transferred) {
+void SerialDevice::Impl::writeCompleted(const boost::system::error_code& error, std::size_t bytes_transferred) {
   if (error) {
     errorCode = error.value();
     notify(DeviceEvent::deviceError);
@@ -113,7 +113,7 @@ void Device::Impl::writeCompleted(const boost::system::error_code& error, std::s
   }      
 }
 
-void Device::Impl::readCompleted(const boost::system::error_code& error) {
+void SerialDevice::Impl::readCompleted(const boost::system::error_code& error) {
   if (error) {          
     errorCode = error.value();
     notify(DeviceEvent::deviceError);
@@ -125,7 +125,7 @@ void Device::Impl::readCompleted(const boost::system::error_code& error) {
   string response(asio::buffers_begin(bufs), asio::buffers_begin(bufs) + m_readBuffer.size());
 
   m_readBuffer.consume(m_readBuffer.size());    
-  async_read_until(m_port, m_readBuffer, "\r\n", boost::bind(&Device::Impl::readCompleted, this, asio::placeholders::error));
+  async_read_until(m_port, m_readBuffer, "\r\n", boost::bind(&SerialDevice::Impl::readCompleted, this, asio::placeholders::error));
 
   if (response.size() < 2) {
     errorCode = -1;
@@ -138,7 +138,7 @@ void Device::Impl::readCompleted(const boost::system::error_code& error) {
   handleResponse(response);
 }
 
-void Device::Impl::handleResponse(const string &response) {
+void SerialDevice::Impl::handleResponse(const string &response) {
   auto splitted = splitString(response);
 
   m_log.d() << "nrf rx: " << response << Logger::endl;
@@ -203,7 +203,7 @@ void Device::Impl::handleResponse(const string &response) {
           auto it2 = it++;
           string value = *it;
           int type = atoi((*it2).c_str());
-          Barcode barcode = {value, type};
+          Barcode barcode = {value, (BarcodeType)type};          
 
           barcodes.push_back(barcode);
       }
@@ -235,7 +235,7 @@ void Device::Impl::handleResponse(const string &response) {
   notify(event);
 }
 
-void Device::Impl::notify(const DeviceEvent& event) {
+void SerialDevice::Impl::notify(const DeviceEvent& event) {
   auto callback = *m_callback;
 
   if (callback != nullptr) {
@@ -243,7 +243,7 @@ void Device::Impl::notify(const DeviceEvent& event) {
   }
 }
 
-void Device::Impl::execute(const string &cmd) {
+void SerialDevice::Impl::execute(const string &cmd) {
   if (!m_port.is_open()) {
     throw runtime_error("port is not opened");
   }
@@ -252,13 +252,13 @@ void Device::Impl::execute(const string &cmd) {
 
   m_writeData = cmd;
   auto buffer = asio::buffer(m_writeData.c_str(), m_writeData.size());
-  auto writeCallback = boost::bind(&Device::Impl::writeCompleted, this, 
+  auto writeCallback = boost::bind(&SerialDevice::Impl::writeCompleted, this, 
     asio::placeholders::error, asio::placeholders::bytes_transferred);
 
   async_write(m_port, buffer, writeCallback); 
 }
 
-void Device::Impl::runLoop() {
+void SerialDevice::Impl::runLoop() {
   m_log.i() << "run loop" << Logger::endl;
   m_io_service.run();
   m_log.i() << "run loop end" << Logger::endl;
@@ -266,19 +266,19 @@ void Device::Impl::runLoop() {
 
 // Device
 
-Device::Device(DeviceCallback callback)
+SerialDevice::SerialDevice(DeviceCallback callback)
 :callback(callback), m_impl(new Impl(&this->callback)) {}
 
-Device::~Device() {}
+SerialDevice::~SerialDevice() {}
 
-void Device::open(const string& path) { m_impl->open(path); }
-void Device::close() { m_impl->close(); }
-void Device::openSession() { m_impl->execute("OPEN_SESSION\r\n"); }
-void Device::closeSession() { m_impl->execute("CLOSE_SESSION\r\n"); }
-void Device::requestBarcodes() { m_impl->execute("REQUEST_BARCODES\r\n"); }
-void Device::cancelBarcodes() { m_impl->execute("CANCEL_BARCODES\r\n"); }
+void SerialDevice::open(const string& path) { m_impl->open(path); }
+void SerialDevice::close() { m_impl->close(); }
+void SerialDevice::openSession() { m_impl->execute("OPEN_SESSION\r\n"); }
+void SerialDevice::closeSession() { m_impl->execute("CLOSE_SESSION\r\n"); }
+void SerialDevice::requestBarcodes() { m_impl->execute("REQUEST_BARCODES\r\n"); }
+void SerialDevice::cancelBarcodes() { m_impl->execute("CANCEL_BARCODES\r\n"); }
 
-void Device::createPayment(uint32_t amount, const std::string& transactionId, const std::string& cashierId, 
+void SerialDevice::createPayment(uint32_t amount, const std::string& transactionId, const std::string& cashierId, 
   const PaymentMetadata& metadata) {
     ostringstream ss;
 
@@ -301,7 +301,7 @@ void Device::createPayment(uint32_t amount, const std::string& transactionId, co
     m_impl->execute(ss.str());
 }
 
-void Device::createPaymentToken(uint32_t amount, const std::string& transactionId, const std::string& cashierId, 
+void SerialDevice::createPaymentToken(uint32_t amount, const std::string& transactionId, const std::string& cashierId, 
   const PaymentMetadata &metadata) {
     ostringstream ss;
 
@@ -324,9 +324,9 @@ void Device::createPaymentToken(uint32_t amount, const std::string& transactionI
     m_impl->execute(ss.str());
 }
 
-void Device::cancelPayment() { m_impl->execute("CANCEL_PAYMENT\r\n"); }
-void Device::resetState() { m_impl->execute("RESET_STATE\r\n"); }
-const vector<Barcode>& Device::barcodes() { return m_impl->barcodes; }
-int Device::errorCode() { return m_impl->errorCode; }
-const string& Device::paymentToken() { return m_impl->paymentToken; }
-const string& Device::paymentError() { return m_impl->paymentError; }
+void SerialDevice::cancelPayment() { m_impl->execute("CANCEL_PAYMENT\r\n"); }
+void SerialDevice::resetState() { m_impl->execute("RESET_STATE\r\n"); }
+const vector<Barcode>& SerialDevice::barcodes() { return m_impl->barcodes; }
+int SerialDevice::errorCode() { return m_impl->errorCode; }
+const string& SerialDevice::paymentToken() { return m_impl->paymentToken; }
+const string& SerialDevice::paymentError() { return m_impl->paymentError; }

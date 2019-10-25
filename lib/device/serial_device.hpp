@@ -2,6 +2,7 @@
 #define JETBEEP_DEVICE__H
 
 #include "device_types.hpp"
+#include "barcode.hpp"
 
 #include <unordered_map>
 #include <memory>
@@ -11,10 +12,10 @@
 namespace JetBeep {
   typedef std::unordered_map<std::string, std::string> PaymentMetadata;  
   
-  class Device {
+  class SerialDevice {
   public:
-    Device(DeviceCallback callback = nullptr);
-    virtual ~Device();
+    SerialDevice(DeviceCallback callback = nullptr);
+    virtual ~SerialDevice();
 
     void open(const std::string& path);
     void close();
