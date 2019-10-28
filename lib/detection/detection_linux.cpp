@@ -7,7 +7,7 @@
 #include <thread>
 #include <unordered_map>
 #include <libudev.h>
-#include <string>
+#include <unistd.h>
 
 using namespace JetBeep;
 using namespace std;
@@ -30,14 +30,6 @@ private:
 	Logger m_log;
 	struct udev *udev;
 	bool isMonActive = false;
-
-	class UdevUSBDevice {
-		public:
-		string type;
-		string path;
-		string node;
-		string subsystem;
-	};
 
 	bool checkTTYParent(uDev *ttyDevice, DeviceCandidate &candidate);
 	bool checkDevVIDPID(uDev *ttyDevice, DeviceCandidate &candidate);
@@ -69,17 +61,18 @@ bool DeviceDetection::Impl::checkDevVIDPID(uDev *dev, DeviceCandidate &deviceCan
 		
 	auto vendorId = udev_device_get_sysattr_value(dev, "idVendor");
 	auto productId = udev_device_get_sysattr_value(dev, "idProduct");
-
-	m_log.d() << "vid:pid "<<vendorId<< ":" <<productId << Logger::endl;
-
+	const char * propModelId = NULL;
+	const char * propVendorId = NULL;
 
 	if (!vendorId || !productId) {
-		return false;
+		propModelId = udev_device_get_property_value(dev, "ID_MODEL_ID");
+		propVendorId = udev_device_get_property_value(dev, "ID_VENDOR_ID");
+		if (!propModelId || !propVendorId) return false;
 	}
 
 	VidPid deviceIds;
-	deviceIds.vid = strtol(vendorId, NULL, 16);
-	deviceIds.pid = strtol(productId, NULL, 16);
+	deviceIds.vid = strtol(vendorId ? vendorId : propVendorId, NULL, 16);
+	deviceIds.pid = strtol(productId ? productId : propModelId, NULL, 16);
 
 	if (DeviceDetection::isValidVidPid(deviceIds)) {
 		deviceCandidate.vid = deviceIds.vid;
@@ -124,13 +117,10 @@ void DeviceDetection::Impl::startMonitoring()
 
 	mon = udev_monitor_new_from_netlink(udev, "udev");
 	udev_monitor_filter_add_match_subsystem_devtype(mon, "tty", NULL);
-	udev_monitor_filter_add_match_subsystem_devtype(mon, "usb", "usb_device");
 	udev_monitor_enable_receiving(mon);
 	fd = udev_monitor_get_fd(mon);
 
 	m_log.d() << "Udev mon started" << Logger::endl;
-
-	UdevUSBDevice lastRemovedTTYdev;
 
 	while (isMonActive)
 	{
@@ -154,48 +144,25 @@ void DeviceDetection::Impl::startMonitoring()
 
 			m_log.d() << "Udev mon event: " << action << Logger::endl;
 
-			auto subsystem = udev_device_get_subsystem(dev);
-			auto devtype = udev_device_get_devtype(dev);
-			auto devpath = udev_device_get_devpath(dev);
-
-			if (!subsystem) {
-				continue;
-			}
-
 			DeviceCandidate candidate;
+			auto devNode = udev_device_get_devnode(dev);
+			if (!devNode) continue;
+
+			candidate.path = string(devNode);
 
 			if (action == "add") {
-				auto devNode = udev_device_get_devnode(dev);
-				if (devNode && string(subsystem) == "tty" && checkTTYParent(dev, candidate)) {
+				if (checkTTYParent(dev, candidate)) {
 					callback(ADDED, candidate);
 				}
 			} else if (action == "remove") {
-				if (string(subsystem) == "usb" && checkDevVIDPID(dev, candidate)) {
-					//removed last
-					string usbDevPath(devpath ? devpath : "");
-					if (lastRemovedTTYdev.path.empty() 
-						// make sure last removed tty device is usb device child
-						// /devices/pci0000:00/0000:00:14.0/usb1/1-2/1-2.2 + /1-2.2:1.0/tty/ttyACM0
-						|| !(lastRemovedTTYdev.path.compare(0, usbDevPath.length(), usbDevPath) == 0)) {
-						m_log.d() << "JetBeep device removed - unknown tty path" << Logger::endl;
-					}
-
-					candidate.path = lastRemovedTTYdev.node;
-					lastRemovedTTYdev.path = "";
-					lastRemovedTTYdev.node = "";
+				if (checkDevVIDPID(dev, candidate)) {
 					callback(REMOVED, candidate);
-				} else if (string(subsystem) == "tty") {
-					//removed first
-					auto devNode = udev_device_get_devnode(dev);
-					lastRemovedTTYdev.node = devNode ? string(devNode) : "";
-					lastRemovedTTYdev.path = devpath ? string(devpath) : "";
-					m_log.d() << "tty " <<  devNode << Logger::endl;
-
 				}
 			}
 
 			udev_device_unref(dev);
 		}
+		usleep(250*1000);
 	}
 
 	udev_monitor_unref(mon);
