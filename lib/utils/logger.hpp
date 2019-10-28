@@ -12,13 +12,13 @@
 #include <iostream>
 
 namespace JetBeep {
-	enum LoggerLevel {
-		VERBOSE = 0,
-		DEBUG,
-		INFO,
-		WARNING,
-		ERROR,
-		SILENT
+	enum class LoggerLevel {
+		verbose = 0,
+		debug,
+		info,
+		warning,
+		error,
+		silent
 	};
 
 	class Logger {
