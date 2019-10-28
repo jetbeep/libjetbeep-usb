@@ -5,7 +5,7 @@
 #include "../utils/logger.hpp"
 
 #include <thread>
-#include <unordered_map>
+#include <atomic>
 #include <libudev.h>
 #include <unistd.h>
 
@@ -29,10 +29,13 @@ private:
 	DeviceDetectionCallback *m_callback;
 	Logger m_log;
 	struct udev *udev;
-	bool isMonActive = false;
+	std::atomic<bool> isMonActive;
+	std::thread m_thread;
 
 	bool checkTTYParent(uDev *ttyDevice, DeviceCandidate &candidate);
 	bool checkDevVIDPID(uDev *ttyDevice, DeviceCandidate &candidate);
+
+	void udevMonitorLoop();
 };
 
 // DeviceDetection implementation
@@ -45,6 +48,7 @@ DeviceDetection::Impl::Impl(DeviceDetectionCallback *callback)
 	{
 		throw "Unable to initialize UDEV";
 	}
+	isMonActive.store(false);
 }
 
 DeviceDetection::Impl::~Impl()
@@ -95,14 +99,27 @@ bool DeviceDetection::Impl::checkTTYParent(uDev *ttyDevice, DeviceCandidate &dev
 
 void DeviceDetection::Impl::stopMonitoring()
 {
-	isMonActive = false;
+	isMonActive.store(false);
+
+	if (m_thread.joinable()) {
+		m_thread.join();
+	}
+
+	m_log.d() << "Udev mon stopped" << Logger::endl;
 }
 
 void DeviceDetection::Impl::startMonitoring()
 {
-	if (isMonActive)
+	if (isMonActive.load())
 		return;
-	isMonActive = true;
+
+	isMonActive.store(true);
+
+	m_thread = thread(&DeviceDetection::Impl::udevMonitorLoop, this);
+}
+
+void DeviceDetection::Impl::udevMonitorLoop()
+{
 	auto callback = *this->m_callback;
 
 	struct udev_enumerate *enumerate;
@@ -122,7 +139,7 @@ void DeviceDetection::Impl::startMonitoring()
 
 	m_log.d() << "Udev mon started" << Logger::endl;
 
-	while (isMonActive)
+	while (isMonActive.load())
 	{
 		fd_set fds;
 		struct timeval tv;
@@ -159,8 +176,7 @@ void DeviceDetection::Impl::startMonitoring()
 					callback(REMOVED, candidate);
 				}
 			}
-
-			udev_device_unref(dev);
+			//udev_device_unref(dev); //This causes segmentation fault... in some cases
 		}
 		usleep(250*1000);
 	}
