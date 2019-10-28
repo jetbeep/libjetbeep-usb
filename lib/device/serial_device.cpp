@@ -1,8 +1,10 @@
 #include "serial_device.hpp"
 #include "../utils/logger.hpp"
 #include "../utils/split.hpp"
+#include "device_utils.hpp"
 
 #include <thread>
+#include <iterator>
 
 #include <boost/asio/serial_port.hpp> 
 #include <boost/asio.hpp>
@@ -13,25 +15,31 @@ using namespace std;
 using namespace boost;
 using namespace boost::asio;
 
+typedef struct SerialDeviceCallbacks {
+  SerialErrorCallback *errorCallback;
+  SerialBarcodesCallback *barcodesCallback;
+  SerialPaymentErrorCallback *paymentErrorCallback;
+  SerialPaymentSuccessCallback *paymentSuccessCallback;
+  SerialPaymentTokenCallback *paymentTokenCallback;
+  SerialMobileCallback *mobileCallback;
+  SerialGetCallback *getCallback;
+  SerialGetStateCallback *getStateCallback;
+} SerialDeviceCallbacks;
+
 class SerialDevice::Impl {
   public:
-    Impl(DeviceCallback *callback);
+    Impl(const SerialDeviceCallbacks& callbacks);
     virtual ~Impl(); 
 
     void open(const string& path);
     void close();
 
     void execute(const string& cmd);
-
-    vector<Barcode> barcodes;
-    int errorCode;
-    string paymentToken;
-    string paymentError;
   private:
     string m_writeData;
     asio::streambuf m_readBuffer;
     Logger m_log;
-    DeviceCallback *m_callback;
+    SerialDeviceCallbacks m_callbacks;
     io_service m_io_service;
     io_service::work m_work;
     serial_port m_port;
@@ -41,50 +49,12 @@ class SerialDevice::Impl {
     void writeCompleted(const boost::system::error_code& ec, std::size_t bytes_transferred);
     void readCompleted(const boost::system::error_code& err);
     void handleResponse(const string& response);
-    void notify(const DeviceEvent& event);
+    bool handleResult(const string& result, const vector<string>& params);
+    void handleEvent(const string& event, const vector<string>& params);
 };
 
-namespace DeviceResponses {
-  // responses
-  const string openSession = "OPEN_SESSION";
-  const string closeSession = "CLOSE_SESSION";
-  const string requestBarcodes = "REQUEST_BARCODES";
-  const string cancelBarcodes = "CANCEL_BARCODES";
-  const string createPayment = "CREATE_PAYMENT";
-  const string cancelPayment = "CANCEL_PAYMENT";
-  const string confirmPayment = "CONFIRM_PAYMENT";
-  const string createPaymentToken = "CREATE_PAYMENT_TOKEN";
-  const string resetState = "RESET_STATE";
-
-  // events
-  const string mobileConnected = "MOBILE_CONNECTED";
-  const string mobileDisconnected = "MOBILE_DISCONNECTED";
-  const string barcodes = "BARCODES";
-  const string paymentSuccessful = "PAYMENT_SUCCESSFUL";
-  const string paymentError = "PAYMENT_ERROR";
-  const string paymentToken = "PAYMENT_TOKEN";
-
-  DeviceEvent toDeviceEvent(const string &event) {
-    if (event.compare(DeviceResponses::mobileConnected) == 0) {
-      return DeviceEvent::mobileConnected;
-    } else if (event.compare(DeviceResponses::mobileDisconnected) == 0) {
-      return DeviceEvent::mobileDisconnected;
-    } else if (event.compare(DeviceResponses::barcodes) == 0) {
-      return DeviceEvent::barcodes;
-    } else if (event.compare(DeviceResponses::paymentSuccessful) == 0) {
-      return DeviceEvent::paymentSuccessful;
-    } else if (event.compare(DeviceResponses::paymentError) == 0) {
-      return DeviceEvent::paymentError;
-    } else if (event.compare(DeviceResponses::paymentToken) == 0) {
-      return DeviceEvent::paymentToken;
-    } else {
-      throw runtime_error("invalid event string");
-    }
-  }
-}
-
-SerialDevice::Impl::Impl(DeviceCallback *callback):
-m_thread(&SerialDevice::Impl::runLoop, this), m_work(m_io_service), m_port(m_io_service), m_callback(callback), m_log("device") {
+SerialDevice::Impl::Impl(const SerialDeviceCallbacks& callbacks):
+m_thread(&SerialDevice::Impl::runLoop, this), m_work(m_io_service), m_port(m_io_service), m_callbacks(callbacks), m_log("device") {
 
 }
 
@@ -105,19 +75,21 @@ void SerialDevice::Impl::close() {
 }
 
 void SerialDevice::Impl::writeCompleted(const boost::system::error_code& error, std::size_t bytes_transferred) {
-  if (error) {
-    errorCode = error.value();
-    notify(DeviceEvent::deviceError);
+  if (error) {    
     m_log.e() << "write error: "<< error << Logger::endl;
+    if (*m_callbacks.errorCallback) {
+      (*m_callbacks.errorCallback)(SerialError::ioError);
+    }    
     return;
   }      
 }
 
 void SerialDevice::Impl::readCompleted(const boost::system::error_code& error) {
-  if (error) {          
-    errorCode = error.value();
-    notify(DeviceEvent::deviceError);
+  if (error) {    
     m_log.e() << "read error: "<< error << Logger::endl;
+    if (*m_callbacks.errorCallback) {
+      (*m_callbacks.errorCallback)(SerialError::ioError);
+    }    
     return;
   }
     
@@ -127,10 +99,11 @@ void SerialDevice::Impl::readCompleted(const boost::system::error_code& error) {
   m_readBuffer.consume(m_readBuffer.size());    
   async_read_until(m_port, m_readBuffer, "\r\n", boost::bind(&SerialDevice::Impl::readCompleted, this, asio::placeholders::error));
 
-  if (response.size() < 2) {
-    errorCode = -1;
-    notify(DeviceEvent::deviceError);
+  if (response.size() < 2) {    
     m_log.e() << "response size < 2" << Logger::endl;
+    if (*m_callbacks.errorCallback) {
+      (*m_callbacks.errorCallback)(SerialError::protocolError);
+    }    
     return;
   }
 
@@ -145,8 +118,9 @@ void SerialDevice::Impl::handleResponse(const string &response) {
 
   if (splitted.empty()) {
     m_log.e() << "unable to split string..."<< Logger::endl;
-    errorCode = -2;
-    notify(DeviceEvent::protocolError);
+    if (*m_callbacks.errorCallback) {
+      (*m_callbacks.errorCallback)(SerialError::protocolError);
+    }    
     return;
   }
 
@@ -160,86 +134,169 @@ void SerialDevice::Impl::handleResponse(const string &response) {
   command.compare(DeviceResponses::cancelPayment) == 0 ||
   command.compare(DeviceResponses::confirmPayment) == 0 || 
   command.compare(DeviceResponses::createPaymentToken) == 0 ||
-  command.compare(DeviceResponses::resetState) == 0
+  command.compare(DeviceResponses::resetState) == 0 ||
+  command.compare(DeviceResponses::beginPrivate) == 0 ||
+  command.compare(DeviceResponses::commit) == 0 ||
+  command.compare(DeviceResponses::set) == 0
   ) {
     if (splitted.size() != 2) {
       m_log.e() << "invalid response split size: " << splitted.size() << Logger::endl;
-      errorCode = -3;
-      notify(DeviceEvent::protocolError);
+      if (*m_callbacks.errorCallback) {
+        (*m_callbacks.errorCallback)(SerialError::protocolError);
+      }      
       return;
     }
-    auto result = splitted.at(1);
+    auto result = splitted[1];
 
     if (result == "ok") {
       return;
     } else {
-      errorCode = -1;
-      notify(DeviceEvent::protocolError);
+      m_log.e() << "result is not ok: " << result << Logger::endl;
+      if (*m_callbacks.errorCallback) {
+        (*m_callbacks.errorCallback)(SerialError::protocolError);
+      }      
       return;
     }
-  }
+  }    
+  splitted.erase(splitted.begin());
 
-  DeviceEvent event;
-  try {
-    event = DeviceResponses::toDeviceEvent(response);
-  } catch (...) {
-    errorCode = -2;
-    notify(DeviceEvent::protocolError);
+  if (handleResult(command, splitted)) {
     return;
   }
 
-  switch (event) {
-    case DeviceEvent::barcodes:
-      barcodes.clear();
-
-      if (splitted.size() % 2 != 1) {
-        m_log.e() << "invalid response split size: " << splitted.size() << Logger::endl;
-        errorCode = -4;
-        notify(DeviceEvent::protocolError);
-        return;
-      }
-      
-      for (auto it = splitted.begin()++ ; it != splitted.end(); it += 2) {
-          auto it2 = it++;
-          string value = *it;
-          int type = atoi((*it2).c_str());
-          Barcode barcode = {value, (BarcodeType)type};          
-
-          barcodes.push_back(barcode);
-      }
-      break;
-    case DeviceEvent::paymentToken:
-      if (splitted.size() != 2) {
-        m_log.e() << "invalid response split size: " << splitted.size() << Logger::endl;
-        errorCode = -4;
-        notify(DeviceEvent::protocolError);
-        return;
-      }
-
-      paymentToken = splitted.at(1);
-      break;
-    case DeviceEvent::paymentError:
-      if (splitted.size() != 2) {
-        m_log.e() << "invalid response split size: " << splitted.size() << Logger::endl;
-        errorCode = -4;
-        notify(DeviceEvent::protocolError);
-        return;
-      }
-
-      paymentError = splitted.at(1);
-      break;
-    default:
-      break;
-  } 
-
-  notify(event);
+  handleEvent(command, splitted);  
 }
 
-void SerialDevice::Impl::notify(const DeviceEvent& event) {
-  auto callback = *m_callback;
+bool SerialDevice::Impl::handleResult(const std::string &result, const vector<string> &params) {
+  if (result.compare(DeviceResponses::get) == 0) {
+    if (params.size() != 2) {
+      m_log.e() << "invalid get response split size: " << params.size() << Logger::endl;
+      if (*m_callbacks.errorCallback) {
+        (*m_callbacks.errorCallback)(SerialError::protocolError);
+      }
+      return true;
+    }
 
-  if (callback != nullptr) {
-    callback(event);
+    auto result = params[0];
+    auto value = params[1];
+
+    if (result != "ok") {
+      m_log.e() << "result is not ok: " << result << Logger::endl;
+      if (*m_callbacks.errorCallback) {
+        (*m_callbacks.errorCallback)(SerialError::protocolError);
+      }      
+      return true;
+    }
+    if (*m_callbacks.getCallback) {
+      (*m_callbacks.getCallback)(value);
+    }
+    return true;
+  } else if (result.compare(DeviceResponses::getState) == 0) {
+    if (params.size() != 4) {
+      m_log.e() << "invalid getState response split size: " << params.size() << Logger::endl;
+      if (*m_callbacks.errorCallback) {
+        (*m_callbacks.errorCallback)(SerialError::protocolError);
+      }
+      return true;
+    }
+        
+    auto isSessionOpened = params[1] == "1";
+    auto isBarcodesRequested = params[2] == "1";
+    auto isPaymentCreated = params[3] == "1";
+
+    if (*m_callbacks.getStateCallback) {
+      (*m_callbacks.getStateCallback)(isSessionOpened, isBarcodesRequested, isPaymentCreated);
+    }
+  }
+
+  return false;
+}
+
+void SerialDevice::Impl::handleEvent(const string& event, const vector<string> &params) {
+  if (event.compare(DeviceResponses::mobileConnected) == 0) {
+    if (*m_callbacks.mobileCallback) {
+      (*m_callbacks.mobileCallback)(SerialMobileEvent::connected);
+    }    
+  } else if (event.compare(DeviceResponses::mobileDisconnected) == 0) {
+    if (*m_callbacks.mobileCallback) {
+      (*m_callbacks.mobileCallback)(SerialMobileEvent::disconnected);
+    }    
+  } else if (event.compare(DeviceResponses::barcodes) == 0) {
+    vector<Barcode> barcodes;
+
+    if (params.size() % 2 != 0) {
+      m_log.e() << "invalid params size when received barcodes: " << params.size() << Logger::endl;
+      if (*m_callbacks.errorCallback) {
+        (*m_callbacks.errorCallback)(SerialError::protocolError);
+      }      
+      return;
+    }
+
+    for (auto it = params.begin(), it2 = next(it) ; it != params.end(); it += 2) {
+        string value = *it;
+        int type = atoi((*it2).c_str());
+        Barcode barcode = {value, static_cast<BarcodeType>(type)};          
+
+        barcodes.push_back(barcode);
+    }
+    if (*m_callbacks.barcodesCallback) {
+      (*m_callbacks.barcodesCallback)(barcodes);
+    }    
+  } else if (event.compare(DeviceResponses::paymentToken) == 0) {
+    if (params.size() != 1) {
+      m_log.e() << "invalid params count of payment token: " << params.size() << Logger::endl;
+      if (*m_callbacks.errorCallback) {
+        (*m_callbacks.errorCallback)(SerialError::protocolError);
+      }      
+      return;
+    }
+
+    auto paymentToken = params[0];
+    if (*m_callbacks.paymentTokenCallback) {
+      (*m_callbacks.paymentTokenCallback)(paymentToken);
+    }    
+  } else if (event.compare(DeviceResponses::paymentError) == 0) {
+    if (params.size() != 1) {
+      m_log.e() << "invalid params count of payment error: " << params.size() << Logger::endl;
+      if (*m_callbacks.errorCallback) {
+        (*m_callbacks.errorCallback)(SerialError::protocolError);
+      }      
+      return;
+    }
+
+    auto paymentErrorStr = params[0];
+    PaymentError paymentError = PaymentError::unknown;
+    if (paymentErrorStr == "NETWORK") {
+      paymentError = PaymentError::network;
+    } else if (paymentErrorStr == "TIMEOUT") {
+      paymentError = PaymentError::timeout;
+    } else if (paymentErrorStr == "SERVER") {
+      paymentError = PaymentError::server;
+    } else if (paymentErrorStr == "SECURITY") {
+      paymentError = PaymentError::security;
+    } else if (paymentErrorStr == "WITHDRAWAL") {
+      paymentError = PaymentError::withdrawal;
+    } else if (paymentErrorStr == "DISCARDED") {
+      paymentError = PaymentError::discarded;
+    } else if (paymentErrorStr == "INVALID_PIN") {
+      paymentError = PaymentError::invalidPin;
+    } else if (paymentErrorStr == "UNKNOWN") {
+      paymentError = PaymentError::unknown;
+    } else {
+      m_log.e() << "unable to parse payment error" << Logger::endl;
+      if (*m_callbacks.errorCallback) {
+        (*m_callbacks.errorCallback)(SerialError::protocolError);
+      }      
+      return;
+    }
+
+    if (*m_callbacks.paymentErrorCallback) {
+      (*m_callbacks.paymentErrorCallback)(paymentError);
+    }    
+  } else if (event.compare(DeviceResponses::paymentSuccessful)) {
+    if (*m_callbacks.paymentSuccessCallback) {
+      (*m_callbacks.paymentSuccessCallback)();
+    }    
   }
 }
 
@@ -266,8 +323,12 @@ void SerialDevice::Impl::runLoop() {
 
 // Device
 
-SerialDevice::SerialDevice(DeviceCallback callback)
-:callback(callback), m_impl(new Impl(&this->callback)) {}
+SerialDevice::SerialDevice() {
+  SerialDeviceCallbacks callbacks = {&errorCallback, &barcodesCallback, &paymentErrorCallback, 
+    &paymentSuccessCallback, &paymentTokenCallback, &mobileCallback, &getCallback, &getStateCallback};
+
+  m_impl.reset(new Impl(callbacks));
+}
 
 SerialDevice::~SerialDevice() {}
 
@@ -326,7 +387,8 @@ void SerialDevice::createPaymentToken(uint32_t amount, const std::string& transa
 
 void SerialDevice::cancelPayment() { m_impl->execute("CANCEL_PAYMENT\r\n"); }
 void SerialDevice::resetState() { m_impl->execute("RESET_STATE\r\n"); }
-const vector<Barcode>& SerialDevice::barcodes() { return m_impl->barcodes; }
-int SerialDevice::errorCode() { return m_impl->errorCode; }
-const string& SerialDevice::paymentToken() { return m_impl->paymentToken; }
-const string& SerialDevice::paymentError() { return m_impl->paymentError; }
+void SerialDevice::get(const DeviceParameter& parameter) { m_impl->execute("GET " + DeviceUtils::parameterToString(parameter) + "\r\n"); }
+void SerialDevice::set(const DeviceParameter& parameter, const std::string &value) { m_impl->execute("SET " + DeviceUtils::parameterToString(parameter) + " " + value + "\r\n"); }
+void SerialDevice::beginPrivate() { m_impl->execute("BEGIN_PRIVATE\r\n"); }
+void SerialDevice::commit(const string& signature) { m_impl->execute("COMMIT " + signature + "\r\n"); }
+void SerialDevice::getState() { m_impl->execute("GETSTATE \r\n"); }

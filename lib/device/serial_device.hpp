@@ -2,19 +2,16 @@
 #define JETBEEP_DEVICE__H
 
 #include "device_types.hpp"
-#include "barcode.hpp"
+#include "device_parameter.hpp"
 
-#include <unordered_map>
 #include <memory>
 #include <string>
 #include <vector>
 
-namespace JetBeep {
-  typedef std::unordered_map<std::string, std::string> PaymentMetadata;  
-  
+namespace JetBeep {      
   class SerialDevice {
   public:
-    SerialDevice(DeviceCallback callback = nullptr);
+    SerialDevice();
     virtual ~SerialDevice();
 
     void open(const std::string& path);
@@ -29,13 +26,21 @@ namespace JetBeep {
     void createPaymentToken(uint32_t amount, const std::string& transactionId, const std::string& cashierId = "", 
       const PaymentMetadata& metadata = PaymentMetadata());
     void cancelPayment();
-    void resetState();      
+    void resetState();
+    void get(const DeviceParameter& parameter);
+    void set(const DeviceParameter& parameter, const std::string& value);
+    void beginPrivate();
+    void commit(const std::string& signature);
+    void getState();
     
-    DeviceCallback callback;
-    const std::vector<Barcode>& barcodes();
-    const std::string& paymentToken();
-    const std::string& paymentError();
-    int errorCode();
+    SerialErrorCallback errorCallback;
+    SerialBarcodesCallback barcodesCallback;
+    SerialPaymentErrorCallback paymentErrorCallback;
+    SerialPaymentSuccessCallback paymentSuccessCallback;
+    SerialPaymentTokenCallback paymentTokenCallback;
+    SerialMobileCallback mobileCallback;
+    SerialGetCallback getCallback;
+    SerialGetStateCallback getStateCallback;
   private:
     class Impl;
     std::unique_ptr<Impl> m_impl;
