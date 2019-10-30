@@ -3,25 +3,33 @@
 
 #include <string>
 #include <vector>
+#include <unordered_map>
+#include <functional>
+
+#include "barcode.hpp"
+#include "payment_error.hpp"
 
 namespace JetBeep {
-  enum class DeviceEvent {
-    deviceError,
-    protocolError,
-    mobileConnected,
-    mobileDisconnected,
-    barcodes,
-    paymentSuccessful,
-    paymentError,
-    paymentToken
+  enum class SerialError {
+    ioError,
+    protocolError
+  };
+  
+  enum class SerialMobileEvent {
+    connected,
+    disconnected
   };
 
-  struct Barcode {
-    std::string value;
-    int type;
-  };
+  typedef std::function<void(const SerialError &)> SerialErrorCallback;
+  typedef std::function<void(const std::vector<Barcode> &)> SerialBarcodesCallback;
+  typedef std::function<void(const PaymentError &)> SerialPaymentErrorCallback;
+  typedef std::function<void()> SerialPaymentSuccessCallback;
+  typedef std::function<void(const std::string &)> SerialPaymentTokenCallback;
+  typedef std::function<void(const SerialMobileEvent &)> SerialMobileCallback;
+  typedef std::function<void(const std::string&)> SerialGetCallback;
+  typedef std::function<void(bool, bool, bool)> SerialGetStateCallback;
 
-  typedef void (*DeviceCallback)(const DeviceEvent &);
+  typedef std::unordered_map<std::string, std::string> PaymentMetadata;
 }
 
 #endif

@@ -6,7 +6,7 @@ using namespace std;
 using namespace JetBeep;
 
 Logger l("main");
-Device d;
+SerialDevice d;
 
 char asciitolower(char in) {
     if (in <= 'Z' && in >= 'A')

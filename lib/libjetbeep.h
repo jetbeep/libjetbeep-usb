@@ -4,6 +4,6 @@
 #include "detection/detection.hpp"
 #include "utils/logger.hpp"
 #include "utils/split.hpp"
-#include "device/device.hpp"
+#include "device/serial_device.hpp"
 
 #endif
