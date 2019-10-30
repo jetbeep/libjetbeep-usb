@@ -192,20 +192,23 @@ bool SerialDevice::Impl::handleResult(const std::string &result, const vector<st
     }
     return true;
   } else if (result.compare(DeviceResponses::getState) == 0) {
-    if (params.size() != 4) {
+    if (params.size() != 6) {
       m_log.e() << "invalid getState response split size: " << params.size() << Logger::endl;
       if (*m_callbacks.errorCallback) {
         (*m_callbacks.errorCallback)(SerialError::protocolError);
       }
       return true;
     }
-        
-    auto isSessionOpened = params[1] == "1";
-    auto isBarcodesRequested = params[2] == "1";
-    auto isPaymentCreated = params[3] == "1";
+    
+    SerialGetStateResult result;
+    result.isSessionOpened = params[1] == "1";
+    result.isBarcodesRequested = params[2] == "1";
+    result.isPaymentCreated = params[3] == "1";
+    result.isWaitingForPaymentConfirmation = params[4] == "1";
+    result.isRefundRequested = params[5] == "1";
 
     if (*m_callbacks.getStateCallback) {
-      (*m_callbacks.getStateCallback)(isSessionOpened, isBarcodesRequested, isPaymentCreated);
+      (*m_callbacks.getStateCallback)(result);
     }
   }
 
@@ -293,7 +296,7 @@ void SerialDevice::Impl::handleEvent(const string& event, const vector<string> &
     if (*m_callbacks.paymentErrorCallback) {
       (*m_callbacks.paymentErrorCallback)(paymentError);
     }    
-  } else if (event.compare(DeviceResponses::paymentSuccessful)) {
+  } else if (event.compare(DeviceResponses::paymentSuccessful) == 0) {
     if (*m_callbacks.paymentSuccessCallback) {
       (*m_callbacks.paymentSuccessCallback)();
     }    

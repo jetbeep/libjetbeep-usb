@@ -17,7 +17,7 @@ Cmd::Cmd()
   m_device.paymentTokenCallback = bind(&Cmd::paymentTokenHandler, this, placeholders::_1);
   m_device.mobileCallback = bind(&Cmd::mobileHandler, this, placeholders::_1);
   m_device.getCallback = bind(&Cmd::getHandler, this, placeholders::_1);
-  m_device.getStateCallback = bind(&Cmd::getStateHandler, this, placeholders::_1, placeholders::_2, placeholders::_3);
+  m_device.getStateCallback = bind(&Cmd::getStateHandler, this, placeholders::_1);
 }
 
 void Cmd::process(const string& cmd, const vector<string>& params) {
@@ -336,7 +336,11 @@ void Cmd::getHandler(const std::string& result) {
 	m_log.i() << "get result: " << result << Logger::endl;
 }
 
-void Cmd::getStateHandler(bool isSessionOpened, bool isBarcodesRequested, bool isPaymentCreated) {
-  m_log.i() << "session opened: " << isSessionOpened << ", barcodes requested: " << isBarcodesRequested 
-    << ", payment created: " << isPaymentCreated << Logger::endl;
+void Cmd::getStateHandler(const SerialGetStateResult& result) {
+  m_log.i() << "session opened: " << result.isSessionOpened 
+    << ", barcodes requested: " << result.isBarcodesRequested 
+    << ", payment created: " << result.isPaymentCreated 
+    << ", waiting for confirmation: " << result.isWaitingForPaymentConfirmation 
+    << ", is refund requested: " << result.isRefundRequested
+    << Logger::endl;
 }
