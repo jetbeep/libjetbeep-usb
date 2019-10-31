@@ -15,9 +15,8 @@ add_library(jetbeep SHARED ${JETBEEP_INCLUDES} $<TARGET_OBJECTS:jetbeep_obj>)
 
 if (APPLE) 
 	target_link_libraries(jetbeep "-framework IOKit" "-framework CoreFoundation")
-elseif(UNIX AND NOT APPLE)
-    target_link_libraries(jetbeep "-lpthread")
-    target_link_libraries(jetbeep "-ludev")
+elseif(UNIX AND NOT APPLE) #linux
+    target_link_libraries(jetbeep "-lpthread" "-ludev")
 elseif(WIN32)
 endif()
 

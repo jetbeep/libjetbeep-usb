@@ -8,65 +8,57 @@
 #include <atomic>
 #include <libudev.h>
 #include <unistd.h>
+#include <stdexcept>
 
 using namespace JetBeep;
 using namespace std;
 
 typedef struct udev_device uDev;
 
-class DeviceDetection::Impl
-{
-public:
+class DeviceDetection::Impl {
+  public:
 	Impl(DeviceDetectionCallback *callback);
-
 	void startMonitoring();
 	void stopMonitoring();
 	void detectConnected();
-
 	virtual ~Impl();
 
-private:
-	DeviceDetectionCallback *m_callback;
+  private:
+	DeviceDetectionCallback *m_callback = nullptr;
 	Logger m_log;
-	struct udev *udev;
+	struct udev *udev = nullptr;
 	std::atomic<bool> isMonActive;
 	std::thread m_thread;
-
-	bool checkTTYParent(uDev *ttyDevice, DeviceCandidate &candidate);
-	bool checkDevVIDPID(uDev *ttyDevice, DeviceCandidate &candidate);
-
+	bool checkTTYParent(uDev *, DeviceCandidate *);
+	bool checkDevVIDPID(uDev *, DeviceCandidate *);
 	void udevMonitorLoop();
 };
 
 // DeviceDetection implementation
 
 DeviceDetection::Impl::Impl(DeviceDetectionCallback *callback)
-	: m_callback(callback), m_log("detection")
-{
+	: m_callback(callback), m_log("detection") {
 	udev = udev_new();
-	if (udev == NULL)
-	{
-		throw "Unable to initialize UDEV";
+	if (udev == nullptr) {
+		throw runtime_error("Unable to initialize UDEV");
 	}
 	isMonActive.store(false);
 }
 
-DeviceDetection::Impl::~Impl()
-{
+DeviceDetection::Impl::~Impl() {
 	stopMonitoring();
 	udev_unref(udev);
 }
 
-bool DeviceDetection::Impl::checkDevVIDPID(uDev *dev, DeviceCandidate &deviceCandidate)
-{
+bool DeviceDetection::Impl::checkDevVIDPID(uDev *dev, DeviceCandidate *deviceCandidate) {
 	if (!dev) {
 		return false;
 	}
 		
 	auto vendorId = udev_device_get_sysattr_value(dev, "idVendor");
 	auto productId = udev_device_get_sysattr_value(dev, "idProduct");
-	const char * propModelId = NULL;
-	const char * propVendorId = NULL;
+	const char * propModelId = nullptr;
+	const char * propVendorId = nullptr;
 
 	if (!vendorId || !productId) {
 		propModelId = udev_device_get_property_value(dev, "ID_MODEL_ID");
@@ -75,19 +67,18 @@ bool DeviceDetection::Impl::checkDevVIDPID(uDev *dev, DeviceCandidate &deviceCan
 	}
 
 	VidPid deviceIds;
-	deviceIds.vid = strtol(vendorId ? vendorId : propVendorId, NULL, 16);
-	deviceIds.pid = strtol(productId ? productId : propModelId, NULL, 16);
+	deviceIds.vid = strtol(vendorId ? vendorId : propVendorId, nullptr, 16);
+	deviceIds.pid = strtol(productId ? productId : propModelId, nullptr, 16);
 
 	if (DeviceDetection::isValidVidPid(deviceIds)) {
-		deviceCandidate.vid = deviceIds.vid;
-		deviceCandidate.pid = deviceIds.pid;
+		deviceCandidate->vid = deviceIds.vid;
+		deviceCandidate->pid = deviceIds.pid;
 		return true;
 	} 
 	return false;
 }
 
-bool DeviceDetection::Impl::checkTTYParent(uDev *ttyDevice, DeviceCandidate &deviceCandidate)
-{
+bool DeviceDetection::Impl::checkTTYParent(uDev *ttyDevice, DeviceCandidate *deviceCandidate) {
 	uDev *devParent = udev_device_get_parent_with_subsystem_devtype(ttyDevice, "usb", "usb_device");
 
 	bool result = checkDevVIDPID(devParent, deviceCandidate);
@@ -97,8 +88,7 @@ bool DeviceDetection::Impl::checkTTYParent(uDev *ttyDevice, DeviceCandidate &dev
 	return result;
 }
 
-void DeviceDetection::Impl::stopMonitoring()
-{
+void DeviceDetection::Impl::stopMonitoring() {
 	isMonActive.store(false);
 
 	if (m_thread.joinable()) {
@@ -108,8 +98,7 @@ void DeviceDetection::Impl::stopMonitoring()
 	m_log.d() << "Udev mon stopped" << Logger::endl;
 }
 
-void DeviceDetection::Impl::startMonitoring()
-{
+void DeviceDetection::Impl::startMonitoring() {
 	if (isMonActive.load())
 		return;
 
@@ -118,14 +107,12 @@ void DeviceDetection::Impl::startMonitoring()
 	m_thread = thread(&DeviceDetection::Impl::udevMonitorLoop, this);
 }
 
-void DeviceDetection::Impl::udevMonitorLoop()
-{
+void DeviceDetection::Impl::udevMonitorLoop() {
 	auto callback = *this->m_callback;
 
-	struct udev_enumerate *enumerate;
-	struct udev_list_entry *devices, *dev_list_entry;
-	uDev *dev;
-	struct udev_monitor *mon;
+	struct udev_enumerate *enumerate = nullptr;
+	uDev *dev = nullptr;
+	struct udev_monitor *mon = nullptr;
 	int fd;
 
 	if (!udev || callback == nullptr) {
@@ -133,14 +120,13 @@ void DeviceDetection::Impl::udevMonitorLoop()
 	}
 
 	mon = udev_monitor_new_from_netlink(udev, "udev");
-	udev_monitor_filter_add_match_subsystem_devtype(mon, "tty", NULL);
+	udev_monitor_filter_add_match_subsystem_devtype(mon, "tty", nullptr);
 	udev_monitor_enable_receiving(mon);
 	fd = udev_monitor_get_fd(mon);
 
 	m_log.d() << "Udev mon started" << Logger::endl;
 
-	while (isMonActive.load())
-	{
+	while (isMonActive.load()) {
 		fd_set fds;
 		struct timeval tv;
 		int ret;
@@ -148,14 +134,15 @@ void DeviceDetection::Impl::udevMonitorLoop()
 		FD_ZERO(&fds);
 		FD_SET(fd, &fds);
 		tv.tv_sec = 0;
-		tv.tv_usec = 0;
+		tv.tv_usec = 250 * 1000; //ms timeout for fd changes
 
-		ret = select(fd + 1, &fds, NULL, NULL, &tv);
+		ret = select(fd + 1, &fds, nullptr, nullptr, &tv);
 
-		if (ret > 0 && FD_ISSET(fd, &fds))
-		{
+		if (ret > 0 && FD_ISSET(fd, &fds)) {
 			dev = udev_monitor_receive_device(mon);
-			if (!dev) continue;
+			if (!dev) {
+				continue;
+			}
 
 			string action(udev_device_get_action(dev));
 
@@ -163,75 +150,70 @@ void DeviceDetection::Impl::udevMonitorLoop()
 
 			DeviceCandidate candidate;
 			auto devNode = udev_device_get_devnode(dev);
-			if (!devNode) continue;
+			if (!devNode) {
+				continue;
+			}
 
 			candidate.path = string(devNode);
 
 			if (action == "add") {
-				if (checkTTYParent(dev, candidate)) {
+				if (checkTTYParent(dev, &candidate)) {
 					callback(DeviceDetectionEvent::added, candidate);
 				}
 			} else if (action == "remove") {
-				if (checkDevVIDPID(dev, candidate)) {
+				if (checkDevVIDPID(dev, &candidate)) {
 					callback(DeviceDetectionEvent::removed, candidate);
 				}
 			}
 			//udev_device_unref(dev); //This causes segmentation fault... in some cases
 		}
-		usleep(250*1000);
 	}
 
 	udev_monitor_unref(mon);
 }
 
-void DeviceDetection::Impl::detectConnected()
-{
-	uDev *dev, *devParent;
-	struct udev_enumerate *enumerate;
-	struct udev_list_entry *devices, *deviceEntry, *attrsEntry;
+void DeviceDetection::Impl::detectConnected() {
+	uDev *dev = nullptr;
+	struct udev_enumerate *enumerate = nullptr;
+	struct udev_list_entry *devices = nullptr, *deviceEntry = nullptr;
 
 	enumerate = udev_enumerate_new(udev);
-	if (!enumerate)
-	{
-		throw "UDEV: Unable to initialize UDEV enumerate";
+	if (!enumerate) {
+		throw runtime_error("UDEV: Unable to initialize UDEV enumerate");
 	}
 
 	udev_enumerate_add_match_subsystem(enumerate, "tty");
 	udev_enumerate_scan_devices(enumerate);
 
 	devices = udev_enumerate_get_list_entry(enumerate);
-	if (!devices)
-	{
-		throw "UDEV: Unable to get devices list";
+	if (!devices) {
+		throw runtime_error("UDEV: Unable to get devices list");
 	}
 
-	udev_list_entry_foreach(deviceEntry, devices)
-	{
+	udev_list_entry_foreach(deviceEntry, devices) {
 		const char *path, *tmp, *vendorId, *productId;
 
 		path = udev_list_entry_get_name(deviceEntry);
 		dev = udev_device_new_from_syspath(udev, path);
-		if (!dev)
+		if (!dev) {
 			continue;
+		}
 
 		struct udev_list_entry *attrsAvailable = udev_device_get_sysattr_list_entry(dev);
 
 		const char *devNode = udev_device_get_devnode(dev);
 
-		if (!devNode)
-		{
+		if (!devNode) {
 			udev_device_unref(dev);
 			continue;
 		}
 
 		DeviceCandidate deviceCandidate = {0, 0, string(devNode)};
 
-		if (checkTTYParent(dev, deviceCandidate))
-		{
+		if (checkTTYParent(dev, &deviceCandidate)) {
 			auto callback = *this->m_callback;
 
-			if (callback != nullptr)
-			{
+			if (callback != nullptr) {
 				callback(DeviceDetectionEvent::added, deviceCandidate);
 			}
 		}
@@ -249,11 +231,13 @@ DeviceDetection::DeviceDetection(DeviceDetectionCallback callback)
 
 DeviceDetection::~DeviceDetection() {}
 
-void DeviceDetection::start()
-{
+void DeviceDetection::start() {
 	m_impl->detectConnected();
 	m_impl->startMonitoring();
 }
-void DeviceDetection::stop() { m_impl->stopMonitoring(); }
+
+void DeviceDetection::stop() { 
+	m_impl->stopMonitoring(); 
+}
 
 #endif
