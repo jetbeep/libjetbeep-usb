@@ -86,7 +86,10 @@
 			"typeinfo": "cpp",
 			"unordered_map": "cpp",
 			"variant": "cpp",
-			"vector": "cpp"
+			"vector": "cpp",
+			"*.tcc": "cpp",
+			"clocale": "cpp",
+			"memory_resource": "cpp"
 		}
 	}
 }
