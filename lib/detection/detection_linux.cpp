@@ -169,11 +169,11 @@ void DeviceDetection::Impl::udevMonitorLoop()
 
 			if (action == "add") {
 				if (checkTTYParent(dev, candidate)) {
-					callback(ADDED, candidate);
+					callback(DeviceDetectionEvent::added, candidate);
 				}
 			} else if (action == "remove") {
 				if (checkDevVIDPID(dev, candidate)) {
-					callback(REMOVED, candidate);
+					callback(DeviceDetectionEvent::removed, candidate);
 				}
 			}
 			//udev_device_unref(dev); //This causes segmentation fault... in some cases
@@ -232,7 +232,7 @@ void DeviceDetection::Impl::detectConnected()
 
 			if (callback != nullptr)
 			{
-				callback(ADDED, deviceCandidate);
+				callback(DeviceDetectionEvent::added, deviceCandidate);
 			}
 		}
 
