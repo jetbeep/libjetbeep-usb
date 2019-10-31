@@ -9,7 +9,7 @@ using namespace std;
 using namespace JetBeep;
 
 Logger l("main");
-Device d;
+SerialDevice d;
 
 string toLowerCase(const string& input) {
 	string result = input;
