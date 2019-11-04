@@ -87,7 +87,10 @@
 			"unordered_map": "cpp",
 			"variant": "cpp",
 			"vector": "cpp",
-			"__functional_03": "cpp"
+			"__functional_03": "cpp",
+			"*.tcc": "cpp",
+			"clocale": "cpp",
+			"memory_resource": "cpp"
 		}
 	}
 }

@@ -5,6 +5,7 @@
 #include <string>
 #include <stdint.h>
 #include <stddef.h>
+#include <functional>
 
 namespace JetBeep {
 	typedef struct VidPid {
@@ -23,7 +24,7 @@ namespace JetBeep {
 		std::string path;
 	} DeviceCandidate;
 
-	typedef void (*DeviceDetectionCallback)(const DeviceDetectionEvent&, const DeviceCandidate&);
+	typedef std::function<void(const DeviceDetectionEvent&, const DeviceCandidate&)> DeviceDetectionCallback;
 
 	class DeviceDetection {
 	public:

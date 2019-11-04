@@ -7,12 +7,17 @@ list(FILTER JETBEEP_SOURCES EXCLUDE REGEX "boost")
 set(BOOST_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/boost_1_71_0)
 
 add_library(jetbeep_obj OBJECT ${JETBEEP_SOURCES} ${JETBEEP_INCLUDES})
+set_property(TARGET jetbeep_obj PROPERTY POSITION_INDEPENDENT_CODE ON)
+
 target_include_directories(jetbeep_obj PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${BOOST_SOURCE_DIR})
 
 add_library(jetbeep SHARED ${JETBEEP_INCLUDES} $<TARGET_OBJECTS:jetbeep_obj>)
 
 if (APPLE) 
 	target_link_libraries(jetbeep "-framework IOKit" "-framework CoreFoundation")
+elseif(UNIX AND NOT APPLE) #linux
+    target_link_libraries(jetbeep "-lpthread" "-ludev")
+elseif(WIN32)
 endif()
 
 target_include_directories(jetbeep PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

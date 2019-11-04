@@ -6,6 +6,7 @@
 using namespace JetBeep;
 using namespace std;
 
+//TODO add Nordic Dev kits
 size_t DeviceDetection::vidPidCount = 2;
 VidPid DeviceDetection::validVidPids[]= { {0x04d8, 0x00df}, {0x1915, 0x776A} };
 

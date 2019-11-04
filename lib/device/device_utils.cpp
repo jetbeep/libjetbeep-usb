@@ -1,4 +1,5 @@
 #include "device_utils.hpp"
+#include <stdexcept>
 
 using namespace JetBeep;
 using namespace std;
