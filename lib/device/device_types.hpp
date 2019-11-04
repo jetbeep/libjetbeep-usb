@@ -11,6 +11,7 @@
 
 namespace JetBeep {
   enum class SerialError {
+    noError,
     ioError,
     protocolError
   };

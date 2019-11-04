@@ -1,5 +1,6 @@
 #include <iostream>
 #include "cmd.h"
+#include "promise_test.hpp"
 #include "../lib/libjetbeep.h"
 
 using namespace std;
@@ -38,6 +39,9 @@ int main() {
 	Logger::coutEnabled = true;
 	Logger::level = LoggerLevel::verbose;
 	Cmd cmd;
+
+	PromiseTest test;
+	test.run();
 
 	DeviceDetection d(deviceEvent);
 

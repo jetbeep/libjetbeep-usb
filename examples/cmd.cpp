@@ -98,7 +98,11 @@ void Cmd::resetState() {
 
 void Cmd::openSession() {
   try {
-    m_device.openSession();
+    m_device.openSession([&](const SerialError& error) {
+      if (error != SerialError::noError) {
+        m_log.e() << "open session error: " << static_cast<int>(error) << Logger::endl;
+      }
+    });
     m_log.i() << "session opened" << Logger::endl;
   } catch (const exception& e) {
     m_log.e() << "unable to open session: "<< e.what() << Logger::endl;
