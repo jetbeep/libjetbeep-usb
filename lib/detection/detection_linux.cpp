@@ -119,13 +119,13 @@ void DeviceDetection::Impl::startMonitoring() {
 }
 
 void DeviceDetection::Impl::udevMonitorLoop() {
-	auto callback = *this->m_callback;
+	auto callback = *m_callback;
 
 	struct udev_enumerate *enumerate = nullptr;
 	uDev *dev = nullptr;
 	struct udev_monitor *mon = nullptr;
 
-	if (!udev || callback == nullptr) {
+	if (!udev || !callback) {
 		return;
 	}
 
@@ -222,9 +222,9 @@ void DeviceDetection::Impl::detectConnected() {
 		DeviceCandidate deviceCandidate = {0, 0, string(devNode)};
 
 		if (checkTTYParent(dev, &deviceCandidate)) {
-			auto callback = *this->m_callback;
+			auto callback = *m_callback;
 
-			if (callback != nullptr) {
+			if (callback) {
 				callback(DeviceDetectionEvent::added, deviceCandidate);
 			}
 		}
