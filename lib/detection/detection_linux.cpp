@@ -9,6 +9,7 @@
 #include <libudev.h>
 #include <unistd.h>
 #include <stdexcept>
+#include <algorithm>
 
 using namespace JetBeep;
 using namespace std;
@@ -29,6 +30,7 @@ class DeviceDetection::Impl {
 	struct udev *udev = nullptr;
 	std::atomic<bool> isMonActive;
 	std::thread m_thread;
+	int monitorFDPipe[2] = {-1, -1};
 	bool checkTTYParent(uDev *, DeviceCandidate *);
 	bool checkDevVIDPID(uDev *, DeviceCandidate *);
 	void udevMonitorLoop();
@@ -91,6 +93,10 @@ bool DeviceDetection::Impl::checkTTYParent(uDev *ttyDevice, DeviceCandidate *dev
 void DeviceDetection::Impl::stopMonitoring() {
 	isMonActive.store(false);
 
+	if (write(monitorFDPipe[1], "\n", 1) == -1) {
+		throw runtime_error("pipe write error");
+	}
+
 	if (m_thread.joinable()) {
 		m_thread.join();
 	}
@@ -99,8 +105,13 @@ void DeviceDetection::Impl::stopMonitoring() {
 }
 
 void DeviceDetection::Impl::startMonitoring() {
-	if (isMonActive.load())
+	if (isMonActive.load()) {
 		return;
+	}
+
+	if (pipe(monitorFDPipe) == -1) {
+		throw runtime_error("pipe error");
+	}
 
 	isMonActive.store(true);
 
@@ -113,7 +124,6 @@ void DeviceDetection::Impl::udevMonitorLoop() {
 	struct udev_enumerate *enumerate = nullptr;
 	uDev *dev = nullptr;
 	struct udev_monitor *mon = nullptr;
-	int fd;
 
 	if (!udev || callback == nullptr) {
 		return;
@@ -122,23 +132,24 @@ void DeviceDetection::Impl::udevMonitorLoop() {
 	mon = udev_monitor_new_from_netlink(udev, "udev");
 	udev_monitor_filter_add_match_subsystem_devtype(mon, "tty", nullptr);
 	udev_monitor_enable_receiving(mon);
-	fd = udev_monitor_get_fd(mon);
+	int monitorFD = udev_monitor_get_fd(mon);
+
+	if (monitorFD < 0) {
+		throw runtime_error("Unable to udev_monitor_get_fd");
+	}
 
 	m_log.d() << "Udev mon started" << Logger::endl;
 
 	while (isMonActive.load()) {
 		fd_set fds;
-		struct timeval tv;
-		int ret;
 
 		FD_ZERO(&fds);
-		FD_SET(fd, &fds);
-		tv.tv_sec = 0;
-		tv.tv_usec = 250 * 1000; //ms timeout for fd changes
+		FD_SET(monitorFD, &fds);
+		FD_SET(monitorFDPipe[0], &fds);
 
-		ret = select(fd + 1, &fds, nullptr, nullptr, &tv);
+		int ret = select(max(monitorFD, monitorFDPipe[0]) + 1, &fds, nullptr, nullptr, nullptr);
 
-		if (ret > 0 && FD_ISSET(fd, &fds)) {
+		if (ret > 0 && FD_ISSET(monitorFD, &fds)) {
 			dev = udev_monitor_receive_device(mon);
 			if (!dev) {
 				continue;
