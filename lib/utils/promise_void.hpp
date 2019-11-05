@@ -163,11 +163,11 @@ namespace JetBeep {
       return promise;
     }
 
-    template <typename ReturnType, template <typename> class PromiseType = Promise>
+    template <typename ReturnType, template <typename> class PromiseType>
     PromiseType<ReturnType> thenPromise(std::function< PromiseType<ReturnType> ()> callback) {   
       Promise<ReturnType> promise;
 
-      auto resolveLambda = [=, m_impl = m_impl] () {
+      auto resolveLambda = [=, m_impl = m_impl] () mutable {
         auto resultPromise = callback();
 
         resultPromise
