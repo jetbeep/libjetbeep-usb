@@ -5,9 +5,11 @@
 #include <vector>
 #include <unordered_map>
 #include <functional>
+#include <exception>
 
 #include "barcode.hpp"
 #include "payment_error.hpp"
+#include "device_errors.hpp"
 
 namespace JetBeep {
   enum class SerialError {

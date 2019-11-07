@@ -18,7 +18,7 @@ SerialDevice::~SerialDevice() {}
 
 void SerialDevice::open(const string& path) { m_impl->open(path); }
 void SerialDevice::close() { m_impl->close(); }
-void SerialDevice::openSession(function<void (const SerialError &)> callback) { m_impl->executeCallback = callback; m_impl->execute("OPEN_SESSION\r\n"); }
+Promise<void> SerialDevice::openSession() { return m_impl->execute(DeviceResponses::openSession); }
 void SerialDevice::closeSession() { m_impl->execute("CLOSE_SESSION\r\n"); }
 void SerialDevice::requestBarcodes() { m_impl->execute("REQUEST_BARCODES\r\n"); }
 void SerialDevice::cancelBarcodes() { m_impl->execute("CANCEL_BARCODES\r\n"); }

@@ -8,8 +8,9 @@ using namespace boost;
 using namespace boost::asio;
 
 SerialDevice::Impl::Impl(const SerialDeviceCallbacks& callbacks):
-m_thread(&SerialDevice::Impl::runLoop, this), m_work(m_io_service), m_port(m_io_service), m_callbacks(callbacks), m_log("device") {
-
+m_thread(&SerialDevice::Impl::runLoop, this), m_work(m_io_service), m_port(m_io_service),
+ m_callbacks(callbacks), m_log("device"), m_state(SerialDeviceState::idle), m_timer(m_io_service) {
+  
 }
 
 SerialDevice::Impl::~Impl() {
@@ -189,7 +190,7 @@ void SerialDevice::Impl::handleEvent(const string& event, const vector<string> &
       return;
     }
 
-    for (auto it = params.begin(), it2 = next(it) ; it != params.end(); it += 2) {
+    for (auto it = params.begin(), it2 = std::next(it) ; it != params.end(); it += 2) {
         string value = *it;
         int type = atoi((*it2).c_str());
         Barcode barcode = {value, static_cast<BarcodeType>(type)};          
@@ -257,9 +258,9 @@ void SerialDevice::Impl::handleEvent(const string& event, const vector<string> &
   }
 }
 
-void SerialDevice::Impl::execute(const string &cmd) {
+void SerialDevice::Impl::writeSerial(const string& cmd) {
   if (!m_port.is_open()) {
-    throw runtime_error("port is not opened");
+    throw Errors::DeviceNotOpened();
   }
 
   m_log.d() << "nrf tx: " << cmd.substr(0, cmd.size() - 2) << Logger::endl;
@@ -270,6 +271,40 @@ void SerialDevice::Impl::execute(const string &cmd) {
     asio::placeholders::error, asio::placeholders::bytes_transferred);
 
   async_write(m_port, buffer, writeCallback); 
+}
+
+Promise<void> SerialDevice::Impl::execute(const string &cmd, unsigned int timeoutInMilliseconds) {
+  if (m_state == SerialDeviceState::executeInProgress) {
+    throw Errors::OperationInProgress();
+  }
+
+  writeSerial(cmd + "\r\n");
+
+  // NOTE: expires_from_now cancels all pending timeouts (according to docs)
+  m_timer.expires_from_now(boost::posix_time::millisec(timeoutInMilliseconds));
+  m_timer.async_wait(boost::bind(&SerialDevice::Impl::handleTimeout, this, asio::placeholders::error));
+
+  m_executedCommand = cmd;
+  m_executePromise = Promise<void>();
+  m_state = SerialDeviceState::executeInProgress;
+  return m_executePromise;
+}
+
+void SerialDevice::Impl::handleTimeout(const boost::system::error_code& err) {
+  if (err == boost::asio::error::operation_aborted) {
+    m_log.d() << "timer operation aborted" << Logger::endl;
+    return;
+  }
+
+  switch (m_state) {
+    case SerialDeviceState::executeInProgress:
+      m_state = SerialDeviceState::idle;
+      m_executePromise.reject(make_exception_ptr(Errors::OperationTimeout()));      
+    break;    
+    case SerialDeviceState::idle:
+      m_log.e() << "handle timeout call, while no active operation in progress" << Logger::endl;
+    break;
+  }  
 }
 
 void SerialDevice::Impl::runLoop() {

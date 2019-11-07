@@ -98,17 +98,25 @@ void Cmd::resetState() {
 
 void Cmd::openSession() {
   try {
-    m_device.openSession([&](const SerialError& error) {
-      if (error != SerialError::noError) {
-        m_log.e() << "open session error: " << static_cast<int>(error) << Logger::endl;
-      }
-    });
-    m_log.i() << "session opened" << Logger::endl;
-  } catch (const exception& e) {
-    m_log.e() << "unable to open session: "<< e.what() << Logger::endl;
+    m_device.openSession()
+      .then([=] {
+        m_log.i() << "session opened" << Logger::endl;
+      }).catchError([=] (exception_ptr error) {
+        try {
+          rethrow_exception(error);
+        } catch (const Errors::OperationTimeout& error) {
+          m_log.e() << error.what() << Logger::endl;
+        } catch (...) {
+          m_log.e() << "unknown exception" << Logger::endl;
+        }
+      });    
+  } catch (const Errors::DeviceNotOpened &error) {
+    m_log.e() << error.what() << Logger::endl;
+  } catch (const Errors::OperationInProgress &error) {
+    m_log.e() << error.what() << Logger::endl;
   } catch (...) {
-    m_log.e() << "unable to open session" << Logger::endl;
-  }  
+    m_log.e() << "unknown error during opening session" << Logger::endl;
+  }
 }
 
 void Cmd::closeSession() {

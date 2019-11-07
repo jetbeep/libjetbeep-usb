@@ -19,7 +19,7 @@ namespace JetBeep {
     void open(const std::string& path);
     void close();
 
-    void openSession(std::function<void (const SerialError& )>);
+    Promise<void> openSession();
     void closeSession();
     void requestBarcodes();
     void cancelBarcodes();

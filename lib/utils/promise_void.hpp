@@ -293,6 +293,8 @@ namespace JetBeep {
       promise.reject(error);
       return promise;
     }
+
+    PromiseState state() { return m_impl->m_state; }
   private:
     class Impl {
       public:
