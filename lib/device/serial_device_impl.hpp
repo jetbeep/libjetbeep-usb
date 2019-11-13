@@ -20,8 +20,6 @@ namespace JetBeep {
     SerialPaymentSuccessCallback *paymentSuccessCallback;
     SerialPaymentTokenCallback *paymentTokenCallback;
     SerialMobileCallback *mobileCallback;
-    SerialGetCallback *getCallback;
-    SerialGetStateCallback *getStateCallback;
   } SerialDeviceCallbacks;
 
   enum class SerialDeviceState {
@@ -32,15 +30,20 @@ namespace JetBeep {
   class SerialDevice::Impl {
   public:
     Impl(const SerialDeviceCallbacks& callbacks);
-    virtual ~Impl(); 
+    virtual ~Impl();
 
     void open(const std::string& path);
     void close();
     
-    Promise<void> execute(const std::string& cmd, unsigned int timeoutInMilliseconds = 2000);
+    Promise<void> execute(const std::string& cmd, const std::string& params = "", unsigned int timeoutInMilliseconds = 2000);
+    Promise<std::string> executeString(const std::string &cmd, const std::string& params = "", unsigned int timeoutInMilliseconds = 2000);
+    Promise<SerialGetStateResult> executeGetState(const std::string &cmd, const std::string& params = "", unsigned int timeoutInMilliseconds = 2000);
+    void cancelPendingOperations();
   private:
     SerialDeviceState m_state;
     Promise<void> m_executePromise;
+    Promise<std::string> m_executeStringPromise;
+    Promise<SerialGetStateResult> m_executeGetStatePromise;
     std::string m_executedCommand;
     std::string m_writeData;
     boost::asio::streambuf m_readBuffer;
@@ -52,14 +55,15 @@ namespace JetBeep {
     boost::asio::deadline_timer m_timer;
     std::thread m_thread;    
     void runLoop();
-    void writeSerial(const std::string &cmd);
+    void writeSerial(const std::string &cmd, unsigned int timeoutInMilliseconds);
 
     void handleTimeout(const boost::system::error_code& err);
     void writeCompleted(const boost::system::error_code& ec, std::size_t bytes_transferred);
     void readCompleted(const boost::system::error_code& err);
     void handleResponse(const std::string& response);
-    bool handleResult(const std::string& result, const std::vector<std::string>& params);
-    void handleEvent(const std::string& event, const std::vector<std::string>& params);
+    bool handleResult(const std::string& command, const std::vector<std::string>& params);
+    bool handleResultWithParams(const std::string& command, const std::vector<std::string>& params);
+    bool handleEvent(const std::string& event, const std::vector<std::string>& params);
   };
 }
 

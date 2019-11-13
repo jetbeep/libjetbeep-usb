@@ -13,7 +13,6 @@
 
 namespace JetBeep {
   enum class SerialError {
-    noError,
     ioError,
     protocolError
   };
@@ -31,14 +30,17 @@ namespace JetBeep {
     bool isRefundRequested;
   } SerialGetStateResult;
 
+  enum class SerialBeginPrivateMode {
+    setup,
+    config
+  };
+
   typedef std::function<void(const SerialError &)> SerialErrorCallback;
   typedef std::function<void(const std::vector<Barcode> &)> SerialBarcodesCallback;
   typedef std::function<void(const PaymentError &)> SerialPaymentErrorCallback;
   typedef std::function<void()> SerialPaymentSuccessCallback;
   typedef std::function<void(const std::string &)> SerialPaymentTokenCallback;
   typedef std::function<void(const SerialMobileEvent &)> SerialMobileCallback;
-  typedef std::function<void(const std::string&)> SerialGetCallback;
-  typedef std::function<void(const SerialGetStateResult& )> SerialGetStateCallback;
 
   typedef std::unordered_map<std::string, std::string> PaymentMetadata;
 }

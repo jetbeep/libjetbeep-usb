@@ -20,20 +20,20 @@ namespace JetBeep {
     void close();
 
     Promise<void> openSession();
-    void closeSession();
-    void requestBarcodes();
-    void cancelBarcodes();
-    void createPayment(uint32_t amount, const std::string& transactionId, const std::string& cashierId = "", 
+    Promise<void> closeSession();
+    Promise<void> requestBarcodes();
+    Promise<void> cancelBarcodes();
+    Promise<void> createPayment(uint32_t amount, const std::string& transactionId, const std::string& cashierId = "", 
       const PaymentMetadata& metadata = PaymentMetadata());
-    void createPaymentToken(uint32_t amount, const std::string& transactionId, const std::string& cashierId = "", 
+    Promise<void> createPaymentToken(uint32_t amount, const std::string& transactionId, const std::string& cashierId = "", 
       const PaymentMetadata& metadata = PaymentMetadata());
-    void cancelPayment();
-    void resetState();
-    void get(const DeviceParameter& parameter);
-    void set(const DeviceParameter& parameter, const std::string& value);
-    void beginPrivate();
-    void commit(const std::string& signature);
-    void getState();
+    Promise<void> cancelPayment();
+    Promise<void> resetState();
+    Promise<std::string> get(const DeviceParameter& parameter);
+    Promise<void> set(const DeviceParameter& parameter, const std::string& value);
+    Promise<void> beginPrivate(const SerialBeginPrivateMode& mode);
+    Promise<void> commit(const std::string& signature);
+    Promise<SerialGetStateResult> getState();
     
     SerialErrorCallback errorCallback;
     SerialBarcodesCallback barcodesCallback;
@@ -41,8 +41,6 @@ namespace JetBeep {
     SerialPaymentSuccessCallback paymentSuccessCallback;
     SerialPaymentTokenCallback paymentTokenCallback;
     SerialMobileCallback mobileCallback;
-    SerialGetCallback getCallback;
-    SerialGetStateCallback getStateCallback;
   private:
     class Impl;
     std::unique_ptr<Impl> m_impl;

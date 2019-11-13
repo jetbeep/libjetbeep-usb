@@ -1,9 +1,10 @@
 #include <iostream>
 #include <algorithm>
 #include <cctype>
-#include "cmd.h"
+#include "cmd.hpp"
 #include "promise_test.hpp"
 #include "../lib/libjetbeep.h"
+#include "utils.hpp"
 
 
 using namespace std;
@@ -11,14 +12,6 @@ using namespace JetBeep;
 
 Logger l("main");
 SerialDevice d;
-
-string toLowerCase(const string& input) {
-	string result = input;
-
-	transform(result.begin(), result.end(), result.begin(), (int (*)(int))std::tolower);
-
-	return result;
-}
 
 static void deviceEvent(const DeviceDetectionEvent& event, const DeviceCandidate &candidate) {
 	string event_type;
@@ -36,8 +29,8 @@ int main() {
 	Logger::level = LoggerLevel::verbose;
 	Cmd cmd;
 
-	PromiseTest test;
-	test.run();
+	// PromiseTest test;
+	// test.run();
 
 	DeviceDetection d(deviceEvent);
 
@@ -52,7 +45,7 @@ int main() {
 		string input;
 
 		getline(cin, input);
-		input = toLowerCase(input);
+		input = Utils::toLowerCase(input);
 		auto splitted = splitString(input);
 
 		if (splitted.empty())	{

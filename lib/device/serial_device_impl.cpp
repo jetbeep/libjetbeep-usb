@@ -80,55 +80,71 @@ void SerialDevice::Impl::handleResponse(const string &response) {
   }
 
   auto command = splitted.at(0);
-
-  if (command.compare(DeviceResponses::openSession) == 0 ||
-  command.compare(DeviceResponses::closeSession) == 0 ||
-  command.compare(DeviceResponses::requestBarcodes) == 0 ||
-  command.compare(DeviceResponses::cancelBarcodes) == 0 ||
-  command.compare(DeviceResponses::createPayment) == 0 ||
-  command.compare(DeviceResponses::cancelPayment) == 0 ||
-  command.compare(DeviceResponses::confirmPayment) == 0 || 
-  command.compare(DeviceResponses::createPaymentToken) == 0 ||
-  command.compare(DeviceResponses::resetState) == 0 ||
-  command.compare(DeviceResponses::beginPrivate) == 0 ||
-  command.compare(DeviceResponses::commit) == 0 ||
-  command.compare(DeviceResponses::set) == 0
-  ) {
-    if (splitted.size() != 2) {
-      m_log.e() << "invalid response split size: " << splitted.size() << Logger::endl;
-      if (*m_callbacks.errorCallback) {
-        (*m_callbacks.errorCallback)(SerialError::protocolError);
-      }      
-      return;
-    }
-    auto result = splitted[1];
-
-    if (result == "ok") {
-      return;
-    } else {
-      m_log.e() << "result is not ok: " << result << Logger::endl;
-      if (*m_callbacks.errorCallback) {
-        (*m_callbacks.errorCallback)(SerialError::protocolError);
-      }      
-      return;
-    }
-  }    
   splitted.erase(splitted.begin());
 
   if (handleResult(command, splitted)) {
     return;
   }
 
-  handleEvent(command, splitted);  
+  if (handleResultWithParams(command, splitted)) {
+    return;
+  }
+
+  if (handleEvent(command, splitted)) {
+    return;
+  }
+
+  if (*m_callbacks.errorCallback) {
+    m_log.e() << "unable to parse command: "<< response << Logger::endl;
+    (*m_callbacks.errorCallback)(SerialError::protocolError);
+  }
 }
 
-bool SerialDevice::Impl::handleResult(const std::string &result, const vector<string> &params) {
-  if (result.compare(DeviceResponses::get) == 0) {
+bool SerialDevice::Impl::handleResult(const string &command, const vector<string> &params) {
+  if (m_state != SerialDeviceState::executeInProgress) {
+    return false;
+  }
+
+  if (command != m_executedCommand) {
+    return false;
+  }
+
+  m_state = SerialDeviceState::idle;
+  m_timer.cancel();
+        
+  if (params.size() != 1) {
+    m_log.e() << "invalid response params size: " << params.size() << Logger::endl;
+    m_executePromise.reject(make_exception_ptr(Errors::InvalidResponse()));
+    return true;
+  }
+  
+  auto result = params[0];
+
+  if (result == "ok") {
+    m_executePromise.resolve();
+  } else {
+    m_log.e() << "result is not ok: " << result << Logger::endl;
+    m_executePromise.reject(make_exception_ptr(Errors::InvalidResponse()));
+  }
+  return true;
+}
+
+bool SerialDevice::Impl::handleResultWithParams(const std::string &command, const vector<string> &params) {
+  if (m_state != SerialDeviceState::executeInProgress) {
+    return false;
+  }
+
+  if (command != m_executedCommand) {
+    return false;
+  }
+
+  m_state = SerialDeviceState::idle;
+  m_timer.cancel();
+
+  if (command == DeviceResponses::get) {
     if (params.size() != 2) {
       m_log.e() << "invalid get response split size: " << params.size() << Logger::endl;
-      if (*m_callbacks.errorCallback) {
-        (*m_callbacks.errorCallback)(SerialError::protocolError);
-      }
+      m_executeStringPromise.reject(make_exception_ptr(Errors::InvalidResponse()));
       return true;
     }
 
@@ -137,21 +153,16 @@ bool SerialDevice::Impl::handleResult(const std::string &result, const vector<st
 
     if (result != "ok") {
       m_log.e() << "result is not ok: " << result << Logger::endl;
-      if (*m_callbacks.errorCallback) {
-        (*m_callbacks.errorCallback)(SerialError::protocolError);
-      }      
+      m_executeStringPromise.reject(make_exception_ptr(Errors::InvalidResponse()));
       return true;
     }
-    if (*m_callbacks.getCallback) {
-      (*m_callbacks.getCallback)(value);
-    }
+
+    m_executeStringPromise.resolve(value);
     return true;
-  } else if (result.compare(DeviceResponses::getState) == 0) {
+  } else if (command == DeviceResponses::getState) {
     if (params.size() != 6) {
       m_log.e() << "invalid getState response split size: " << params.size() << Logger::endl;
-      if (*m_callbacks.errorCallback) {
-        (*m_callbacks.errorCallback)(SerialError::protocolError);
-      }
+      m_executeGetStatePromise.reject(make_exception_ptr(Errors::InvalidResponse()));
       return true;
     }
     
@@ -162,24 +173,24 @@ bool SerialDevice::Impl::handleResult(const std::string &result, const vector<st
     result.isWaitingForPaymentConfirmation = params[4] == "1";
     result.isRefundRequested = params[5] == "1";
 
-    if (*m_callbacks.getStateCallback) {
-      (*m_callbacks.getStateCallback)(result);
-    }
+    m_executeGetStatePromise.resolve(result);
+    return true;
   }
 
   return false;
 }
 
-void SerialDevice::Impl::handleEvent(const string& event, const vector<string> &params) {
-  if (event.compare(DeviceResponses::mobileConnected) == 0) {
+bool SerialDevice::Impl::handleEvent(const string& event, const vector<string> &params) {
+  if (event == DeviceResponses::mobileConnected) {
     if (*m_callbacks.mobileCallback) {
       (*m_callbacks.mobileCallback)(SerialMobileEvent::connected);
-    }    
-  } else if (event.compare(DeviceResponses::mobileDisconnected) == 0) {
+    }
+    return true;    
+  } else if (event == DeviceResponses::mobileDisconnected) {
     if (*m_callbacks.mobileCallback) {
       (*m_callbacks.mobileCallback)(SerialMobileEvent::disconnected);
     }    
-  } else if (event.compare(DeviceResponses::barcodes) == 0) {
+  } else if (event == DeviceResponses::barcodes) {
     vector<Barcode> barcodes;
 
     if (params.size() % 2 != 0) {
@@ -187,7 +198,7 @@ void SerialDevice::Impl::handleEvent(const string& event, const vector<string> &
       if (*m_callbacks.errorCallback) {
         (*m_callbacks.errorCallback)(SerialError::protocolError);
       }      
-      return;
+      return true;
     }
 
     for (auto it = params.begin(), it2 = std::next(it) ; it != params.end(); it += 2) {
@@ -197,29 +208,31 @@ void SerialDevice::Impl::handleEvent(const string& event, const vector<string> &
 
         barcodes.push_back(barcode);
     }
+
     if (*m_callbacks.barcodesCallback) {
       (*m_callbacks.barcodesCallback)(barcodes);
-    }    
-  } else if (event.compare(DeviceResponses::paymentToken) == 0) {
+    }
+    return true;
+  } else if (event == DeviceResponses::paymentToken) {
     if (params.size() != 1) {
       m_log.e() << "invalid params count of payment token: " << params.size() << Logger::endl;
       if (*m_callbacks.errorCallback) {
         (*m_callbacks.errorCallback)(SerialError::protocolError);
       }      
-      return;
+      return true;
     }
 
     auto paymentToken = params[0];
     if (*m_callbacks.paymentTokenCallback) {
       (*m_callbacks.paymentTokenCallback)(paymentToken);
-    }    
-  } else if (event.compare(DeviceResponses::paymentError) == 0) {
+    }
+  } else if (event == DeviceResponses::paymentError) {
     if (params.size() != 1) {
       m_log.e() << "invalid params count of payment error: " << params.size() << Logger::endl;
       if (*m_callbacks.errorCallback) {
         (*m_callbacks.errorCallback)(SerialError::protocolError);
       }      
-      return;
+      return true;
     }
 
     auto paymentErrorStr = params[0];
@@ -245,20 +258,27 @@ void SerialDevice::Impl::handleEvent(const string& event, const vector<string> &
       if (*m_callbacks.errorCallback) {
         (*m_callbacks.errorCallback)(SerialError::protocolError);
       }      
-      return;
+      return true;
     }
 
     if (*m_callbacks.paymentErrorCallback) {
       (*m_callbacks.paymentErrorCallback)(paymentError);
     }    
-  } else if (event.compare(DeviceResponses::paymentSuccessful) == 0) {
+  } else if (event == DeviceResponses::paymentSuccessful) {
     if (*m_callbacks.paymentSuccessCallback) {
       (*m_callbacks.paymentSuccessCallback)();
-    }    
+    }
+    return true;
   }
+
+  return false;
 }
 
-void SerialDevice::Impl::writeSerial(const string& cmd) {
+void SerialDevice::Impl::writeSerial(const string& cmd, unsigned int timeoutInMilliseconds) {
+  if (m_state != SerialDeviceState::idle) {
+    throw Errors::OperationInProgress();
+  }
+
   if (!m_port.is_open()) {
     throw Errors::DeviceNotOpened();
   }
@@ -271,28 +291,49 @@ void SerialDevice::Impl::writeSerial(const string& cmd) {
     asio::placeholders::error, asio::placeholders::bytes_transferred);
 
   async_write(m_port, buffer, writeCallback); 
-}
-
-Promise<void> SerialDevice::Impl::execute(const string &cmd, unsigned int timeoutInMilliseconds) {
-  if (m_state == SerialDeviceState::executeInProgress) {
-    throw Errors::OperationInProgress();
-  }
-
-  writeSerial(cmd + "\r\n");
 
   // NOTE: expires_from_now cancels all pending timeouts (according to docs)
   m_timer.expires_from_now(boost::posix_time::millisec(timeoutInMilliseconds));
   m_timer.async_wait(boost::bind(&SerialDevice::Impl::handleTimeout, this, asio::placeholders::error));
-
-  m_executedCommand = cmd;
-  m_executePromise = Promise<void>();
+  
   m_state = SerialDeviceState::executeInProgress;
+}
+
+Promise<void> SerialDevice::Impl::execute(const string &cmd, const string& params, unsigned int timeoutInMilliseconds) {
+  if (params != "") {
+    writeSerial(cmd + " " + params + "\r\n", timeoutInMilliseconds);
+  } else {
+    writeSerial(cmd + "\r\n", timeoutInMilliseconds);
+  }
+  m_executePromise = Promise<void>();
+  m_executedCommand = cmd;
   return m_executePromise;
 }
 
+Promise<string> SerialDevice::Impl::executeString(const string &cmd, const string& params, unsigned int timeoutInMilliseconds) {
+  if (params != "") {
+    writeSerial(cmd + " " + params + "\r\n", timeoutInMilliseconds);
+  } else {
+    writeSerial(cmd + "\r\n", timeoutInMilliseconds);
+  }
+  m_executeStringPromise = Promise<string>();  
+  m_executedCommand = cmd;
+  return m_executeStringPromise;
+}
+
+Promise<SerialGetStateResult> SerialDevice::Impl::executeGetState(const string &cmd, const string& params, unsigned int timeoutInMilliseconds) {
+  if (params != "") {
+    writeSerial(cmd + " " + params + "\r\n", timeoutInMilliseconds);
+  } else {
+    writeSerial(cmd + "\r\n", timeoutInMilliseconds);
+  }  
+  m_executeGetStatePromise = Promise<SerialGetStateResult>();  
+  m_executedCommand = cmd;
+  return m_executeGetStatePromise;
+}
+
 void SerialDevice::Impl::handleTimeout(const boost::system::error_code& err) {
-  if (err == boost::asio::error::operation_aborted) {
-    m_log.d() << "timer operation aborted" << Logger::endl;
+  if (err == boost::asio::error::operation_aborted) {    
     return;
   }
 
@@ -300,8 +341,8 @@ void SerialDevice::Impl::handleTimeout(const boost::system::error_code& err) {
     case SerialDeviceState::executeInProgress:
       m_state = SerialDeviceState::idle;
       m_executePromise.reject(make_exception_ptr(Errors::OperationTimeout()));      
-    break;    
-    case SerialDeviceState::idle:
+    break;
+    default:
       m_log.e() << "handle timeout call, while no active operation in progress" << Logger::endl;
     break;
   }  

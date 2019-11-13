@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <exception>
 #include "../lib/libjetbeep.h"
 
 class Cmd {
@@ -26,18 +27,17 @@ class Cmd {
     void createPaymentToken(const std::vector<std::string> &params);
     void get(const std::vector<std::string> &params);
     void set(const std::vector<std::string> &params);
-    void beginPrivate();
+    void beginPrivate(const std::vector<std::string> &params);
     void commit(const std::vector<std::string> &params);
     void getState();
     
+    void handleError(std::exception_ptr exception);
     void errorHandler(const JetBeep::SerialError &error);
     void barcodeHandler(const std::vector<JetBeep::Barcode> &barcodes);
     void paymentErrorHandler(const JetBeep::PaymentError &error);
     void paymentSuccessHandler();
     void paymentTokenHandler(const std::string &token);
     void mobileHandler(const JetBeep::SerialMobileEvent &event);
-    void getHandler(const std::string& result);
-    void getStateHandler(const JetBeep::SerialGetStateResult& );
 };
 
 #endif
