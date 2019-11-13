@@ -3,10 +3,12 @@
 
 #include "device_types.hpp"
 #include "device_parameter.hpp"
+#include "../utils/promise.hpp"
 
 #include <memory>
 #include <string>
 #include <vector>
+#include <functional>
 
 namespace JetBeep {      
   class SerialDevice {
@@ -17,7 +19,7 @@ namespace JetBeep {
     void open(const std::string& path);
     void close();
 
-    void openSession();
+    void openSession(std::function<void (const SerialError& )>);
     void closeSession();
     void requestBarcodes();
     void cancelBarcodes();

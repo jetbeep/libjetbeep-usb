@@ -37,7 +37,7 @@ class Cmd {
     void paymentTokenHandler(const std::string &token);
     void mobileHandler(const JetBeep::SerialMobileEvent &event);
     void getHandler(const std::string& result);
-    void getStateHandler(bool isSessionOpened, bool isBarcodesRequested, bool isPaymentCreated);
+    void getStateHandler(const JetBeep::SerialGetStateResult& );
 };
 
 #endif
