@@ -84,6 +84,8 @@ Promise<void> SerialDevice::beginPrivate(const SerialBeginPrivateMode& mode) {
     case SerialBeginPrivateMode::config:
       param = "config";
       break;
+    default:
+      throw std::invalid_argument("invalid argument provided");
   }
 
   return m_impl->execute(DeviceResponses::beginPrivate, param);
