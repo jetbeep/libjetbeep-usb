@@ -6,6 +6,7 @@
 #include "../utils/promise.hpp"
 #include <thread>
 #include <iterator>
+#include <mutex>
 
 #include <boost/asio/serial_port.hpp> 
 #include <boost/date_time/posix_time/posix_time.hpp>
@@ -46,6 +47,7 @@ namespace JetBeep {
     Promise<SerialGetStateResult> m_executeGetStatePromise;
     std::string m_executedCommand;
     std::string m_writeData;
+    std::recursive_mutex m_mutex;
     boost::asio::streambuf m_readBuffer;
     Logger m_log;
     SerialDeviceCallbacks m_callbacks;

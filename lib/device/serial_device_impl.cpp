@@ -68,6 +68,7 @@ void SerialDevice::Impl::readCompleted(const boost::system::error_code& error) {
 
 void SerialDevice::Impl::handleResponse(const string &response) {
   auto splitted = splitString(response);
+  lock_guard<recursive_mutex> guard(m_mutex);
 
   m_log.d() << "nrf rx: " << response << Logger::endl;
 
@@ -275,6 +276,8 @@ bool SerialDevice::Impl::handleEvent(const string& event, const vector<string> &
 }
 
 void SerialDevice::Impl::writeSerial(const string& cmd, unsigned int timeoutInMilliseconds) {
+  lock_guard<recursive_mutex> guard(m_mutex);
+
   if (m_state != SerialDeviceState::idle) {
     throw Errors::OperationInProgress();
   }
@@ -321,7 +324,7 @@ Promise<string> SerialDevice::Impl::executeString(const string &cmd, const strin
   return m_executeStringPromise;
 }
 
-Promise<SerialGetStateResult> SerialDevice::Impl::executeGetState(const string &cmd, const string& params, unsigned int timeoutInMilliseconds) {
+Promise<SerialGetStateResult> SerialDevice::Impl::executeGetState(const string &cmd, const string& params, unsigned int timeoutInMilliseconds) {  
   if (params != "") {
     writeSerial(cmd + " " + params + "\r\n", timeoutInMilliseconds);
   } else {
