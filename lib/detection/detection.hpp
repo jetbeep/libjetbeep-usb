@@ -22,6 +22,9 @@ namespace JetBeep {
 		uint16_t vid;
 		uint16_t pid;
 		std::string path;
+
+		bool operator==(const DeviceCandidate &other);
+		bool operator!=(const DeviceCandidate &other);
 	} DeviceCandidate;
 
 	typedef std::function<void(const DeviceDetectionEvent&, const DeviceCandidate&)> DeviceDetectionCallback;
