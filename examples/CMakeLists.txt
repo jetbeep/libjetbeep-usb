@@ -8,5 +8,5 @@ if (APPLE)
 elseif(UNIX AND NOT APPLE) #linux
 	target_link_libraries(jetbeep_usb_test "-lpthread" "-ludev")
 elseif(WIN32)
-
+	target_link_libraries(jetbeep_usb_test "-lwsock32")
 endif()
