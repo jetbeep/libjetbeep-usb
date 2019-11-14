@@ -66,6 +66,7 @@ namespace JetBeep {
     bool handleResult(const std::string& command, const std::vector<std::string>& params);
     bool handleResultWithParams(const std::string& command, const std::vector<std::string>& params);
     bool handleEvent(const std::string& event, const std::vector<std::string>& params);
+    void rejectPendingPromises(std::exception_ptr exception);
   };
 }
 
