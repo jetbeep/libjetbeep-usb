@@ -14,6 +14,7 @@
 #include <mutex>
 #include <vector>
 #include <functional>
+#include <string>
 
 namespace JetBeep {
   class AutoDevice::Impl {
@@ -24,8 +25,22 @@ namespace JetBeep {
     void openSession();
     void closeSession();
 
+    Promise<std::vector<Barcode> > requestBarcodes();
+    void cancelBarcodes();
+
+    Promise<void> createPayment(uint32_t amount, const std::string& transactionId, const std::string& cashierId = "", 
+      const PaymentMetadata& metadata = PaymentMetadata());    
+    void confirmPayment();
+
+    Promise<std::string> createPaymentToken(uint32_t amount, const std::string& transactionId, const std::string& cashierId = "", 
+      const PaymentMetadata& metadata = PaymentMetadata());
+    void cancelPayment(); 
+
     AutoDeviceState state();
   private:
+    Promise<std::vector<Barcode> > m_barcodesPromise;
+    Promise<void> m_paymentPromise;
+    Promise<std::string> m_paymentTokenPromise;
     DeviceCandidate m_candidate;
     Logger m_log;
     AutoDeviceState m_state;
@@ -46,6 +61,10 @@ namespace JetBeep {
     void handleTimeout(const boost::system::error_code& err);
     void executeNextOperation();
     void enqueueOperation(const std::function<void ()>& callback);
+    void onBarcodes(const std::vector<Barcode> &barcodes);
+    void onPaymentError(const PaymentError &error);
+    void onPaymentSuccess();
+    void onPaymentToken(const std::string &token);
   };
 }
 

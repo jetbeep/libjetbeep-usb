@@ -27,6 +27,7 @@ namespace JetBeep {
       const PaymentMetadata& metadata = PaymentMetadata());
     Promise<void> createPaymentToken(uint32_t amount, const std::string& transactionId, const std::string& cashierId = "", 
       const PaymentMetadata& metadata = PaymentMetadata());
+    Promise<void> confirmPayment();
     Promise<void> cancelPayment();
     Promise<void> resetState();
     Promise<std::string> get(const DeviceParameter& parameter);

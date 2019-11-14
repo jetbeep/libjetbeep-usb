@@ -11,6 +11,10 @@ AutoDevice::Impl::Impl(AutoDeviceStateChangeCallback *callback)
 : m_callback(callback), m_state(AutoDeviceState::invalid), m_log("autodevice"), m_thread(&AutoDevice::Impl::runLoop, this),
   m_work(m_io_service), m_timer(m_io_service) {
   m_detection.callback = std::bind(&AutoDevice::Impl::onDeviceEvent, this, std::placeholders::_1, std::placeholders::_2);
+  m_device.barcodesCallback = std::bind(&AutoDevice::Impl::onBarcodes, this, std::placeholders::_1);
+  m_device.paymentErrorCallback = std::bind(&AutoDevice::Impl::onPaymentError, this, std::placeholders::_1);
+  m_device.paymentSuccessCallback = std::bind(&AutoDevice::Impl::onPaymentSuccess, this);
+  m_device.paymentTokenCallback = std::bind(&AutoDevice::Impl::onPaymentToken, this, std::placeholders::_1);
 }
 
 AutoDevice::Impl::~Impl() {
@@ -55,7 +59,11 @@ void AutoDevice::Impl::onDeviceEvent(const DeviceDetectionEvent& event, const De
 }
 
 void AutoDevice::Impl::resetState() {
-  m_pendingOperations.clear();  
+  m_pendingOperations.clear();
+
+  if (m_barcodesPromise.state() == PromiseState::undefined) {
+    m_barcodesPromise.reject(make_exception_ptr(Errors::InvalidResponse()));
+  }  
 
   m_device.resetState()
     .then([&] {
@@ -124,6 +132,145 @@ void AutoDevice::Impl::closeSession() {
   enqueueOperation(lambda);
 }
 
+Promise<std::vector<Barcode> > AutoDevice::Impl::requestBarcodes() {
+  std::lock_guard<recursive_mutex> guard(m_mutex);
+
+  if (m_state != AutoDeviceState::sessionOpened) {
+    throw Errors::InvalidState();
+  }
+
+  m_state = AutoDeviceState::waitingForBarcodes;
+  m_barcodesPromise = Promise<std::vector<Barcode> >();
+
+  auto lambda = [&] {
+      m_device.closeSession()
+      .then([&] {
+        executeNextOperation();
+      }).catchError([&] (exception_ptr) {
+        m_log.e() << "close session error" << Logger::endl;
+        resetState();
+      });
+  };
+
+  enqueueOperation(lambda);
+  return m_barcodesPromise;
+}
+
+void AutoDevice::Impl::cancelBarcodes() {
+  std::lock_guard<recursive_mutex> guard(m_mutex);
+
+  if (m_state != AutoDeviceState::waitingForBarcodes) {
+    throw Errors::InvalidState();
+  }
+
+  m_state = AutoDeviceState::sessionOpened;
+  auto lambda = [&] {
+    m_device.cancelBarcodes()
+      .then([&] {
+        executeNextOperation();
+      }).catchError([&] (exception_ptr) {
+        m_log.e() << "cancel barcodes error" << Logger::endl;
+        resetState();
+      });
+  };
+
+  enqueueOperation(lambda);
+}
+
+Promise<void> AutoDevice::Impl::createPayment(uint32_t amount, const std::string& transactionId, const std::string& cashierId, 
+  const PaymentMetadata& metadata) {
+  std::lock_guard<recursive_mutex> guard(m_mutex);
+
+  if (m_state != AutoDeviceState::sessionOpened) {
+    throw Errors::InvalidState();    
+  }
+
+  m_state = AutoDeviceState::waitingForPaymentResult;
+  m_paymentPromise = Promise<void>();
+
+  auto lambda = [&, amount, transactionId, cashierId, metadata] {
+    m_device.createPayment(amount, transactionId, cashierId, metadata)
+      .then([&] {
+        executeNextOperation();
+      }).catchError([&] (exception_ptr) {
+        m_log.e() << "create payment error" << Logger::endl;
+        resetState();
+      });
+  };
+
+  enqueueOperation(lambda);
+  return m_paymentPromise;  
+}
+
+Promise<std::string> AutoDevice::Impl::createPaymentToken(uint32_t amount, const std::string& transactionId, const std::string& cashierId, 
+  const PaymentMetadata& metadata) {
+  std::lock_guard<recursive_mutex> guard(m_mutex);
+
+if (m_state != AutoDeviceState::sessionOpened) {
+    throw Errors::InvalidState();    
+  }
+
+  m_state = AutoDeviceState::waitingForPaymentToken;
+  m_paymentTokenPromise = Promise<string>();
+
+  auto lambda = [&, amount, transactionId, cashierId, metadata] {
+    m_device.createPaymentToken(amount, transactionId, cashierId, metadata)
+      .then([&] {
+        executeNextOperation();
+      }).catchError([&] (exception_ptr) {
+        m_log.e() << "cancel barcodes error" << Logger::endl;
+        resetState();
+      });
+  };
+
+  enqueueOperation(lambda);
+  return m_paymentTokenPromise;  
+}
+
+void AutoDevice::Impl::confirmPayment() {
+  std::lock_guard<recursive_mutex> guard(m_mutex);
+
+  if (m_state != AutoDeviceState::waitingForConfirmation) {
+    throw Errors::InvalidState();
+  }
+
+  m_state = AutoDeviceState::sessionClosed;
+  auto lambda = [&] {
+      m_device.confirmPayment()
+      .then([&] {
+        executeNextOperation();
+      }).catchError([&] (exception_ptr) {
+        m_log.e() << "confirm payment error" << Logger::endl;
+        resetState();
+      });
+  };
+
+  enqueueOperation(lambda);  
+}
+
+void AutoDevice::Impl::cancelPayment() {
+  std::lock_guard<recursive_mutex> guard(m_mutex);
+
+  if (m_state != AutoDeviceState::waitingForConfirmation && 
+    m_state != AutoDeviceState::waitingForPaymentResult && 
+    m_state != AutoDeviceState::waitingForPaymentToken) {
+    throw Errors::InvalidState();
+  }
+
+  m_state = AutoDeviceState::sessionClosed;
+  auto lambda = [&] {
+      m_device.cancelPayment()
+      .then([&] {
+        executeNextOperation();
+      }).catchError([&] (exception_ptr) {
+        m_log.e() << "cancel payment error" << Logger::endl;
+        resetState();
+      });
+  };
+
+  enqueueOperation(lambda);    
+}
+
 void AutoDevice::Impl::enqueueOperation(const std::function<void ()>& callback) {
   if (m_pendingOperations.empty()) {
     callback();
@@ -136,6 +283,62 @@ void AutoDevice::Impl::executeNextOperation() {
   if (!m_pendingOperations.empty()) {
     m_pendingOperations.front()();
   }  
+}
+
+void AutoDevice::Impl::onBarcodes(const std::vector<Barcode> &barcodes) {
+  std::lock_guard<recursive_mutex> guard(m_mutex);
+
+  if (m_state != AutoDeviceState::waitingForBarcodes) {
+    m_log.e() << "invalid state while received barcodes" << Logger::endl;
+    return;
+  }
+
+  m_state = AutoDeviceState::sessionClosed;
+
+  if (m_barcodesPromise.state() != PromiseState::undefined) {
+    m_log.e() << "invalid promise state while received barcodes" << Logger::endl;
+    return;
+  }
+
+  m_barcodesPromise.resolve(barcodes);
+}
+
+void AutoDevice::Impl::onPaymentError(const PaymentError &error) {
+  // TODO: have to properly handle payment errors.
+}
+
+void AutoDevice::Impl::onPaymentSuccess() {
+  std::lock_guard<recursive_mutex> guard(m_mutex);
+
+  if (m_state != AutoDeviceState::waitingForPaymentResult) {
+    m_log.e() << "invalid state while received payment result" << Logger::endl;
+    return;
+  }
+
+  m_state = AutoDeviceState::waitingForConfirmation;
+
+  if (m_paymentPromise.state() != PromiseState::undefined) {
+    m_log.e() << "invalid promise state while received payment result" << Logger::endl;
+  }
+
+  m_paymentPromise.resolve();
+}
+
+void AutoDevice::Impl::onPaymentToken(const std::string &token) {
+  std::lock_guard<recursive_mutex> guard(m_mutex);
+
+  if (m_state != AutoDeviceState::waitingForPaymentToken) {
+    m_log.e() << "invalid state while received payment result" << Logger::endl;
+    return;
+  }
+
+  m_state = AutoDeviceState::sessionClosed;
+
+  if (m_paymentTokenPromise.state() != PromiseState::undefined) {
+    m_log.e() << "invalid promise state while received payment result" << Logger::endl;
+  }
+
+  m_paymentTokenPromise.resolve(token);  
 }
 
 void AutoDevice::Impl::runLoop() {
