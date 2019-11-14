@@ -132,7 +132,7 @@ DeviceDetection::Impl::~Impl() {
 	try {
 		stopMonitoring();
 	} catch (exception &e) {
-		m_log.e() << e.what << Logger::endl;
+		m_log.e() << e.what() << Logger::endl;
 	}
 }
 
