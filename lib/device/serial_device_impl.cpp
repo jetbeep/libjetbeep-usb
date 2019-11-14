@@ -95,6 +95,10 @@ void SerialDevice::Impl::handleResponse(const string &response) {
     return;
   }
 
+  // if we are here, then something wrong happened and we have to cancel all pending operations
+  m_state = SerialDeviceState::idle;
+  rejectPendingPromises(make_exception_ptr(Errors::InvalidResponse()));
+
   if (*m_callbacks.errorCallback) {
     m_log.e() << "unable to parse command: "<< response << Logger::endl;
     (*m_callbacks.errorCallback)(SerialError::protocolError);
@@ -336,6 +340,8 @@ Promise<SerialGetStateResult> SerialDevice::Impl::executeGetState(const string &
 }
 
 void SerialDevice::Impl::handleTimeout(const boost::system::error_code& err) {
+  lock_guard<recursive_mutex> guard(m_mutex);
+
   if (err == boost::asio::error::operation_aborted) {    
     return;
   }
@@ -343,12 +349,26 @@ void SerialDevice::Impl::handleTimeout(const boost::system::error_code& err) {
   switch (m_state) {
     case SerialDeviceState::executeInProgress:
       m_state = SerialDeviceState::idle;
-      m_executePromise.reject(make_exception_ptr(Errors::OperationTimeout()));      
+      rejectPendingPromises(make_exception_ptr(Errors::OperationTimeout()));
     break;
     default:
       m_log.e() << "handle timeout call, while no active operation in progress" << Logger::endl;
     break;
   }  
+}
+
+void SerialDevice::Impl::rejectPendingPromises(std::exception_ptr exception) {
+  if (m_executePromise.state() == PromiseState::undefined) {
+    m_executePromise.reject(exception);
+  }
+
+  if (m_executeStringPromise.state() == PromiseState::undefined) {
+    m_executeStringPromise.reject(exception);
+  }
+
+  if (m_executeGetStatePromise.state() == PromiseState::undefined) {
+    m_executeGetStatePromise.reject(exception);
+  }
 }
 
 void SerialDevice::Impl::runLoop() {
