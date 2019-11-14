@@ -29,6 +29,11 @@ namespace JetBeep {
       public:
         virtual char const* what() const noexcept { return "Device returned invalid response"; }         
       };
+
+      class InvalidState: public std::exception {
+        public:
+          virtual char const* what() const noexcept { return "Invalid state"; }
+      };
   }
 }
 

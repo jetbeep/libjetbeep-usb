@@ -19,6 +19,7 @@ AutoDevice::Impl::~Impl() {
 }
 
 void AutoDevice::Impl::onDeviceEvent(const DeviceDetectionEvent& event, const DeviceCandidate& candidate) {
+  std::lock_guard<recursive_mutex> guard(m_mutex);
   auto callback = *m_callback;
 
   switch (event) {
@@ -53,15 +54,9 @@ void AutoDevice::Impl::onDeviceEvent(const DeviceDetectionEvent& event, const De
   }
 }
 
-void AutoDevice::Impl::notifyStateChange(AutoDeviceState state, exception_ptr exception) {
-  auto callback = *m_callback;
-
-  if (callback) {
-    callback(m_state, exception);
-  }
-}
-
 void AutoDevice::Impl::resetState() {
+  m_pendingOperations.clear();  
+
   m_device.resetState()
     .then([&] {
     m_state = AutoDeviceState::sessionClosed;
@@ -78,6 +73,8 @@ void AutoDevice::Impl::resetState() {
 }
 
 void AutoDevice::Impl::handleTimeout(const boost::system::error_code& err) {
+  std::lock_guard<recursive_mutex> guard(m_mutex);
+
   if (err == boost::asio::error::operation_aborted) {    
     return;
   }
@@ -85,6 +82,74 @@ void AutoDevice::Impl::handleTimeout(const boost::system::error_code& err) {
   resetState();
 }
 
+void AutoDevice::Impl::openSession() {
+  std::lock_guard<recursive_mutex> guard(m_mutex);
+
+  if (m_state != AutoDeviceState::sessionClosed) {
+    throw Errors::InvalidState();
+  } 
+
+  m_state = AutoDeviceState::sessionOpened;
+  auto lambda = [&] {
+    m_device.openSession()
+      .then([&] {
+        executeNextOperation();
+      }).catchError([&] (exception_ptr) {
+        m_log.e() << "open session error" << Logger::endl;
+        resetState();
+      });
+  };
+
+  enqueueOperation(lambda);
+}
+
+void AutoDevice::Impl::closeSession() {
+  std::lock_guard<recursive_mutex> guard(m_mutex);
+
+  if (m_state == AutoDeviceState::sessionClosed || m_state == AutoDeviceState::invalid) {
+    throw Errors::InvalidState();
+  }
+
+  m_state = AutoDeviceState::sessionClosed;
+  auto lambda = [&] {
+    m_device.closeSession()
+      .then([&] {
+        executeNextOperation();
+      }).catchError([&] (exception_ptr) {
+        m_log.e() << "close session error" << Logger::endl;
+        resetState();
+      });
+  };
+
+  enqueueOperation(lambda);
+}
+
+void AutoDevice::Impl::enqueueOperation(const std::function<void ()>& callback) {
+  if (m_pendingOperations.empty()) {
+    callback();
+  }
+  m_pendingOperations.push_back(callback);
+}
+
+void AutoDevice::Impl::executeNextOperation() {
+  m_pendingOperations.pop_back();
+  if (!m_pendingOperations.empty()) {
+    m_pendingOperations.front()();
+  }  
+}
+
 void AutoDevice::Impl::runLoop() {
   m_io_service.run();
+}
+
+void AutoDevice::Impl::notifyStateChange(AutoDeviceState state, exception_ptr exception) {
+  auto callback = *m_callback;
+
+  if (callback) {
+    callback(m_state, exception);
+  }
+}
+
+AutoDeviceState AutoDevice::Impl::state() {
+  return m_state;
 }
