@@ -91,10 +91,10 @@ void Cmd::resetState() {
       .then([&] {
         m_log.i() << "state reset" << Logger::endl;
       }).catchError([&] (exception_ptr error) {
-        handleError(error);
+        processError(error);
       });      
   } catch (...) {
-    handleError(std::current_exception());
+    processError(std::current_exception());
   }   
 }
 
@@ -104,10 +104,10 @@ void Cmd::openSession() {
       .then([&] {
         m_log.i() << "session opened" << Logger::endl;
       }).catchError([&] (exception_ptr error) {
-        handleError(error);
+        processError(error);
       });    
   } catch (...) {
-    handleError(std::current_exception());
+    processError(std::current_exception());
   }
 }
 
@@ -117,10 +117,10 @@ void Cmd::closeSession() {
     .then([&] {
       m_log.i() << "session closed" << Logger::endl;
     }).catchError([&] (exception_ptr error) {
-      handleError(error);
+      processError(error);
     });  
   } catch (...) {
-    handleError(std::current_exception());
+    processError(std::current_exception());
   }
 }
 
@@ -130,10 +130,10 @@ void Cmd::requestBarcodes() {
       .then([&] {
         m_log.i() << "barcodes ok" << Logger::endl;
       }).catchError([&] (exception_ptr error) {
-        handleError(error);
+        processError(error);
       });    
   } catch (...) {
-    handleError(std::current_exception());
+    processError(std::current_exception());
   }
 }
 
@@ -143,10 +143,10 @@ void Cmd::cancelBarcodes() {
       .then([&] {
         m_log.i() << "barcodes cancelled" << Logger::endl;
       }).catchError([&] (exception_ptr error) {
-        handleError(error);
+        processError(error);
       });
   } catch (...) {
-    handleError(std::current_exception());
+    processError(std::current_exception());
   }  
 }
 
@@ -167,7 +167,7 @@ void Cmd::createPayment(const vector<string>& params) {
         .then([&] {
           m_log.i() << "payment created" << Logger::endl;
         }).catchError([&] (exception_ptr error) {
-          handleError(error);
+          processError(error);
         });        
     } else {
       auto cashierId = params.at(2);
@@ -176,7 +176,7 @@ void Cmd::createPayment(const vector<string>& params) {
           .then([&] {
             m_log.i() << "payment created" << Logger::endl;
           }).catchError([&] (exception_ptr error) {
-            handleError(error);
+            processError(error);
           });        
       } else {
         auto rawMetadata = params.at(3);
@@ -197,12 +197,12 @@ void Cmd::createPayment(const vector<string>& params) {
           .then([&] {
             m_log.i() << "payment created" << Logger::endl;
           }).catchError([&] (exception_ptr error) {
-            handleError(error);
+            processError(error);
           });             
       }
     }
   } catch (...) {
-    handleError(std::current_exception());
+    processError(std::current_exception());
   }  
 }
 
@@ -212,10 +212,10 @@ void Cmd::cancelPayment() {
       .then([&] {
         m_log.i() << "payment cancelled" << Logger::endl;
       }).catchError([&] (exception_ptr error) {
-        handleError(error);
+        processError(error);
       });
   } catch (...) {
-    handleError(std::current_exception());
+    processError(std::current_exception());
   }  
 }
 
@@ -236,7 +236,7 @@ void Cmd::createPaymentToken(const vector<string>& params) {
           .then([&] {
             m_log.i() << "payment token created" << Logger::endl;
           }).catchError([&] (exception_ptr error) {
-            handleError(error);
+            processError(error);
           });        
     } else {
       auto cashierId = params.at(2);
@@ -245,7 +245,7 @@ void Cmd::createPaymentToken(const vector<string>& params) {
           .then([&] {
             m_log.i() << "payment token created" << Logger::endl;
           }).catchError([&] (exception_ptr error) {
-            handleError(error);
+            processError(error);
           });
       } else {
         auto rawMetadata = params.at(3);
@@ -266,12 +266,12 @@ void Cmd::createPaymentToken(const vector<string>& params) {
           .then([&] {
             m_log.i() << "payment token created" << Logger::endl;
           }).catchError([&] (exception_ptr error) {
-            handleError(error);
+            processError(error);
           });        
       }
     }
   } catch (...) {
-    handleError(std::current_exception());
+    processError(std::current_exception());
   }
 }
 
@@ -287,10 +287,10 @@ void Cmd::get(const vector<string>& params) {
       .then([&] (string result) {
         m_log.i() << "get: " << result << Logger::endl;
       }).catchError([&] (exception_ptr error) {
-        handleError(error);
+        processError(error);
       });    
   } catch (...) {
-    handleError(std::current_exception());
+    processError(std::current_exception());
   }
 }
 
@@ -307,10 +307,10 @@ void Cmd::set(const vector<string>& params) {
       .then([&] {
         m_log.i() << "set ok" << Logger::endl;
       }).catchError([&] (exception_ptr error) {
-        handleError(error);
+        processError(error);
       });     
   } catch (...) {
-    handleError(std::current_exception());
+    processError(std::current_exception());
   }
 }
 
@@ -336,10 +336,10 @@ void Cmd::beginPrivate(const vector<string>& params) {
       .then([&] {
         m_log.i() << "begin private ok" << Logger::endl;
       }).catchError([&] (exception_ptr error) {
-        handleError(error);
+        processError(error);
       });      
   } catch (...) {
-    handleError(std::current_exception());
+    processError(std::current_exception());
   }
 }
 
@@ -355,10 +355,10 @@ void Cmd::commit(const vector<string>& params) {
       .then([&] {
         m_log.i() << "commit ok" << Logger::endl;
       }).catchError([&] (exception_ptr error) {
-        handleError(error);
+        processError(error);
       });     
   } catch (...) {
-    handleError(std::current_exception());
+    processError(std::current_exception());
   }
 }
 
@@ -367,20 +367,26 @@ void Cmd::getState() {
     m_device.getState()
       .then([&] (SerialGetStateResult result) {     
         m_log.i() << "isSessionOpened: " << result.isSessionOpened <<
-        " isBarcodesRequested" << result.isBarcodesRequested <<
-        " isPaymentCreated" << result.isPaymentCreated <<
-        " isWaitingForPaymentConfirmation" << result.isWaitingForPaymentConfirmation <<
-        " isRefundRequested" << result.isRefundRequested << Logger::endl;
+        " isBarcodesRequested: " << result.isBarcodesRequested <<
+        " isPaymentCreated: " << result.isPaymentCreated <<
+        " isWaitingForPaymentConfirmation: " << result.isWaitingForPaymentConfirmation <<
+        " isRefundRequested: " << result.isRefundRequested << Logger::endl;
       }).catchError([&] (exception_ptr error) {
-        handleError(error);
+        processError(error);
       });    
   } catch (...) {
-    handleError(std::current_exception());
+    processError(std::current_exception());
   }
 }
 
-void Cmd::errorHandler(const SerialError &error) {
-	m_log.e() << "device error: " << static_cast<int>(error) << Logger::endl;
+void Cmd::errorHandler(exception_ptr exception) {
+  try {
+    rethrow_exception(exception);
+  } catch (const Errors::IOError& error) {
+    m_log.e() << "device error: " << error.what() << Logger::endl;
+  } catch (const Errors::ProtocolError& error) {
+    m_log.e() << "device error: " << error.what() << Logger::endl;
+  }	
 }
 
 void Cmd::barcodeHandler(const std::vector<Barcode> &barcodes) {
@@ -407,7 +413,7 @@ void Cmd::mobileHandler(const SerialMobileEvent &event) {
 	}
 }
 
-void Cmd::handleError(std::exception_ptr error) {
+void Cmd::processError(std::exception_ptr error) {
   try {
     rethrow_exception(error);
   } catch (const Errors::OperationTimeout& error) {

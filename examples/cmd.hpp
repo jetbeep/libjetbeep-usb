@@ -31,8 +31,8 @@ class Cmd {
     void commit(const std::vector<std::string> &params);
     void getState();
     
-    void handleError(std::exception_ptr exception);
-    void errorHandler(const JetBeep::SerialError &error);
+    void processError(std::exception_ptr exception);
+    void errorHandler(std::exception_ptr error);
     void barcodeHandler(const std::vector<JetBeep::Barcode> &barcodes);
     void paymentErrorHandler(const JetBeep::PaymentError &error);
     void paymentSuccessHandler();

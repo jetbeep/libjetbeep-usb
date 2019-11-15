@@ -11,12 +11,7 @@
 #include "payment_error.hpp"
 #include "device_errors.hpp"
 
-namespace JetBeep {
-  enum class SerialError {
-    ioError,
-    protocolError
-  };
-  
+namespace JetBeep {  
   enum class SerialMobileEvent {
     connected,
     disconnected
@@ -35,7 +30,7 @@ namespace JetBeep {
     config
   };
 
-  typedef std::function<void(const SerialError &)> SerialErrorCallback;
+  typedef std::function<void(std::exception_ptr)> SerialErrorCallback;
   typedef std::function<void(const std::vector<Barcode> &)> SerialBarcodesCallback;
   typedef std::function<void(const PaymentError &)> SerialPaymentErrorCallback;
   typedef std::function<void()> SerialPaymentSuccessCallback;

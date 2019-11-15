@@ -10,7 +10,10 @@ using namespace boost::asio;
 SerialDevice::Impl::Impl(const SerialDeviceCallbacks& callbacks):
 m_thread(&SerialDevice::Impl::runLoop, this), m_work(m_io_service), m_port(m_io_service),
  m_callbacks(callbacks), m_log("device"), m_state(SerialDeviceState::idle), m_timer(m_io_service) {
-  
+  // These promises should be already resolved\rejected in constructor to make handleResponse, handleResult, etc functions work properly   
+  m_executePromise.reject(make_exception_ptr(Errors::InvalidResponse()));
+  m_executeStringPromise.reject(make_exception_ptr(Errors::InvalidResponse()));
+  m_executeGetStatePromise.reject(make_exception_ptr(Errors::InvalidResponse()));
 }
 
 SerialDevice::Impl::~Impl() {
@@ -30,20 +33,24 @@ void SerialDevice::Impl::close() {
 }
 
 void SerialDevice::Impl::writeCompleted(const boost::system::error_code& error, std::size_t bytes_transferred) {
+  auto errorCallback = *m_callbacks.errorCallback;
+
   if (error) {    
     m_log.e() << "write error: "<< error << Logger::endl;
-    if (*m_callbacks.errorCallback) {
-      (*m_callbacks.errorCallback)(SerialError::ioError);
+    if (errorCallback) {
+      errorCallback(make_exception_ptr(Errors::IOError()));
     }    
     return;
   }      
 }
 
 void SerialDevice::Impl::readCompleted(const boost::system::error_code& error) {
+  auto errorCallback = *m_callbacks.errorCallback;
+
   if (error) {    
     m_log.e() << "read error: "<< error << Logger::endl;
-    if (*m_callbacks.errorCallback) {
-      (*m_callbacks.errorCallback)(SerialError::ioError);
+    if (errorCallback) {
+      errorCallback(make_exception_ptr(Errors::IOError()));
     }    
     return;
   }
@@ -56,8 +63,8 @@ void SerialDevice::Impl::readCompleted(const boost::system::error_code& error) {
 
   if (response.size() < 2) {    
     m_log.e() << "response size < 2" << Logger::endl;
-    if (*m_callbacks.errorCallback) {
-      (*m_callbacks.errorCallback)(SerialError::protocolError);
+    if (errorCallback) {
+      errorCallback(make_exception_ptr(Errors::ProtocolError()));
     }    
     return;
   }
@@ -67,6 +74,7 @@ void SerialDevice::Impl::readCompleted(const boost::system::error_code& error) {
 }
 
 void SerialDevice::Impl::handleResponse(const string &response) {
+  auto errorCallback = *m_callbacks.errorCallback;
   auto splitted = splitString(response);
   lock_guard<recursive_mutex> guard(m_mutex);
 
@@ -74,8 +82,8 @@ void SerialDevice::Impl::handleResponse(const string &response) {
 
   if (splitted.empty()) {
     m_log.e() << "unable to split string..."<< Logger::endl;
-    if (*m_callbacks.errorCallback) {
-      (*m_callbacks.errorCallback)(SerialError::protocolError);
+    if (errorCallback) {
+      errorCallback(make_exception_ptr(Errors::ProtocolError()));
     }    
     return;
   }
@@ -97,12 +105,12 @@ void SerialDevice::Impl::handleResponse(const string &response) {
 
   // if we are here, then something wrong happened and we have to cancel all pending operations
   m_state = SerialDeviceState::idle;
+  m_timer.cancel();
   rejectPendingPromises(make_exception_ptr(Errors::InvalidResponse()));
-
-  if (*m_callbacks.errorCallback) {
-    m_log.e() << "unable to parse command: "<< response << Logger::endl;
-    (*m_callbacks.errorCallback)(SerialError::protocolError);
-  }
+  m_log.e() << "unable to parse command: "<< response << Logger::endl;
+  if (errorCallback) {
+    errorCallback(make_exception_ptr(Errors::ProtocolError()));
+  }  
 }
 
 bool SerialDevice::Impl::handleResult(const string &command, const vector<string> &params) {
@@ -111,6 +119,10 @@ bool SerialDevice::Impl::handleResult(const string &command, const vector<string
   }
 
   if (command != m_executedCommand) {
+    return false;
+  }
+
+  if (m_executePromise.state() != PromiseState::undefined) {
     return false;
   }
 
@@ -135,6 +147,8 @@ bool SerialDevice::Impl::handleResult(const string &command, const vector<string
 }
 
 bool SerialDevice::Impl::handleResultWithParams(const std::string &command, const vector<string> &params) {
+  auto errorCallback = *m_callbacks.errorCallback;
+
   if (m_state != SerialDeviceState::executeInProgress) {
     return false;
   }
@@ -147,6 +161,14 @@ bool SerialDevice::Impl::handleResultWithParams(const std::string &command, cons
   m_timer.cancel();
 
   if (command == DeviceResponses::get) {
+    if (m_executeStringPromise.state() != PromiseState::undefined) {
+      m_log.e() << "invalid promise state" << Logger::endl;
+      if (errorCallback) {
+        errorCallback(make_exception_ptr(Errors::ProtocolError()));
+      }
+      return true;
+    }
+
     if (params.size() != 2) {
       m_log.e() << "invalid get response split size: " << params.size() << Logger::endl;
       m_executeStringPromise.reject(make_exception_ptr(Errors::InvalidResponse()));
@@ -165,6 +187,14 @@ bool SerialDevice::Impl::handleResultWithParams(const std::string &command, cons
     m_executeStringPromise.resolve(value);
     return true;
   } else if (command == DeviceResponses::getState) {
+    if (m_executeGetStatePromise.state() != PromiseState::undefined) {
+      m_log.e() << "invalid promise state" << Logger::endl;
+      if (errorCallback) {
+        errorCallback(make_exception_ptr(Errors::ProtocolError()));
+      }      
+      return false;
+    }
+
     if (params.size() != 6) {
       m_log.e() << "invalid getState response split size: " << params.size() << Logger::endl;
       m_executeGetStatePromise.reject(make_exception_ptr(Errors::InvalidResponse()));
@@ -186,6 +216,8 @@ bool SerialDevice::Impl::handleResultWithParams(const std::string &command, cons
 }
 
 bool SerialDevice::Impl::handleEvent(const string& event, const vector<string> &params) {
+  auto errorCallback = *m_callbacks.errorCallback;
+
   if (event == DeviceResponses::mobileConnected) {
     if (*m_callbacks.mobileCallback) {
       (*m_callbacks.mobileCallback)(SerialMobileEvent::connected);
@@ -200,9 +232,9 @@ bool SerialDevice::Impl::handleEvent(const string& event, const vector<string> &
 
     if (params.size() % 2 != 0) {
       m_log.e() << "invalid params size when received barcodes: " << params.size() << Logger::endl;
-      if (*m_callbacks.errorCallback) {
-        (*m_callbacks.errorCallback)(SerialError::protocolError);
-      }      
+      if (errorCallback) {
+        errorCallback(make_exception_ptr(Errors::ProtocolError()));
+      }
       return true;
     }
 
@@ -221,9 +253,9 @@ bool SerialDevice::Impl::handleEvent(const string& event, const vector<string> &
   } else if (event == DeviceResponses::paymentToken) {
     if (params.size() != 1) {
       m_log.e() << "invalid params count of payment token: " << params.size() << Logger::endl;
-      if (*m_callbacks.errorCallback) {
-        (*m_callbacks.errorCallback)(SerialError::protocolError);
-      }      
+      if (errorCallback) {
+        errorCallback(make_exception_ptr(Errors::ProtocolError()));
+      }
       return true;
     }
 
@@ -234,9 +266,9 @@ bool SerialDevice::Impl::handleEvent(const string& event, const vector<string> &
   } else if (event == DeviceResponses::paymentError) {
     if (params.size() != 1) {
       m_log.e() << "invalid params count of payment error: " << params.size() << Logger::endl;
-      if (*m_callbacks.errorCallback) {
-        (*m_callbacks.errorCallback)(SerialError::protocolError);
-      }      
+      if (errorCallback) {
+        errorCallback(make_exception_ptr(Errors::ProtocolError()));
+      }
       return true;
     }
 
@@ -260,9 +292,9 @@ bool SerialDevice::Impl::handleEvent(const string& event, const vector<string> &
       paymentError = PaymentError::unknown;
     } else {
       m_log.e() << "unable to parse payment error" << Logger::endl;
-      if (*m_callbacks.errorCallback) {
-        (*m_callbacks.errorCallback)(SerialError::protocolError);
-      }      
+      if (errorCallback) {
+        errorCallback(make_exception_ptr(Errors::ProtocolError()));
+      }
       return true;
     }
 
