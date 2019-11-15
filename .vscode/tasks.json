@@ -13,7 +13,32 @@
             "options": {
                 "cwd": "/usr/bin"
             }
-        }
+        },
+        {
+            "type": "shell",
+            "label": "g++ build",
+            "command": "g++",
+            "args": [
+                "-g",
+                "${file}",
+                "-o",
+                "${fileDirname}/${fileBasenameNoExtension}"
+            ]
+        },
+        {
+            "label": "msvc build",
+            "type": "shell",
+            "command": "cl.exe",
+            "args": ["/EHsc", "/Zi", "/Fe:", "${fileDirname}/${fileBasenameNoExtension}", "${file}"],
+            "group": {
+              "kind": "build",
+              "isDefault": true
+            },
+            "presentation": {
+              "reveal": "always"
+            },
+            "problemMatcher": "$msCompile"
+          }
     ],
     "version": "2.0.0"
 }
