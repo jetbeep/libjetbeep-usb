@@ -4,7 +4,8 @@ using namespace std;
 using namespace JetBeep;
 
 Cmd::Cmd():m_log("cmd") {
-
+  m_autoDevice.stateCallback = std::bind(&Cmd::onStateChange, this, std::placeholders::_1, std::placeholders::_2);
+  m_autoDevice.paymentErrorCallback = std::bind(&Cmd::onPaymentError, this, std::placeholders::_1);
 }
 
 void Cmd::process(const std::string& cmd, const std::vector<std::string>& params) {
@@ -184,4 +185,35 @@ void Cmd::cancelPayment() {
   } catch (...) {
     m_log.e() << "unable to cancel payment" << Logger::endl;
   }    
+}
+
+void Cmd::onStateChange(AutoDeviceState state, std::exception_ptr error) {
+  switch (state)
+  {
+  case AutoDeviceState::invalid:
+    m_log.i() << "changed state to: invalid" << Logger::endl;
+    break;
+  case AutoDeviceState::sessionClosed:
+    m_log.i() << "changed state to: sessionClosed" << Logger::endl;
+    break;
+  case AutoDeviceState::sessionOpened:
+    m_log.i() << "changed state to: sessionOpened" << Logger::endl;
+    break;
+  case AutoDeviceState::waitingForBarcodes:
+    m_log.i() << "changed state to: waitingForBarcodes" << Logger::endl;
+    break;
+  case AutoDeviceState::waitingForConfirmation:
+    m_log.i() << "changed state to: waitingForConfirmation" << Logger::endl;
+    break;
+  case AutoDeviceState::waitingForPaymentResult:
+    m_log.i() << "changed state to: waitingForPaymentResult" << Logger::endl;
+    break;
+  case AutoDeviceState::waitingForPaymentToken:
+    m_log.i() << "changed state to: waitingForPaymentToken" << Logger::endl;
+    break;
+  }  
+}
+
+void Cmd::onPaymentError(const PaymentError& error) {
+  m_log.e() << "payment error!" << Logger::endl;
 }

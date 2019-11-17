@@ -22,6 +22,9 @@ private:
   void createPaymentToken(const std::vector<std::string>& params);
   void confirmPayment();
   void cancelPayment();
+
+  void onStateChange(JetBeep::AutoDeviceState state, std::exception_ptr error);
+  void onPaymentError(const JetBeep::PaymentError& error);
 };
 
 #endif
