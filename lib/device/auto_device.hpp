@@ -22,7 +22,8 @@ namespace JetBeep {
     waitingForPaymentToken
   };
 
-  typedef std::function<void (AutoDeviceState newState, std::exception_ptr error)> AutoDeviceStateChangeCallback;
+  typedef std::function<void (const PaymentError& error)> AutoDevicePaymentErrorCallback;
+  typedef std::function<void (AutoDeviceState state, std::exception_ptr error)> AutoDeviceStateCallback;
 
   class AutoDevice {
   public:
@@ -43,7 +44,8 @@ namespace JetBeep {
       const PaymentMetadata& metadata = PaymentMetadata());
     void cancelPayment();
     
-    AutoDeviceStateChangeCallback changeStateCallback;
+    AutoDeviceStateCallback stateCallback;
+    AutoDevicePaymentErrorCallback paymentErrorCallback;
 
     AutoDeviceState state();
   private:

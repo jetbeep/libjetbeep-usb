@@ -16,10 +16,10 @@
 #include <functional>
 #include <string>
 
-namespace JetBeep {
+namespace JetBeep {  
   class AutoDevice::Impl {
   public:
-    Impl(AutoDeviceStateChangeCallback *callback);
+    Impl(AutoDeviceStateCallback *stateCallback, AutoDevicePaymentErrorCallback *paymentErrorCallback);
     virtual ~Impl();
 
     void openSession();
@@ -30,21 +30,23 @@ namespace JetBeep {
 
     Promise<void> createPayment(uint32_t amount, const std::string& transactionId, const std::string& cashierId = "", 
       const PaymentMetadata& metadata = PaymentMetadata());    
-    void confirmPayment();
+    void confirmPayment();    
 
     Promise<std::string> createPaymentToken(uint32_t amount, const std::string& transactionId, const std::string& cashierId = "", 
       const PaymentMetadata& metadata = PaymentMetadata());
     void cancelPayment(); 
 
     AutoDeviceState state();
+    
   private:
+    AutoDeviceStateCallback *m_stateCallback;
+    AutoDevicePaymentErrorCallback *m_paymentErrorCallback;    
     Promise<std::vector<Barcode> > m_barcodesPromise;
     Promise<void> m_paymentPromise;
     Promise<std::string> m_paymentTokenPromise;
     DeviceCandidate m_candidate;
     Logger m_log;
-    AutoDeviceState m_state;
-    AutoDeviceStateChangeCallback *m_callback;
+    AutoDeviceState m_state;    
     DeviceDetection m_detection;
     SerialDevice m_device;
     boost::asio::io_service m_io_service;
@@ -52,10 +54,10 @@ namespace JetBeep {
     boost::asio::deadline_timer m_timer;
     std::thread m_thread;
     std::recursive_mutex m_mutex;
-    std::vector<std::function<void ()> > m_pendingOperations;    
+    std::vector<std::function<void ()> > m_pendingOperations;
     
     void onDeviceEvent(const DeviceDetectionEvent& event, const DeviceCandidate& candidate);
-    void notifyStateChange(AutoDeviceState state, std::exception_ptr exception);
+    void changeState(AutoDeviceState state, std::exception_ptr exception = nullptr);
     void resetState();
     void runLoop();
     void handleTimeout(const boost::system::error_code& err);
@@ -65,6 +67,7 @@ namespace JetBeep {
     void onPaymentError(const PaymentError &error);
     void onPaymentSuccess();
     void onPaymentToken(const std::string &token);
+    void rejectPendingOperations();
   };
 }
 

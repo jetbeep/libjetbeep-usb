@@ -42,7 +42,12 @@ namespace JetBeep {
       class IOError: public std::exception {
       public:
         virtual char const* what() const noexcept { return "Input-output error"; } 
-      };      
+      };
+
+      class OperationCancelled: public std::exception {
+      public:
+        virtual char const* what() const noexcept { return "Operation cancelled"; }         
+      };
   }
 }
 
