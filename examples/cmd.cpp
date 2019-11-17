@@ -1,6 +1,7 @@
-#include "cmd.h"
+#include "cmd.hpp"
 #include "../lib/libjetbeep.h"
 #include "../lib/device/device_utils.hpp"
+#include "utils.hpp"
 
 #include <stdlib.h>
 #include <functional>
@@ -16,8 +17,6 @@ Cmd::Cmd()
   m_device.paymentSuccessCallback = bind(&Cmd::paymentSuccessHandler, this);
   m_device.paymentTokenCallback = bind(&Cmd::paymentTokenHandler, this, placeholders::_1);
   m_device.mobileCallback = bind(&Cmd::mobileHandler, this, placeholders::_1);
-  m_device.getCallback = bind(&Cmd::getHandler, this, placeholders::_1);
-  m_device.getStateCallback = bind(&Cmd::getStateHandler, this, placeholders::_1);
 }
 
 void Cmd::process(const string& cmd, const vector<string>& params) {
@@ -48,7 +47,7 @@ void Cmd::process(const string& cmd, const vector<string>& params) {
   } else if (cmd == "set") {
     set(params);
   } else if (cmd == "begin_private" || cmd == "beginprivate") {
-    beginPrivate();
+    beginPrivate(params);
   } else if (cmd == "commit") {
     commit(params);
   } else if (cmd == "getstate" || cmd == "get_state") {
@@ -88,58 +87,66 @@ void Cmd::close() {
 
 void Cmd::resetState() {
   try {
-    m_device.resetState();
-  } catch (const exception& e) {
-    m_log.e() << "unable to reset state: "<< e.what() << Logger::endl;
+    m_device.resetState()
+      .then([&] {
+        m_log.i() << "state reset" << Logger::endl;
+      }).catchError([&] (exception_ptr error) {
+        processError(error);
+      });      
   } catch (...) {
-    m_log.e() << "unable to reset state" << Logger::endl;
+    processError(std::current_exception());
   }   
 }
 
 void Cmd::openSession() {
   try {
-    m_device.openSession([&](const SerialError& error) {
-      if (error != SerialError::noError) {
-        m_log.e() << "open session error: " << static_cast<int>(error) << Logger::endl;
-      }
-    });
-    m_log.i() << "session opened" << Logger::endl;
-  } catch (const exception& e) {
-    m_log.e() << "unable to open session: "<< e.what() << Logger::endl;
+    m_device.openSession()
+      .then([&] {
+        m_log.i() << "session opened" << Logger::endl;
+      }).catchError([&] (exception_ptr error) {
+        processError(error);
+      });    
   } catch (...) {
-    m_log.e() << "unable to open session" << Logger::endl;
-  }  
+    processError(std::current_exception());
+  }
 }
 
 void Cmd::closeSession() {
   try {
-    m_device.closeSession();
-    m_log.i() << "session closed" << Logger::endl;
-  } catch (const exception& e) {
-    m_log.e() << "unable to close session: "<< e.what() << Logger::endl;
+    m_device.closeSession()
+    .then([&] {
+      m_log.i() << "session closed" << Logger::endl;
+    }).catchError([&] (exception_ptr error) {
+      processError(error);
+    });  
   } catch (...) {
-    m_log.e() << "unable to close session" << Logger::endl;
-  } 
+    processError(std::current_exception());
+  }
 }
 
 void Cmd::requestBarcodes() {
   try {
-    m_device.requestBarcodes();
-    m_log.i() << "barcodes requested" << Logger::endl;
-  } catch (const exception& e) {
-    m_log.e() << "unable to request barcodes: "<< e.what() << Logger::endl;
+    m_device.requestBarcodes()
+      .then([&] {
+        m_log.i() << "barcodes ok" << Logger::endl;
+      }).catchError([&] (exception_ptr error) {
+        processError(error);
+      });    
   } catch (...) {
-    m_log.e() << "unable to request barcodes" << Logger::endl;
+    processError(std::current_exception());
   }
 }
 
 void Cmd::cancelBarcodes() {
   try {
-    m_device.cancelBarcodes();
-  } catch (const exception& e) {
-    m_log.e() << "unable to cancelBarcodes: " << e.what() << Logger::endl;
+    m_device.cancelBarcodes()
+      .then([&] {
+        m_log.i() << "barcodes cancelled" << Logger::endl;
+      }).catchError([&] (exception_ptr error) {
+        processError(error);
+      });
   } catch (...) {
-    m_log.e() << "unable to cancelBarcodes" << Logger::endl;
+    processError(std::current_exception());
   }  
 }
 
@@ -156,11 +163,21 @@ void Cmd::createPayment(const vector<string>& params) {
 
   try {
     if (size == 2) {
-      m_device.createPayment(amount, transactionId);
+      m_device.createPayment(amount, transactionId)
+        .then([&] {
+          m_log.i() << "payment created" << Logger::endl;
+        }).catchError([&] (exception_ptr error) {
+          processError(error);
+        });        
     } else {
       auto cashierId = params.at(2);
       if (size == 3) {
-        m_device.createPayment(amount, transactionId, cashierId);
+        m_device.createPayment(amount, transactionId, cashierId)
+          .then([&] {
+            m_log.i() << "payment created" << Logger::endl;
+          }).catchError([&] (exception_ptr error) {
+            processError(error);
+          });        
       } else {
         auto rawMetadata = params.at(3);
         auto splittedMetadata = splitString(rawMetadata, ";");
@@ -176,23 +193,29 @@ void Cmd::createPayment(const vector<string>& params) {
           metadata[keyValue.at(0)] = keyValue.at(1);
         }
 
-        m_device.createPayment(amount, transactionId, cashierId, metadata);
+        m_device.createPayment(amount, transactionId, cashierId, metadata)
+          .then([&] {
+            m_log.i() << "payment created" << Logger::endl;
+          }).catchError([&] (exception_ptr error) {
+            processError(error);
+          });             
       }
     }
-  } catch (const exception& e) {
-    m_log.e() << "unable to create payment: " << e.what() << Logger::endl;
   } catch (...) {
-    m_log.e() << "unable to create payment: " << Logger::endl;
+    processError(std::current_exception());
   }  
 }
 
 void Cmd::cancelPayment() {
   try {
-    m_device.cancelPayment();
-  } catch (const exception& e) {
-    m_log.e() << "unable to cancelPayment: " << e.what() << Logger::endl;
+    m_device.cancelPayment()
+      .then([&] {
+        m_log.i() << "payment cancelled" << Logger::endl;
+      }).catchError([&] (exception_ptr error) {
+        processError(error);
+      });
   } catch (...) {
-    m_log.e() << "unable to cancelPayment" << Logger::endl;
+    processError(std::current_exception());
   }  
 }
 
@@ -209,11 +232,21 @@ void Cmd::createPaymentToken(const vector<string>& params) {
 
   try {
     if (size == 2) {
-      m_device.createPaymentToken(amount, transactionId);
+      m_device.createPaymentToken(amount, transactionId)
+          .then([&] {
+            m_log.i() << "payment token created" << Logger::endl;
+          }).catchError([&] (exception_ptr error) {
+            processError(error);
+          });        
     } else {
       auto cashierId = params.at(2);
       if (size == 3) {
-        m_device.createPaymentToken(amount, transactionId, cashierId);
+        m_device.createPaymentToken(amount, transactionId, cashierId)
+          .then([&] {
+            m_log.i() << "payment token created" << Logger::endl;
+          }).catchError([&] (exception_ptr error) {
+            processError(error);
+          });
       } else {
         auto rawMetadata = params.at(3);
         auto splittedMetadata = splitString(rawMetadata, ";");
@@ -229,13 +262,16 @@ void Cmd::createPaymentToken(const vector<string>& params) {
           metadata[keyValue.at(0)] = keyValue.at(1);
         }
 
-        m_device.createPaymentToken(amount, transactionId, cashierId, metadata);
+        m_device.createPaymentToken(amount, transactionId, cashierId, metadata)
+          .then([&] {
+            m_log.i() << "payment token created" << Logger::endl;
+          }).catchError([&] (exception_ptr error) {
+            processError(error);
+          });        
       }
     }
-  } catch (const exception& e) {
-    m_log.e() << "unable to create payment token: " << e.what() << Logger::endl;
   } catch (...) {
-    m_log.e() << "unable to create payment token: " << Logger::endl;
+    processError(std::current_exception());
   }
 }
 
@@ -247,11 +283,14 @@ void Cmd::get(const vector<string>& params) {
 
   try {
     auto parameter = DeviceUtils::stringToParameter(params[0]);
-    m_device.get(parameter);
-  } catch (const exception& e) {
-    m_log.e() << "unable to get: " << e.what() << Logger::endl;
+    m_device.get(parameter)
+      .then([&] (string result) {
+        m_log.i() << "get: " << result << Logger::endl;
+      }).catchError([&] (exception_ptr error) {
+        processError(error);
+      });    
   } catch (...) {
-    m_log.e() << "unable to get" << Logger::endl;
+    processError(std::current_exception());
   }
 }
 
@@ -264,21 +303,43 @@ void Cmd::set(const vector<string>& params) {
   try {
     auto parameter = DeviceUtils::stringToParameter(params[0]);
     auto value = params[1];
-    m_device.set(parameter, value);
-  } catch (const exception& e) {
-    m_log.e() << "unable to set: " << e.what() << Logger::endl;
+    m_device.set(parameter, value)
+      .then([&] {
+        m_log.i() << "set ok" << Logger::endl;
+      }).catchError([&] (exception_ptr error) {
+        processError(error);
+      });     
   } catch (...) {
-    m_log.e() << "unable to set" << Logger::endl;
+    processError(std::current_exception());
   }
 }
 
-void Cmd::beginPrivate() {
+void Cmd::beginPrivate(const vector<string>& params) {
+  SerialBeginPrivateMode mode;
+
+  if (params.size() != 1) {
+    m_log.e() << "invalid begin private params count: " << params.size() << Logger::endl;
+    return;
+  }
+
+  auto modeString = Utils::toLowerCase(params[0]);
+  if (modeString == "setup") {
+    mode = SerialBeginPrivateMode::setup;
+  } else if (modeString == "config") {
+    mode = SerialBeginPrivateMode::config;
+  } else {
+    m_log.e() << "invalid mode parameter: " << modeString << Logger::endl;
+  }
+
   try {
-    m_device.beginPrivate();
-  } catch (const exception& e) {
-    m_log.e() << "unable to beginPrivate: " << e.what() << Logger::endl;
+    m_device.beginPrivate(mode)
+      .then([&] {
+        m_log.i() << "begin private ok" << Logger::endl;
+      }).catchError([&] (exception_ptr error) {
+        processError(error);
+      });      
   } catch (...) {
-    m_log.e() << "unable to beginPrivate" << Logger::endl;
+    processError(std::current_exception());
   }
 }
 
@@ -290,26 +351,42 @@ void Cmd::commit(const vector<string>& params) {
 
   try {
     auto signature = params[0];
-    m_device.commit(signature);
-  } catch (const exception& e) {
-    m_log.e() << "unable to commit: " << e.what() << Logger::endl;
+    m_device.commit(signature)
+      .then([&] {
+        m_log.i() << "commit ok" << Logger::endl;
+      }).catchError([&] (exception_ptr error) {
+        processError(error);
+      });     
   } catch (...) {
-    m_log.e() << "unable to commit" << Logger::endl;
+    processError(std::current_exception());
   }
 }
 
 void Cmd::getState() {
   try {
-    m_device.getState();
-  } catch (const exception& e) {
-    m_log.e() << "unable to getState: " << e.what() << Logger::endl;
+    m_device.getState()
+      .then([&] (SerialGetStateResult result) {     
+        m_log.i() << "isSessionOpened: " << result.isSessionOpened <<
+        " isBarcodesRequested: " << result.isBarcodesRequested <<
+        " isPaymentCreated: " << result.isPaymentCreated <<
+        " isWaitingForPaymentConfirmation: " << result.isWaitingForPaymentConfirmation <<
+        " isRefundRequested: " << result.isRefundRequested << Logger::endl;
+      }).catchError([&] (exception_ptr error) {
+        processError(error);
+      });    
   } catch (...) {
-    m_log.e() << "unable to getState" << Logger::endl;
+    processError(std::current_exception());
   }
 }
 
-void Cmd::errorHandler(const SerialError &error) {
-	m_log.e() << "device error: " << static_cast<int>(error) << Logger::endl;
+void Cmd::errorHandler(exception_ptr exception) {
+  try {
+    rethrow_exception(exception);
+  } catch (const Errors::IOError& error) {
+    m_log.e() << "device error: " << error.what() << Logger::endl;
+  } catch (const Errors::ProtocolError& error) {
+    m_log.e() << "device error: " << error.what() << Logger::endl;
+  }	
 }
 
 void Cmd::barcodeHandler(const std::vector<Barcode> &barcodes) {
@@ -336,15 +413,18 @@ void Cmd::mobileHandler(const SerialMobileEvent &event) {
 	}
 }
 
-void Cmd::getHandler(const std::string& result) {
-	m_log.i() << "get result: " << result << Logger::endl;
-}
-
-void Cmd::getStateHandler(const SerialGetStateResult& result) {
-  m_log.i() << "session opened: " << result.isSessionOpened 
-    << ", barcodes requested: " << result.isBarcodesRequested 
-    << ", payment created: " << result.isPaymentCreated 
-    << ", waiting for confirmation: " << result.isWaitingForPaymentConfirmation 
-    << ", is refund requested: " << result.isRefundRequested
-    << Logger::endl;
+void Cmd::processError(std::exception_ptr error) {
+  try {
+    rethrow_exception(error);
+  } catch (const Errors::OperationTimeout& error) {
+    m_log.e() << error.what() << Logger::endl;
+  } catch (const Errors::DeviceNotOpened &error) {
+    m_log.e() << error.what() << Logger::endl;
+  } catch (const Errors::OperationInProgress &error) {
+    m_log.e() << error.what() << Logger::endl;
+  } catch (const Errors::InvalidResponse &error) {
+    m_log.e() << error.what() << Logger::endl;
+  } catch (...) {
+    m_log.e() << "unknown exception" << Logger::endl;
+  } 
 }

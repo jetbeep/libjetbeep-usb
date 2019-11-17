@@ -9,7 +9,7 @@ using namespace std;
 
 SerialDevice::SerialDevice() {
   SerialDeviceCallbacks callbacks = {&errorCallback, &barcodesCallback, &paymentErrorCallback, 
-    &paymentSuccessCallback, &paymentTokenCallback, &mobileCallback, &getCallback, &getStateCallback};
+    &paymentSuccessCallback, &paymentTokenCallback, &mobileCallback};
 
   m_impl.reset(new Impl(callbacks));
 }
@@ -18,16 +18,17 @@ SerialDevice::~SerialDevice() {}
 
 void SerialDevice::open(const string& path) { m_impl->open(path); }
 void SerialDevice::close() { m_impl->close(); }
-void SerialDevice::openSession(function<void (const SerialError &)> callback) { m_impl->executeCallback = callback; m_impl->execute("OPEN_SESSION\r\n"); }
-void SerialDevice::closeSession() { m_impl->execute("CLOSE_SESSION\r\n"); }
-void SerialDevice::requestBarcodes() { m_impl->execute("REQUEST_BARCODES\r\n"); }
-void SerialDevice::cancelBarcodes() { m_impl->execute("CANCEL_BARCODES\r\n"); }
 
-void SerialDevice::createPayment(uint32_t amount, const std::string& transactionId, const std::string& cashierId, 
+Promise<void> SerialDevice::openSession() { return m_impl->execute(DeviceResponses::openSession); }
+Promise<void> SerialDevice::closeSession() { return m_impl->execute(DeviceResponses::closeSession, "" , 6000); }
+Promise<void> SerialDevice::requestBarcodes() { return m_impl->execute(DeviceResponses::requestBarcodes); }
+Promise<void> SerialDevice::cancelBarcodes() { return m_impl->execute(DeviceResponses::cancelBarcodes); }
+
+Promise<void> SerialDevice::createPayment(uint32_t amount, const std::string& transactionId, const std::string& cashierId, 
   const PaymentMetadata& metadata) {
     ostringstream ss;
 
-    ss << "CREATE_PAYMENT " << amount << " " << transactionId;
+    ss << amount << " " << transactionId;
 
     if (cashierId != "") {
       ss << " " << cashierId;
@@ -42,15 +43,14 @@ void SerialDevice::createPayment(uint32_t amount, const std::string& transaction
         ss << ";";  
       }
     }
-    ss << "\r\n";    
-    m_impl->execute(ss.str());
+    return m_impl->execute(DeviceResponses::createPayment, ss.str());
 }
 
-void SerialDevice::createPaymentToken(uint32_t amount, const std::string& transactionId, const std::string& cashierId, 
+Promise<void> SerialDevice::createPaymentToken(uint32_t amount, const std::string& transactionId, const std::string& cashierId, 
   const PaymentMetadata &metadata) {
     ostringstream ss;
 
-    ss << "CREATE_PAYMENT_TOKEN " << amount << " " << transactionId;
+    ss << amount << " " << transactionId;
 
     if (cashierId != "") {
       ss << " " << cashierId;
@@ -65,14 +65,28 @@ void SerialDevice::createPaymentToken(uint32_t amount, const std::string& transa
         ss << ";";    
       }
     }
-    ss << "\r\n";    
-    m_impl->execute(ss.str());
+    return m_impl->execute(DeviceResponses::createPaymentToken, ss.str());
 }
 
-void SerialDevice::cancelPayment() { m_impl->execute("CANCEL_PAYMENT\r\n"); }
-void SerialDevice::resetState() { m_impl->execute("RESET_STATE\r\n"); }
-void SerialDevice::get(const DeviceParameter& parameter) { m_impl->execute("GET " + DeviceUtils::parameterToString(parameter) + "\r\n"); }
-void SerialDevice::set(const DeviceParameter& parameter, const std::string &value) { m_impl->execute("SET " + DeviceUtils::parameterToString(parameter) + " " + value + "\r\n"); }
-void SerialDevice::beginPrivate() { m_impl->execute("BEGIN_PRIVATE\r\n"); }
-void SerialDevice::commit(const string& signature) { m_impl->execute("COMMIT " + signature + "\r\n"); }
-void SerialDevice::getState() { m_impl->execute("GETSTATE \r\n"); }
+Promise<void> SerialDevice::cancelPayment() { return m_impl->execute(DeviceResponses::cancelPayment); }
+Promise<void> SerialDevice::resetState() { return m_impl->execute(DeviceResponses::resetState); }
+Promise<string> SerialDevice::get(const DeviceParameter& parameter) { return m_impl->executeString(DeviceResponses::get, DeviceUtils::parameterToString(parameter)); }
+Promise<void> SerialDevice::set(const DeviceParameter& parameter, const std::string &value) { return m_impl->execute(DeviceResponses::set, DeviceUtils::parameterToString(parameter) + " " + value); }
+Promise<void> SerialDevice::commit(const string& signature) { return m_impl->execute(DeviceResponses::commit,signature); }
+Promise<SerialGetStateResult> SerialDevice::getState() { return m_impl->executeGetState(DeviceResponses::getState); }
+
+Promise<void> SerialDevice::beginPrivate(const SerialBeginPrivateMode& mode) {
+  string param;
+  switch (mode) {
+    case SerialBeginPrivateMode::setup:
+      param = "setup";
+      break;
+    case SerialBeginPrivateMode::config:
+      param = "config";
+      break;
+    default:
+      throw std::invalid_argument("invalid argument provided");
+  }
+
+  return m_impl->execute(DeviceResponses::beginPrivate, param);
+}
