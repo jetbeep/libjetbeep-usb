@@ -22,6 +22,9 @@ namespace JetBeep {
     Impl(AutoDeviceStateCallback *stateCallback, AutoDevicePaymentErrorCallback *paymentErrorCallback);
     virtual ~Impl();
 
+    void start();
+    void stop();
+
     void openSession();
     void closeSession();
 

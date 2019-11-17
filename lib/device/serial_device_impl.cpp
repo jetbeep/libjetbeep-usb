@@ -19,6 +19,9 @@ m_thread(&SerialDevice::Impl::runLoop, this), m_work(m_io_service), m_port(m_io_
 SerialDevice::Impl::~Impl() {
   m_io_service.stop();
   m_thread.join();
+  try {
+    m_port.close();
+  } catch (...) {}
 }
 
 void SerialDevice::Impl::open(const string& path) {

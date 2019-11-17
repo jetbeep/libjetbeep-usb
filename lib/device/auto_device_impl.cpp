@@ -24,6 +24,18 @@ AutoDevice::Impl::~Impl() {
   rejectPendingOperations();
 }
 
+void AutoDevice::Impl::start() {
+  m_detection.start();
+}
+
+void AutoDevice::Impl::stop() {
+  m_detection.stop();
+  try {
+    m_device.close();
+  } catch (...) {}
+  m_candidate = DeviceCandidate();  
+}
+
 void AutoDevice::Impl::onDeviceEvent(const DeviceDetectionEvent& event, const DeviceCandidate& candidate) {
   std::lock_guard<recursive_mutex> guard(m_mutex);
 

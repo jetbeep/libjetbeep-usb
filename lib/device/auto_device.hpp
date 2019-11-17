@@ -30,6 +30,8 @@ namespace JetBeep {
     AutoDevice();
     virtual ~AutoDevice();
 
+    void start();
+    void stop();
     void openSession();
     void closeSession();
 
