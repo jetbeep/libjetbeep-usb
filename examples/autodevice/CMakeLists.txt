@@ -1,4 +1,4 @@
-add_executable(autodevice main.cpp)
+add_executable(autodevice main.cpp cmd.cpp)
 target_include_directories(autodevice PUBLIC ${BOOST_SOURCE_DIR})
 
 target_link_libraries(autodevice $<TARGET_OBJECTS:jetbeep_obj>)

@@ -1,4 +1,4 @@
-add_executable(detection_and_serial main.cpp cmd.cpp promise_test.cpp utils.cpp)
+add_executable(detection_and_serial main.cpp cmd.cpp promise_test.cpp)
 target_include_directories(detection_and_serial PUBLIC ${BOOST_SOURCE_DIR})
 
 target_link_libraries(detection_and_serial $<TARGET_OBJECTS:jetbeep_obj>)

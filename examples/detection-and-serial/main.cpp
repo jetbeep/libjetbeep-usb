@@ -4,7 +4,6 @@
 #include "cmd.hpp"
 #include "promise_test.hpp"
 #include "../../lib/libjetbeep.hpp"
-#include "utils.hpp"
 
 
 using namespace std;
@@ -46,7 +45,7 @@ int main() {
 
 		getline(cin, input);
 		input = Utils::toLowerCase(input);
-		auto splitted = splitString(input);
+		auto splitted = Utils::splitString(input);
 
 		if (splitted.empty())	{
 			l.e() << "invalid input" << Logger::endl;

@@ -1,5 +1,5 @@
 #include "serial_device_impl.hpp"
-#include "../utils/split.hpp"
+#include "../utils/utils.hpp"
 #include "device_utils.hpp"
 
 using namespace std;
@@ -75,7 +75,7 @@ void SerialDevice::Impl::readCompleted(const boost::system::error_code& error) {
 
 void SerialDevice::Impl::handleResponse(const string &response) {
   auto errorCallback = *m_callbacks.errorCallback;
-  auto splitted = splitString(response);
+  auto splitted = Utils::splitString(response);
   lock_guard<recursive_mutex> guard(m_mutex);
 
   m_log.d() << "nrf rx: " << response << Logger::endl;
