@@ -4,7 +4,8 @@
 using namespace std;
 using namespace JetBeep;
 
-AutoDevice::AutoDevice(): m_impl(new AutoDevice::Impl(&stateCallback, &paymentErrorCallback)) {
+AutoDevice::AutoDevice()
+:m_impl(new AutoDevice::Impl(&stateCallback, &paymentErrorCallback, &mobileCallback)) {
 
 }
 AutoDevice::~AutoDevice() {}
@@ -53,4 +54,8 @@ void AutoDevice::cancelPayment() {
 
 AutoDeviceState AutoDevice::state() {
   return m_impl->state();
+}
+
+bool AutoDevice::isMobileConnected() {
+  return m_impl->isMobileConnected();
 }

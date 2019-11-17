@@ -24,6 +24,7 @@ namespace JetBeep {
 
   typedef std::function<void (const PaymentError& error)> AutoDevicePaymentErrorCallback;
   typedef std::function<void (AutoDeviceState state, std::exception_ptr error)> AutoDeviceStateCallback;
+  typedef SerialMobileCallback AutoDeviceMobileCallback;
 
   class AutoDevice {
   public:
@@ -46,8 +47,11 @@ namespace JetBeep {
       const PaymentMetadata& metadata = PaymentMetadata());
     void cancelPayment();
     
+    bool isMobileConnected();
+
     AutoDeviceStateCallback stateCallback;
     AutoDevicePaymentErrorCallback paymentErrorCallback;
+    AutoDeviceMobileCallback mobileCallback;
 
     AutoDeviceState state();
   private:

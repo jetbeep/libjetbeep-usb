@@ -22,9 +22,11 @@ private:
   void createPaymentToken(const std::vector<std::string>& params);
   void confirmPayment();
   void cancelPayment();
+  void connectionState();
 
   void onStateChange(JetBeep::AutoDeviceState state, std::exception_ptr error);
   void onPaymentError(const JetBeep::PaymentError& error);
+  void onMobileEvent(const JetBeep::SerialMobileEvent &event);
 };
 
 #endif

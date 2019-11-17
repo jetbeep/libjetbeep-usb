@@ -6,6 +6,7 @@ using namespace JetBeep;
 Cmd::Cmd():m_log("cmd") {
   m_autoDevice.stateCallback = std::bind(&Cmd::onStateChange, this, std::placeholders::_1, std::placeholders::_2);
   m_autoDevice.paymentErrorCallback = std::bind(&Cmd::onPaymentError, this, std::placeholders::_1);
+  m_autoDevice.mobileCallback = std::bind(&Cmd::onMobileEvent, this, std::placeholders::_1);
 }
 
 void Cmd::process(const std::string& cmd, const std::vector<std::string>& params) {
@@ -29,6 +30,8 @@ void Cmd::process(const std::string& cmd, const std::vector<std::string>& params
     confirmPayment();
   } else if (cmd == "cancel_payment" || cmd == "cancelpayment") {
     cancelPayment();
+  } else if (cmd == "connection_state" || cmd == "connectionstate") {
+    connectionState();
   }
 }
 
@@ -187,6 +190,17 @@ void Cmd::cancelPayment() {
   }    
 }
 
+void Cmd::connectionState() {
+  string connectionState;
+  if (m_autoDevice.isMobileConnected()) {
+    connectionState = "true";
+  } else {
+    connectionState = "false";
+  }
+
+  m_log.i() << "mobile connected: " << connectionState << Logger::endl;
+}
+
 void Cmd::onStateChange(AutoDeviceState state, std::exception_ptr error) {
   switch (state)
   {
@@ -216,4 +230,12 @@ void Cmd::onStateChange(AutoDeviceState state, std::exception_ptr error) {
 
 void Cmd::onPaymentError(const PaymentError& error) {
   m_log.e() << "payment error!" << Logger::endl;
+}
+
+void Cmd::onMobileEvent(const JetBeep::SerialMobileEvent &event) {
+  if (event == SerialMobileEvent::connected) {
+    m_log.i() << "connected" << Logger::endl;
+  } else {
+    m_log.e() << "disconnected" << Logger::endl;
+  }  
 }

@@ -9,7 +9,7 @@ using namespace boost::asio;
 
 SerialDevice::Impl::Impl(const SerialDeviceCallbacks& callbacks):
 m_thread(&SerialDevice::Impl::runLoop, this), m_work(m_io_service), m_port(m_io_service),
- m_callbacks(callbacks), m_log("device"), m_state(SerialDeviceState::idle), m_timer(m_io_service) {
+ m_callbacks(callbacks), m_log("serial_device"), m_state(SerialDeviceState::idle), m_timer(m_io_service) {
   // These promises should be already resolved\rejected in constructor to make handleResponse, handleResult, etc functions work properly   
   m_executePromise.reject(make_exception_ptr(Errors::InvalidResponse()));
   m_executeStringPromise.reject(make_exception_ptr(Errors::InvalidResponse()));

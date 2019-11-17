@@ -19,7 +19,8 @@
 namespace JetBeep {  
   class AutoDevice::Impl {
   public:
-    Impl(AutoDeviceStateCallback *stateCallback, AutoDevicePaymentErrorCallback *paymentErrorCallback);
+    Impl(AutoDeviceStateCallback *stateCallback, AutoDevicePaymentErrorCallback *paymentErrorCallback,
+      SerialMobileCallback *mobileCallback);
     virtual ~Impl();
 
     void start();
@@ -40,10 +41,12 @@ namespace JetBeep {
     void cancelPayment(); 
 
     AutoDeviceState state();
-    
+    bool isMobileConnected();    
   private:
+    bool m_mobileConnected;
     AutoDeviceStateCallback *m_stateCallback;
-    AutoDevicePaymentErrorCallback *m_paymentErrorCallback;    
+    AutoDevicePaymentErrorCallback *m_paymentErrorCallback;
+    SerialMobileCallback *m_mobileCallback;    
     Promise<std::vector<Barcode> > m_barcodesPromise;
     Promise<void> m_paymentPromise;
     Promise<std::string> m_paymentTokenPromise;
@@ -70,6 +73,7 @@ namespace JetBeep {
     void onPaymentError(const PaymentError &error);
     void onPaymentSuccess();
     void onPaymentToken(const std::string &token);
+    void onMobileConnectionChange(const SerialMobileEvent &event);
     void rejectPendingOperations();
   };
 }

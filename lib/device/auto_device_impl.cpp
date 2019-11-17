@@ -7,15 +7,17 @@ using namespace boost;
 using namespace std;
 using namespace JetBeep;
 
-AutoDevice::Impl::Impl(AutoDeviceStateCallback *stateCallback, AutoDevicePaymentErrorCallback *paymentErrorCallback)
-: m_stateCallback(stateCallback), m_paymentErrorCallback(paymentErrorCallback),
-   m_state(AutoDeviceState::invalid), m_log("autodevice"), m_thread(&AutoDevice::Impl::runLoop, this),
-  m_work(m_io_service), m_timer(m_io_service) {
+AutoDevice::Impl::Impl(AutoDeviceStateCallback *stateCallback, AutoDevicePaymentErrorCallback *paymentErrorCallback, 
+  SerialMobileCallback *mobileCallback)
+: m_stateCallback(stateCallback), m_paymentErrorCallback(paymentErrorCallback), m_mobileCallback(mobileCallback),
+  m_state(AutoDeviceState::invalid), m_log("autodevice"), m_thread(&AutoDevice::Impl::runLoop, this),
+  m_work(m_io_service), m_timer(m_io_service), m_mobileConnected(false) {
   m_detection.callback = std::bind(&AutoDevice::Impl::onDeviceEvent, this, std::placeholders::_1, std::placeholders::_2);
   m_device.barcodesCallback = std::bind(&AutoDevice::Impl::onBarcodes, this, std::placeholders::_1);
   m_device.paymentErrorCallback = std::bind(&AutoDevice::Impl::onPaymentError, this, std::placeholders::_1);
   m_device.paymentSuccessCallback = std::bind(&AutoDevice::Impl::onPaymentSuccess, this);
   m_device.paymentTokenCallback = std::bind(&AutoDevice::Impl::onPaymentToken, this, std::placeholders::_1);
+  m_device.mobileCallback = std::bind(&AutoDevice::Impl::onMobileConnectionChange, this, std::placeholders::_1);
 }
 
 AutoDevice::Impl::~Impl() {
@@ -73,6 +75,7 @@ void AutoDevice::Impl::onDeviceEvent(const DeviceDetectionEvent& event, const De
 void AutoDevice::Impl::resetState() {
   m_pendingOperations.clear();
   rejectPendingOperations();
+  m_mobileConnected = false;
 
   m_device.resetState()
     .then([&] {
@@ -147,7 +150,7 @@ Promise<std::vector<Barcode> > AutoDevice::Impl::requestBarcodes() {
   m_barcodesPromise = Promise<std::vector<Barcode> >();
 
   auto lambda = [&] {
-      m_device.closeSession()
+      m_device.requestBarcodes()
       .then([&] {
         executeNextOperation();
       }).catchError([&] (exception_ptr) {
@@ -296,7 +299,7 @@ void AutoDevice::Impl::onBarcodes(const std::vector<Barcode> &barcodes) {
     return;
   }
 
-  changeState(AutoDeviceState::sessionClosed);
+  changeState(AutoDeviceState::sessionOpened);
 
   if (m_barcodesPromise.state() != PromiseState::undefined) {
     m_log.e() << "invalid promise state while received barcodes" << Logger::endl;
@@ -347,6 +350,20 @@ void AutoDevice::Impl::onPaymentToken(const std::string &token) {
   m_paymentTokenPromise.resolve(token);  
 }
 
+void AutoDevice::Impl::onMobileConnectionChange(const SerialMobileEvent &event) {
+  auto mobileCallback = *m_mobileCallback;
+
+  if (event == SerialMobileEvent::connected) {
+    m_mobileConnected = true;
+  } else {
+    m_mobileConnected = false;
+  }
+
+  if (mobileCallback) {
+    mobileCallback(event);
+  }
+}
+
 void AutoDevice::Impl::rejectPendingOperations() {
   std::lock_guard<recursive_mutex> guard(m_mutex);
 
@@ -379,4 +396,8 @@ void AutoDevice::Impl::changeState(AutoDeviceState state, exception_ptr exceptio
 
 AutoDeviceState AutoDevice::Impl::state() {
   return m_state;
+}
+
+bool AutoDevice::Impl::isMobileConnected() {
+  return m_mobileConnected;
 }
