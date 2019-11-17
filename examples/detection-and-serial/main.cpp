@@ -3,7 +3,7 @@
 #include <cctype>
 #include "cmd.hpp"
 #include "promise_test.hpp"
-#include "../../lib/libjetbeep.h"
+#include "../../lib/libjetbeep.hpp"
 #include "utils.hpp"
 
 

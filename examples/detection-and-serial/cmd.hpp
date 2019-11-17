@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 #include <exception>
-#include "../../lib/libjetbeep.h"
+#include "../../lib/libjetbeep.hpp"
 
 class Cmd {
   public:
