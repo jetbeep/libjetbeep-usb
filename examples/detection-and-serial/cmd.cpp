@@ -1,6 +1,6 @@
 #include "cmd.hpp"
-#include "../lib/libjetbeep.h"
-#include "../lib/device/device_utils.hpp"
+#include "../../lib/libjetbeep.h"
+#include "../../lib/device/device_utils.hpp"
 #include "utils.hpp"
 
 #include <stdlib.h>

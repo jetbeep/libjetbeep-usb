@@ -5,4 +5,4 @@ add_definitions("-std=c++17")
 
 add_subdirectory(lib)
 
-add_subdirectory(examples)
+add_subdirectory(examples/detection-and-serial)

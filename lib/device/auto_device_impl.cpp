@@ -168,8 +168,8 @@ void AutoDevice::Impl::cancelBarcodes() {
   enqueueOperation(lambda);
 }
 
-Promise<void> AutoDevice::Impl::createPayment(uint32_t amount, const std::string& transactionId, const std::string& cashierId, 
-  const PaymentMetadata& metadata) {
+Promise<void> AutoDevice::Impl::createPayment(uint32_t amount, const std::string& transactionId, 
+  const std::string& cashierId, const PaymentMetadata& metadata) {
   std::lock_guard<recursive_mutex> guard(m_mutex);
 
   if (m_state != AutoDeviceState::sessionOpened) {
@@ -193,8 +193,8 @@ Promise<void> AutoDevice::Impl::createPayment(uint32_t amount, const std::string
   return m_paymentPromise;  
 }
 
-Promise<std::string> AutoDevice::Impl::createPaymentToken(uint32_t amount, const std::string& transactionId, const std::string& cashierId, 
-  const PaymentMetadata& metadata) {
+Promise<std::string> AutoDevice::Impl::createPaymentToken(uint32_t amount, const std::string& transactionId, 
+  const std::string& cashierId, const PaymentMetadata& metadata) {
   std::lock_guard<recursive_mutex> guard(m_mutex);
 
 if (m_state != AutoDeviceState::sessionOpened) {
