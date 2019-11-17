@@ -74,8 +74,7 @@ void AutoDevice::Impl::onDeviceEvent(const DeviceDetectionEvent& event, const De
 
 void AutoDevice::Impl::resetState() {
   m_pendingOperations.clear();
-  rejectPendingOperations();
-  m_mobileConnected = false;
+  rejectPendingOperations();  
 
   m_device.resetState()
     .then([&] {
@@ -263,7 +262,7 @@ void AutoDevice::Impl::cancelPayment() {
     throw Errors::InvalidState();
   }
 
-  changeState(AutoDeviceState::sessionClosed);
+  changeState(AutoDeviceState::sessionOpened);
   auto lambda = [&] {
       m_device.cancelPayment()
       .then([&] {
@@ -368,6 +367,7 @@ void AutoDevice::Impl::rejectPendingOperations() {
   std::lock_guard<recursive_mutex> guard(m_mutex);
 
   m_timer.cancel();
+  m_mobileConnected = false;
 
   if (m_paymentPromise.state() == PromiseState::undefined) {
     m_paymentPromise.reject(make_exception_ptr(Errors::OperationCancelled()));
