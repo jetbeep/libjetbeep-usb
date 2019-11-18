@@ -20,7 +20,7 @@ namespace JetBeep {
   class AutoDevice::Impl {
   public:
     Impl(AutoDeviceStateCallback *stateCallback, AutoDevicePaymentErrorCallback *paymentErrorCallback,
-      SerialMobileCallback *mobileCallback);
+      SerialMobileCallback *mobileCallback, IOContext context);
     virtual ~Impl();
 
     void start();
@@ -43,6 +43,7 @@ namespace JetBeep {
     AutoDeviceState state();
     bool isMobileConnected();    
   private:
+    IOContext m_context;
     bool m_mobileConnected;
     AutoDeviceStateCallback *m_stateCallback;
     AutoDevicePaymentErrorCallback *m_paymentErrorCallback;
@@ -55,17 +56,13 @@ namespace JetBeep {
     AutoDeviceState m_state;    
     DeviceDetection m_detection;
     SerialDevice m_device;
-    boost::asio::io_service m_io_service;
-    boost::asio::io_service::work m_work;
     boost::asio::deadline_timer m_timer;
-    std::thread m_thread;
     std::recursive_mutex m_mutex;
     std::vector<std::function<void ()> > m_pendingOperations;
     
     void onDeviceEvent(const DeviceDetectionEvent& event, const DeviceCandidate& candidate);
     void changeState(AutoDeviceState state, std::exception_ptr exception = nullptr);
     void resetState();
-    void runLoop();
     void handleTimeout(const boost::system::error_code& err);
     void executeNextOperation();
     void enqueueOperation(const std::function<void ()>& callback);

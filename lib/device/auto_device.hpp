@@ -1,13 +1,14 @@
 #ifndef JETBEEP_AUTODEVICE__H
 #define JETBEEP_AUTODEVICE__H
 
-#include <string>
+#include <exception>
 #include <functional>
 #include <memory>
-#include <exception>
+#include <string>
 
 #include "../utils/promise.hpp"
 #include "device_types.hpp"
+#include "../io/iocontext.hpp"
 
 namespace JetBeep {
   enum class AutoDeviceState {
@@ -22,13 +23,13 @@ namespace JetBeep {
     waitingForPaymentToken
   };
 
-  typedef std::function<void (const PaymentError& error)> AutoDevicePaymentErrorCallback;
-  typedef std::function<void (AutoDeviceState state, std::exception_ptr error)> AutoDeviceStateCallback;
+  typedef std::function<void(const PaymentError& error)> AutoDevicePaymentErrorCallback;
+  typedef std::function<void(AutoDeviceState state, std::exception_ptr error)> AutoDeviceStateCallback;
   typedef SerialMobileCallback AutoDeviceMobileCallback;
 
   class AutoDevice {
   public:
-    AutoDevice();
+    AutoDevice(IOContext context = IOContext::context);
     virtual ~AutoDevice();
 
     void start();
@@ -39,14 +40,12 @@ namespace JetBeep {
     Promise<std::vector<Barcode>> requestBarcodes();
     void cancelBarcodes();
 
-    Promise<void> createPayment(uint32_t amount, const std::string& transactionId, const std::string& cashierId = "", 
-      const PaymentMetadata& metadata = PaymentMetadata());    
+    Promise<void> createPayment(uint32_t amount, const std::string& transactionId, const std::string& cashierId = "", const PaymentMetadata& metadata = PaymentMetadata());
     void confirmPayment();
 
-    Promise<std::string> createPaymentToken(uint32_t amount, const std::string& transactionId, const std::string& cashierId = "", 
-      const PaymentMetadata& metadata = PaymentMetadata());
+    Promise<std::string> createPaymentToken(uint32_t amount, const std::string& transactionId, const std::string& cashierId = "", const PaymentMetadata& metadata = PaymentMetadata());
     void cancelPayment();
-    
+
     bool isMobileConnected();
 
     AutoDeviceStateCallback stateCallback;
@@ -54,10 +53,11 @@ namespace JetBeep {
     AutoDeviceMobileCallback mobileCallback;
 
     AutoDeviceState state();
+
   private:
     class Impl;
     std::unique_ptr<Impl> m_impl;
   };
-}
+} // namespace JetBeep
 
 #endif

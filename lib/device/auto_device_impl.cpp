@@ -1,5 +1,6 @@
 #include "auto_device_impl.hpp"
 #include "device_errors.hpp"
+#include "../io/iocontext_impl.hpp"
 
 #include <functional>
 
@@ -8,10 +9,10 @@ using namespace std;
 using namespace JetBeep;
 
 AutoDevice::Impl::Impl(AutoDeviceStateCallback *stateCallback, AutoDevicePaymentErrorCallback *paymentErrorCallback, 
-  SerialMobileCallback *mobileCallback)
-: m_stateCallback(stateCallback), m_paymentErrorCallback(paymentErrorCallback), m_mobileCallback(mobileCallback),
-  m_state(AutoDeviceState::invalid), m_log("autodevice"), m_thread(&AutoDevice::Impl::runLoop, this),
-  m_work(m_io_service), m_timer(m_io_service), m_mobileConnected(false) {
+  SerialMobileCallback *mobileCallback, IOContext context)
+: m_context(context), m_stateCallback(stateCallback), m_paymentErrorCallback(paymentErrorCallback), 
+  m_mobileCallback(mobileCallback), m_state(AutoDeviceState::invalid), m_log("autodevice"), 
+  m_timer(context.m_impl->ioService), m_mobileConnected(false) {
   m_detection.callback = std::bind(&AutoDevice::Impl::onDeviceEvent, this, std::placeholders::_1, std::placeholders::_2);
   m_device.barcodesCallback = std::bind(&AutoDevice::Impl::onBarcodes, this, std::placeholders::_1);
   m_device.paymentErrorCallback = std::bind(&AutoDevice::Impl::onPaymentError, this, std::placeholders::_1);
@@ -21,8 +22,6 @@ AutoDevice::Impl::Impl(AutoDeviceStateCallback *stateCallback, AutoDevicePayment
 }
 
 AutoDevice::Impl::~Impl() {
-  m_io_service.stop();
-  m_thread.join();
   rejectPendingOperations();
 }
 
@@ -382,15 +381,11 @@ void AutoDevice::Impl::rejectPendingOperations() {
   }  
 }
 
-void AutoDevice::Impl::runLoop() {
-  m_io_service.run();
-}
-
 void AutoDevice::Impl::changeState(AutoDeviceState state, exception_ptr exception) {
   std::lock_guard<recursive_mutex> guard(m_mutex);  
   m_state = state;
   
-  m_io_service.post([&, state, exception] {
+  m_context.m_impl->ioService.post([&, state, exception] {
     auto stateCallback = *m_stateCallback;
     if (stateCallback) {
       stateCallback(state, exception);
