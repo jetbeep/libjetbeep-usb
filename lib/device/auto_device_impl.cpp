@@ -1,6 +1,6 @@
 #include "auto_device_impl.hpp"
-#include "device_errors.hpp"
 #include "../io/iocontext_impl.hpp"
+#include "device_errors.hpp"
 
 #include <functional>
 
@@ -8,11 +8,15 @@ using namespace boost;
 using namespace std;
 using namespace JetBeep;
 
-AutoDevice::Impl::Impl(AutoDeviceStateCallback *stateCallback, AutoDevicePaymentErrorCallback *paymentErrorCallback, 
-  SerialMobileCallback *mobileCallback, IOContext context)
-: m_context(context), m_stateCallback(stateCallback), m_paymentErrorCallback(paymentErrorCallback), 
-  m_mobileCallback(mobileCallback), m_state(AutoDeviceState::invalid), m_log("autodevice"), 
-  m_timer(context.m_impl->ioService), m_mobileConnected(false) {
+AutoDevice::Impl::Impl(AutoDeviceStateCallback* stateCallback, AutoDevicePaymentErrorCallback* paymentErrorCallback, SerialMobileCallback* mobileCallback, IOContext context)
+  : m_context(context),
+    m_stateCallback(stateCallback),
+    m_paymentErrorCallback(paymentErrorCallback),
+    m_mobileCallback(mobileCallback),
+    m_state(AutoDeviceState::invalid),
+    m_log("autodevice"),
+    m_timer(context.m_impl->ioService),
+    m_mobileConnected(false) {
   m_detection.callback = std::bind(&AutoDevice::Impl::onDeviceEvent, this, std::placeholders::_1, std::placeholders::_2);
   m_device.barcodesCallback = std::bind(&AutoDevice::Impl::onBarcodes, this, std::placeholders::_1);
   m_device.paymentErrorCallback = std::bind(&AutoDevice::Impl::onPaymentError, this, std::placeholders::_1);
@@ -33,57 +37,55 @@ void AutoDevice::Impl::stop() {
   m_detection.stop();
   try {
     m_device.close();
-  } catch (...) {}
+  } catch (...) {
+  }
   m_candidate = DeviceCandidate();
   rejectPendingOperations();
-  changeState(AutoDeviceState::invalid);  
+  changeState(AutoDeviceState::invalid);
 }
 
 void AutoDevice::Impl::onDeviceEvent(const DeviceDetectionEvent& event, const DeviceCandidate& candidate) {
   std::lock_guard<recursive_mutex> guard(m_mutex);
 
   switch (event) {
-    case DeviceDetectionEvent::added:
-        if (m_state != AutoDeviceState::invalid) {
-          m_log.w() << "detected additional device in the system, ignoring.." << Logger::endl;
-          return;
-        }
+  case DeviceDetectionEvent::added:
+    if (m_state != AutoDeviceState::invalid) {
+      m_log.w() << "detected additional device in the system, ignoring.." << Logger::endl;
+      return;
+    }
 
-        try {
-          m_device.open(candidate.path);
-          m_candidate = candidate;
-          resetState();
-        } catch (...) {
-          m_log.e() << "unable to open device!" << Logger::endl;
-        }
-      break;
-    case DeviceDetectionEvent::removed:
-      if (m_candidate != candidate) {
-        return;
-      }
+    try {
+      m_device.open(candidate.path);
+      m_candidate = candidate;
+      resetState();
+    } catch (...) {
+      m_log.e() << "unable to open device!" << Logger::endl;
+    }
+    break;
+  case DeviceDetectionEvent::removed:
+    if (m_candidate != candidate) {
+      return;
+    }
 
-      try {
-        m_device.close();          
-      } catch (...) {
-        m_log.e() << "unable to close device!" << Logger::endl;
-      }
-      rejectPendingOperations();      
-      changeState(AutoDeviceState::invalid, make_exception_ptr(Errors::DeviceLost()));
-      break;
+    try {
+      m_device.close();
+    } catch (...) {
+      m_log.e() << "unable to close device!" << Logger::endl;
+    }
+    rejectPendingOperations();
+    changeState(AutoDeviceState::invalid, make_exception_ptr(Errors::DeviceLost()));
+    break;
   }
 }
 
 void AutoDevice::Impl::resetState() {
   m_pendingOperations.clear();
-  rejectPendingOperations();  
+  rejectPendingOperations();
 
-  m_device.resetState()
-    .then([&] {
-    changeState(AutoDeviceState::sessionClosed, nullptr);
-  }).catchError([&] (exception_ptr exception) {
+  m_device.resetState().then([&] { changeState(AutoDeviceState::sessionClosed, nullptr); }).catchError([&](exception_ptr exception) {
     m_log.e() << "unable to reset state!" << Logger::endl;
     if (m_state != AutoDeviceState::invalid) {
-      changeState(AutoDeviceState::invalid, exception);      
+      changeState(AutoDeviceState::invalid, exception);
     }
     m_timer.expires_from_now(boost::posix_time::millisec(2000));
     m_timer.async_wait(boost::bind(&AutoDevice::Impl::handleTimeout, this, asio::placeholders::error));
@@ -93,7 +95,7 @@ void AutoDevice::Impl::resetState() {
 void AutoDevice::Impl::handleTimeout(const boost::system::error_code& err) {
   std::lock_guard<recursive_mutex> guard(m_mutex);
 
-  if (err == boost::asio::error::operation_aborted) {    
+  if (err == boost::asio::error::operation_aborted) {
     return;
   }
   m_log.i() << "trying to issue reset state one more time..." << Logger::endl;
@@ -105,16 +107,13 @@ void AutoDevice::Impl::openSession() {
 
   if (m_state != AutoDeviceState::sessionClosed) {
     throw Errors::InvalidState();
-  } 
+  }
   changeState(AutoDeviceState::sessionOpened);
   auto lambda = [&] {
-    m_device.openSession()
-      .then([&] {
-        executeNextOperation();
-      }).catchError([&] (exception_ptr) {
-        m_log.e() << "open session error" << Logger::endl;
-        resetState();
-      });
+    m_device.openSession().then([&] { executeNextOperation(); }).catchError([&](exception_ptr) {
+      m_log.e() << "open session error" << Logger::endl;
+      resetState();
+    });
   };
 
   enqueueOperation(lambda);
@@ -128,35 +127,29 @@ void AutoDevice::Impl::closeSession() {
   }
   changeState(AutoDeviceState::sessionClosed);
   auto lambda = [&] {
-    m_device.closeSession()
-      .then([&] {
-        executeNextOperation();
-      }).catchError([&] (exception_ptr) {
-        m_log.e() << "close session error" << Logger::endl;
-        resetState();
-      });
+    m_device.closeSession().then([&] { executeNextOperation(); }).catchError([&](exception_ptr) {
+      m_log.e() << "close session error" << Logger::endl;
+      resetState();
+    });
   };
 
   enqueueOperation(lambda);
 }
 
-Promise<std::vector<Barcode> > AutoDevice::Impl::requestBarcodes() {
+Promise<std::vector<Barcode>> AutoDevice::Impl::requestBarcodes() {
   std::lock_guard<recursive_mutex> guard(m_mutex);
 
   if (m_state != AutoDeviceState::sessionOpened) {
     throw Errors::InvalidState();
   }
   changeState(AutoDeviceState::waitingForBarcodes);
-  m_barcodesPromise = Promise<std::vector<Barcode> >();
+  m_barcodesPromise = Promise<std::vector<Barcode>>();
 
   auto lambda = [&] {
-      m_device.requestBarcodes()
-      .then([&] {
-        executeNextOperation();
-      }).catchError([&] (exception_ptr) {
-        m_log.e() << "close session error" << Logger::endl;
-        resetState();
-      });
+    m_device.requestBarcodes().then([&] { executeNextOperation(); }).catchError([&](exception_ptr) {
+      m_log.e() << "close session error" << Logger::endl;
+      resetState();
+    });
   };
 
   enqueueOperation(lambda);
@@ -171,66 +164,55 @@ void AutoDevice::Impl::cancelBarcodes() {
   }
   changeState(AutoDeviceState::sessionOpened);
   auto lambda = [&] {
-    m_device.cancelBarcodes()
-      .then([&] {
-        executeNextOperation();
-      }).catchError([&] (exception_ptr) {
-        m_log.e() << "cancel barcodes error" << Logger::endl;
-        resetState();
-      });
+    m_device.cancelBarcodes().then([&] { executeNextOperation(); }).catchError([&](exception_ptr) {
+      m_log.e() << "cancel barcodes error" << Logger::endl;
+      resetState();
+    });
   };
 
   enqueueOperation(lambda);
 }
 
-Promise<void> AutoDevice::Impl::createPayment(uint32_t amount, const std::string& transactionId, 
-  const std::string& cashierId, const PaymentMetadata& metadata) {
+Promise<void> AutoDevice::Impl::createPayment(uint32_t amount, const std::string& transactionId, const std::string& cashierId, const PaymentMetadata& metadata) {
   std::lock_guard<recursive_mutex> guard(m_mutex);
 
   if (m_state != AutoDeviceState::sessionOpened) {
-    throw Errors::InvalidState();    
+    throw Errors::InvalidState();
   }
 
   changeState(AutoDeviceState::waitingForPaymentResult);
   m_paymentPromise = Promise<void>();
 
   auto lambda = [&, amount, transactionId, cashierId, metadata] {
-    m_device.createPayment(amount, transactionId, cashierId, metadata)
-      .then([&] {
-        executeNextOperation();
-      }).catchError([&] (exception_ptr) {
-        m_log.e() << "create payment error" << Logger::endl;
-        resetState();
-      });
+    m_device.createPayment(amount, transactionId, cashierId, metadata).then([&] { executeNextOperation(); }).catchError([&](exception_ptr) {
+      m_log.e() << "create payment error" << Logger::endl;
+      resetState();
+    });
   };
 
   enqueueOperation(lambda);
-  return m_paymentPromise;  
+  return m_paymentPromise;
 }
 
-Promise<std::string> AutoDevice::Impl::createPaymentToken(uint32_t amount, const std::string& transactionId, 
-  const std::string& cashierId, const PaymentMetadata& metadata) {
+Promise<std::string> AutoDevice::Impl::createPaymentToken(uint32_t amount, const std::string& transactionId, const std::string& cashierId, const PaymentMetadata& metadata) {
   std::lock_guard<recursive_mutex> guard(m_mutex);
 
-if (m_state != AutoDeviceState::sessionOpened) {
-    throw Errors::InvalidState();    
+  if (m_state != AutoDeviceState::sessionOpened) {
+    throw Errors::InvalidState();
   }
 
   changeState(AutoDeviceState::waitingForPaymentToken);
   m_paymentTokenPromise = Promise<string>();
 
   auto lambda = [&, amount, transactionId, cashierId, metadata] {
-    m_device.createPaymentToken(amount, transactionId, cashierId, metadata)
-      .then([&] {
-        executeNextOperation();
-      }).catchError([&] (exception_ptr) {
-        m_log.e() << "cancel barcodes error" << Logger::endl;
-        resetState();
-      });
+    m_device.createPaymentToken(amount, transactionId, cashierId, metadata).then([&] { executeNextOperation(); }).catchError([&](exception_ptr) {
+      m_log.e() << "cancel barcodes error" << Logger::endl;
+      resetState();
+    });
   };
 
   enqueueOperation(lambda);
-  return m_paymentTokenPromise;  
+  return m_paymentTokenPromise;
 }
 
 void AutoDevice::Impl::confirmPayment() {
@@ -242,45 +224,37 @@ void AutoDevice::Impl::confirmPayment() {
 
   changeState(AutoDeviceState::sessionClosed);
   auto lambda = [&] {
-      m_device.confirmPayment()
-      .then([&] {
-        executeNextOperation();
-      }).catchError([&] (exception_ptr) {
-        m_log.e() << "confirm payment error" << Logger::endl;
-        resetState();
-      });
+    m_device.confirmPayment().then([&] { executeNextOperation(); }).catchError([&](exception_ptr) {
+      m_log.e() << "confirm payment error" << Logger::endl;
+      resetState();
+    });
   };
 
-  enqueueOperation(lambda);  
+  enqueueOperation(lambda);
 }
 
 void AutoDevice::Impl::cancelPayment() {
   std::lock_guard<recursive_mutex> guard(m_mutex);
 
-  if (m_state != AutoDeviceState::waitingForConfirmation && 
-    m_state != AutoDeviceState::waitingForPaymentResult && 
-    m_state != AutoDeviceState::waitingForPaymentToken) {
+  if (m_state != AutoDeviceState::waitingForConfirmation && m_state != AutoDeviceState::waitingForPaymentResult && m_state != AutoDeviceState::waitingForPaymentToken) {
     throw Errors::InvalidState();
   }
 
   changeState(AutoDeviceState::sessionOpened);
   auto lambda = [&] {
-      m_device.cancelPayment()
-      .then([&] {
-        executeNextOperation();
-      }).catchError([&] (exception_ptr) {
-        m_log.e() << "cancel payment error" << Logger::endl;
-        resetState();
-      });
+    m_device.cancelPayment().then([&] { executeNextOperation(); }).catchError([&](exception_ptr) {
+      m_log.e() << "cancel payment error" << Logger::endl;
+      resetState();
+    });
   };
 
-  enqueueOperation(lambda);    
+  enqueueOperation(lambda);
 }
 
-void AutoDevice::Impl::enqueueOperation(const std::function<void ()>& callback) {  
+void AutoDevice::Impl::enqueueOperation(const std::function<void()>& callback) {
   if (m_pendingOperations.empty()) {
     callback();
-  }  
+  }
   m_pendingOperations.push_back(callback);
 }
 
@@ -288,10 +262,10 @@ void AutoDevice::Impl::executeNextOperation() {
   m_pendingOperations.erase(m_pendingOperations.begin());
   if (!m_pendingOperations.empty()) {
     m_pendingOperations.front()();
-  }  
+  }
 }
 
-void AutoDevice::Impl::onBarcodes(const std::vector<Barcode> &barcodes) {
+void AutoDevice::Impl::onBarcodes(const std::vector<Barcode>& barcodes) {
   std::lock_guard<recursive_mutex> guard(m_mutex);
 
   if (m_state != AutoDeviceState::waitingForBarcodes) {
@@ -309,7 +283,7 @@ void AutoDevice::Impl::onBarcodes(const std::vector<Barcode> &barcodes) {
   m_barcodesPromise.resolve(barcodes);
 }
 
-void AutoDevice::Impl::onPaymentError(const PaymentError &error) {
+void AutoDevice::Impl::onPaymentError(const PaymentError& error) {
   auto paymentErrorCallback = *m_paymentErrorCallback;
   if (paymentErrorCallback) {
     paymentErrorCallback(error);
@@ -333,7 +307,7 @@ void AutoDevice::Impl::onPaymentSuccess() {
   m_paymentPromise.resolve();
 }
 
-void AutoDevice::Impl::onPaymentToken(const std::string &token) {
+void AutoDevice::Impl::onPaymentToken(const std::string& token) {
   std::lock_guard<recursive_mutex> guard(m_mutex);
 
   if (m_state != AutoDeviceState::waitingForPaymentToken) {
@@ -347,10 +321,10 @@ void AutoDevice::Impl::onPaymentToken(const std::string &token) {
     m_log.e() << "invalid promise state while received payment result" << Logger::endl;
   }
 
-  m_paymentTokenPromise.resolve(token);  
+  m_paymentTokenPromise.resolve(token);
 }
 
-void AutoDevice::Impl::onMobileConnectionChange(const SerialMobileEvent &event) {
+void AutoDevice::Impl::onMobileConnectionChange(const SerialMobileEvent& event) {
   auto mobileCallback = *m_mobileCallback;
 
   if (event == SerialMobileEvent::connected) {
@@ -378,13 +352,13 @@ void AutoDevice::Impl::rejectPendingOperations() {
   }
   if (m_barcodesPromise.state() == PromiseState::undefined) {
     m_barcodesPromise.reject(make_exception_ptr(Errors::OperationCancelled()));
-  }  
+  }
 }
 
 void AutoDevice::Impl::changeState(AutoDeviceState state, exception_ptr exception) {
-  std::lock_guard<recursive_mutex> guard(m_mutex);  
+  std::lock_guard<recursive_mutex> guard(m_mutex);
   m_state = state;
-  
+
   m_context.m_impl->ioService.post([&, state, exception] {
     auto stateCallback = *m_stateCallback;
     if (stateCallback) {

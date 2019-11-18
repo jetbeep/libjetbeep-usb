@@ -8,7 +8,8 @@
 class Cmd {
 public:
   Cmd();
-  void process(const std::string& cmd, const std::vector<std::string>& params);  
+  void process(const std::string& cmd, const std::vector<std::string>& params);
+
 private:
   JetBeep::Logger m_log;
   JetBeep::AutoDevice m_autoDevice;
@@ -27,7 +28,7 @@ private:
 
   void onStateChange(JetBeep::AutoDeviceState state, std::exception_ptr error);
   void onPaymentError(const JetBeep::PaymentError& error);
-  void onMobileEvent(const JetBeep::SerialMobileEvent &event);
+  void onMobileEvent(const JetBeep::SerialMobileEvent& event);
 };
 
 #endif

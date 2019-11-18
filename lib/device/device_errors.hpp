@@ -5,50 +5,68 @@
 
 namespace JetBeep {
   namespace Errors {
-      class DeviceNotOpened: public std::exception {
-      public:
-        virtual char const* what() const noexcept { return "Device is not opened"; } 
-      };
+    class DeviceNotOpened : public std::exception {
+    public:
+      virtual char const* what() const noexcept {
+        return "Device is not opened";
+      }
+    };
 
-      class OperationInProgress: public std::exception {
-      public:
-        virtual char const* what() const noexcept { return "Another command is being executed now"; } 
-      };
+    class OperationInProgress : public std::exception {
+    public:
+      virtual char const* what() const noexcept {
+        return "Another command is being executed now";
+      }
+    };
 
-      class OperationTimeout: public std::exception {
-      public:
-        virtual char const* what() const noexcept { return "Operation timed out"; } 
-      };
+    class OperationTimeout : public std::exception {
+    public:
+      virtual char const* what() const noexcept {
+        return "Operation timed out";
+      }
+    };
 
-      class InvalidResponse: public std::exception {
-      public:
-        virtual char const* what() const noexcept { return "Device returned invalid response"; } 
-      };
-      
-      class DeviceLost: public std::exception {
-      public:
-        virtual char const* what() const noexcept { return "Device returned invalid response"; }         
-      };
+    class InvalidResponse : public std::exception {
+    public:
+      virtual char const* what() const noexcept {
+        return "Device returned invalid response";
+      }
+    };
 
-      class InvalidState: public std::exception {
-        public:
-          virtual char const* what() const noexcept { return "Invalid state"; }
-      };
-      class ProtocolError: public std::exception {
-      public:
-        virtual char const* what() const noexcept { return "Protocol error"; } 
-      };
+    class DeviceLost : public std::exception {
+    public:
+      virtual char const* what() const noexcept {
+        return "Device returned invalid response";
+      }
+    };
 
-      class IOError: public std::exception {
-      public:
-        virtual char const* what() const noexcept { return "Input-output error"; } 
-      };
+    class InvalidState : public std::exception {
+    public:
+      virtual char const* what() const noexcept {
+        return "Invalid state";
+      }
+    };
+    class ProtocolError : public std::exception {
+    public:
+      virtual char const* what() const noexcept {
+        return "Protocol error";
+      }
+    };
 
-      class OperationCancelled: public std::exception {
-      public:
-        virtual char const* what() const noexcept { return "Operation cancelled"; }         
-      };
-  }
-}
+    class IOError : public std::exception {
+    public:
+      virtual char const* what() const noexcept {
+        return "Input-output error";
+      }
+    };
+
+    class OperationCancelled : public std::exception {
+    public:
+      virtual char const* what() const noexcept {
+        return "Operation cancelled";
+      }
+    };
+  } // namespace Errors
+} // namespace JetBeep
 
 #endif

@@ -10,7 +10,8 @@ namespace JetBeep {
     IOContext(const IOContext& other);
 
     static IOContext context;
-    IOContext& operator=(const IOContext &other);
+    IOContext& operator=(const IOContext& other);
+
   private:
     class Impl;
     std::shared_ptr<Impl> m_impl;

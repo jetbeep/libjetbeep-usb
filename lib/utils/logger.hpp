@@ -8,73 +8,68 @@
 #ifndef LIB_UTILS_LOGGER_HPP_
 #define LIB_UTILS_LOGGER_HPP_
 
-#include <string>
 #include <iostream>
+#include <string>
 
 namespace JetBeep {
-	enum class LoggerLevel {
-		verbose = 0,
-		debug,
-		info,
-		warning,
-		error,
-		silent
-	};
+  enum class LoggerLevel { verbose = 0, debug, info, warning, error, silent };
 
-	class Logger {
-	public:
-		Logger(const char* module_name);
+  class Logger {
+  public:
+    Logger(const char* module_name);
 
-		Logger& v();
-		Logger& d();
-		Logger& i();
-		Logger& w();
-		Logger& e();
+    Logger& v();
+    Logger& d();
+    Logger& i();
+    Logger& w();
+    Logger& e();
 
-		static LoggerLevel level;
-		static Logger& endl(Logger& a);
+    static LoggerLevel level;
+    static Logger& endl(Logger& a);
 
-		static bool coutEnabled;
-		static bool cerrEnabled;
+    static bool coutEnabled;
+    static bool cerrEnabled;
 
-	    typedef Logger& (*logger_manipulator)(Logger&);
-	    Logger& operator<<(logger_manipulator manip)
-	    {
-	        // call the function, and return it's value
-	        return manip(*this);
-	    }
+    typedef Logger& (*logger_manipulator)(Logger&);
+    Logger& operator<<(logger_manipulator manip) {
+      // call the function, and return it's value
+      return manip(*this);
+    }
 
-		template<class T> Logger& operator << (const T &t) {
-			if (Logger::m_threadLevel >= Logger::level) {
-				coutValue(t);
-				cerrValue(t);
-			}
+    template <class T>
+    Logger& operator<<(const T& t) {
+      if (Logger::m_threadLevel >= Logger::level) {
+        coutValue(t);
+        cerrValue(t);
+      }
 
-			return *this;
-		}
-	private:
-		std::string m_module_name;
-		Logger& output();
+      return *this;
+    }
 
-		static thread_local LoggerLevel m_threadLevel;
+  private:
+    std::string m_module_name;
+    Logger& output();
 
-		template<class T> void coutValue(T t) {
-			if (!coutEnabled) {
-				return;
-			}
+    static thread_local LoggerLevel m_threadLevel;
 
-			std::cout << t;
-		}
+    template <class T>
+    void coutValue(T t) {
+      if (!coutEnabled) {
+        return;
+      }
 
-		template<class T> void cerrValue(T t) {
-			if (!cerrEnabled) {
-				return;
-			}
+      std::cout << t;
+    }
 
-			std::cerr << t;
-		}
-	};
-}
+    template <class T>
+    void cerrValue(T t) {
+      if (!cerrEnabled) {
+        return;
+      }
 
+      std::cerr << t;
+    }
+  };
+} // namespace JetBeep
 
 #endif /* LIB_UTILS_LOGGER_HPP_ */

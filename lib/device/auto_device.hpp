@@ -6,9 +6,9 @@
 #include <memory>
 #include <string>
 
+#include "../io/iocontext.hpp"
 #include "../utils/promise.hpp"
 #include "device_types.hpp"
-#include "../io/iocontext.hpp"
 
 namespace JetBeep {
   enum class AutoDeviceState {

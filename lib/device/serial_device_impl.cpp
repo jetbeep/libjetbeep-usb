@@ -1,6 +1,6 @@
 #include "serial_device_impl.hpp"
-#include "../utils/utils.hpp"
 #include "../io/iocontext_impl.hpp"
+#include "../utils/utils.hpp"
 #include "device_utils.hpp"
 
 using namespace std;
@@ -9,9 +9,13 @@ using namespace boost;
 using namespace boost::asio;
 
 SerialDevice::Impl::Impl(const SerialDeviceCallbacks& callbacks, IOContext context)
-: m_context(context), m_port(context.m_impl->ioService), m_callbacks(callbacks), m_log("serial_device"), 
-  m_state(SerialDeviceState::idle), m_timer(context.m_impl->ioService) {  
-  // These promises should be already resolved\rejected in constructor to make handleResponse, handleResult, etc functions work properly   
+  : m_context(context),
+    m_port(context.m_impl->ioService),
+    m_callbacks(callbacks),
+    m_log("serial_device"),
+    m_state(SerialDeviceState::idle),
+    m_timer(context.m_impl->ioService) {
+  // These promises should be already resolved\rejected in constructor to make handleResponse, handleResult, etc functions work properly
   m_executePromise.reject(make_exception_ptr(Errors::InvalidResponse()));
   m_executeStringPromise.reject(make_exception_ptr(Errors::InvalidResponse()));
   m_executeGetStatePromise.reject(make_exception_ptr(Errors::InvalidResponse()));
@@ -20,7 +24,8 @@ SerialDevice::Impl::Impl(const SerialDeviceCallbacks& callbacks, IOContext conte
 SerialDevice::Impl::~Impl() {
   try {
     m_port.close();
-  } catch (...) {}
+  } catch (...) {
+  }
 }
 
 void SerialDevice::Impl::open(const string& path) {
@@ -37,37 +42,37 @@ void SerialDevice::Impl::close() {
 void SerialDevice::Impl::writeCompleted(const boost::system::error_code& error, std::size_t bytes_transferred) {
   auto errorCallback = *m_callbacks.errorCallback;
 
-  if (error) {    
-    m_log.e() << "write error: "<< error << Logger::endl;
+  if (error) {
+    m_log.e() << "write error: " << error << Logger::endl;
     if (errorCallback) {
       errorCallback(make_exception_ptr(Errors::IOError()));
-    }    
+    }
     return;
-  }      
+  }
 }
 
 void SerialDevice::Impl::readCompleted(const boost::system::error_code& error) {
   auto errorCallback = *m_callbacks.errorCallback;
 
-  if (error) {    
-    m_log.e() << "read error: "<< error << Logger::endl;
+  if (error) {
+    m_log.e() << "read error: " << error << Logger::endl;
     if (errorCallback) {
       errorCallback(make_exception_ptr(Errors::IOError()));
-    }    
+    }
     return;
   }
-    
+
   asio::streambuf::const_buffers_type bufs = m_readBuffer.data();
   string response(asio::buffers_begin(bufs), asio::buffers_begin(bufs) + m_readBuffer.size());
 
-  m_readBuffer.consume(m_readBuffer.size());    
+  m_readBuffer.consume(m_readBuffer.size());
   async_read_until(m_port, m_readBuffer, "\r\n", boost::bind(&SerialDevice::Impl::readCompleted, this, asio::placeholders::error));
 
-  if (response.size() < 2) {    
+  if (response.size() < 2) {
     m_log.e() << "response size < 2" << Logger::endl;
     if (errorCallback) {
       errorCallback(make_exception_ptr(Errors::ProtocolError()));
-    }    
+    }
     return;
   }
 
@@ -75,7 +80,7 @@ void SerialDevice::Impl::readCompleted(const boost::system::error_code& error) {
   handleResponse(response);
 }
 
-void SerialDevice::Impl::handleResponse(const string &response) {
+void SerialDevice::Impl::handleResponse(const string& response) {
   auto errorCallback = *m_callbacks.errorCallback;
   auto splitted = Utils::splitString(response);
   lock_guard<recursive_mutex> guard(m_mutex);
@@ -83,10 +88,10 @@ void SerialDevice::Impl::handleResponse(const string &response) {
   m_log.d() << "nrf rx: " << response << Logger::endl;
 
   if (splitted.empty()) {
-    m_log.e() << "unable to split string..."<< Logger::endl;
+    m_log.e() << "unable to split string..." << Logger::endl;
     if (errorCallback) {
       errorCallback(make_exception_ptr(Errors::ProtocolError()));
-    }    
+    }
     return;
   }
 
@@ -109,13 +114,13 @@ void SerialDevice::Impl::handleResponse(const string &response) {
   m_state = SerialDeviceState::idle;
   m_timer.cancel();
   rejectPendingPromises(make_exception_ptr(Errors::InvalidResponse()));
-  m_log.e() << "unable to parse command: "<< response << Logger::endl;
+  m_log.e() << "unable to parse command: " << response << Logger::endl;
   if (errorCallback) {
     errorCallback(make_exception_ptr(Errors::ProtocolError()));
-  }  
+  }
 }
 
-bool SerialDevice::Impl::handleResult(const string &command, const vector<string> &params) {
+bool SerialDevice::Impl::handleResult(const string& command, const vector<string>& params) {
   if (m_state != SerialDeviceState::executeInProgress) {
     return false;
   }
@@ -130,13 +135,13 @@ bool SerialDevice::Impl::handleResult(const string &command, const vector<string
 
   m_state = SerialDeviceState::idle;
   m_timer.cancel();
-        
+
   if (params.size() != 1) {
     m_log.e() << "invalid response params size: " << params.size() << Logger::endl;
     m_executePromise.reject(make_exception_ptr(Errors::InvalidResponse()));
     return true;
   }
-  
+
   auto result = params[0];
 
   if (result == "ok") {
@@ -148,7 +153,7 @@ bool SerialDevice::Impl::handleResult(const string &command, const vector<string
   return true;
 }
 
-bool SerialDevice::Impl::handleResultWithParams(const std::string &command, const vector<string> &params) {
+bool SerialDevice::Impl::handleResultWithParams(const std::string& command, const vector<string>& params) {
   auto errorCallback = *m_callbacks.errorCallback;
 
   if (m_state != SerialDeviceState::executeInProgress) {
@@ -193,7 +198,7 @@ bool SerialDevice::Impl::handleResultWithParams(const std::string &command, cons
       m_log.e() << "invalid promise state" << Logger::endl;
       if (errorCallback) {
         errorCallback(make_exception_ptr(Errors::ProtocolError()));
-      }      
+      }
       return false;
     }
 
@@ -202,7 +207,7 @@ bool SerialDevice::Impl::handleResultWithParams(const std::string &command, cons
       m_executeGetStatePromise.reject(make_exception_ptr(Errors::InvalidResponse()));
       return true;
     }
-    
+
     SerialGetStateResult result;
     result.isSessionOpened = params[1] == "1";
     result.isBarcodesRequested = params[2] == "1";
@@ -217,18 +222,18 @@ bool SerialDevice::Impl::handleResultWithParams(const std::string &command, cons
   return false;
 }
 
-bool SerialDevice::Impl::handleEvent(const string& event, const vector<string> &params) {
+bool SerialDevice::Impl::handleEvent(const string& event, const vector<string>& params) {
   auto errorCallback = *m_callbacks.errorCallback;
 
   if (event == DeviceResponses::mobileConnected) {
     if (*m_callbacks.mobileCallback) {
       (*m_callbacks.mobileCallback)(SerialMobileEvent::connected);
     }
-    return true;    
+    return true;
   } else if (event == DeviceResponses::mobileDisconnected) {
     if (*m_callbacks.mobileCallback) {
       (*m_callbacks.mobileCallback)(SerialMobileEvent::disconnected);
-    }    
+    }
   } else if (event == DeviceResponses::barcodes) {
     vector<Barcode> barcodes;
 
@@ -240,12 +245,12 @@ bool SerialDevice::Impl::handleEvent(const string& event, const vector<string> &
       return true;
     }
 
-    for (auto it = params.begin(), it2 = std::next(it) ; it != params.end(); it += 2) {
-        string value = *it;
-        int type = atoi((*it2).c_str());
-        Barcode barcode = {value, static_cast<BarcodeType>(type)};          
+    for (auto it = params.begin(), it2 = std::next(it); it != params.end(); it += 2) {
+      string value = *it;
+      int type = atoi((*it2).c_str());
+      Barcode barcode = {value, static_cast<BarcodeType>(type)};
 
-        barcodes.push_back(barcode);
+      barcodes.push_back(barcode);
     }
 
     if (*m_callbacks.barcodesCallback) {
@@ -302,7 +307,7 @@ bool SerialDevice::Impl::handleEvent(const string& event, const vector<string> &
 
     if (*m_callbacks.paymentErrorCallback) {
       (*m_callbacks.paymentErrorCallback)(paymentError);
-    }    
+    }
   } else if (event == DeviceResponses::paymentSuccessful) {
     if (*m_callbacks.paymentSuccessCallback) {
       (*m_callbacks.paymentSuccessCallback)();
@@ -328,19 +333,18 @@ void SerialDevice::Impl::writeSerial(const string& cmd, unsigned int timeoutInMi
 
   m_writeData = cmd;
   auto buffer = asio::buffer(m_writeData.c_str(), m_writeData.size());
-  auto writeCallback = boost::bind(&SerialDevice::Impl::writeCompleted, this, 
-    asio::placeholders::error, asio::placeholders::bytes_transferred);
+  auto writeCallback = boost::bind(&SerialDevice::Impl::writeCompleted, this, asio::placeholders::error, asio::placeholders::bytes_transferred);
 
-  async_write(m_port, buffer, writeCallback); 
+  async_write(m_port, buffer, writeCallback);
 
   // NOTE: expires_from_now cancels all pending timeouts (according to docs)
   m_timer.expires_from_now(boost::posix_time::millisec(timeoutInMilliseconds));
   m_timer.async_wait(boost::bind(&SerialDevice::Impl::handleTimeout, this, asio::placeholders::error));
-  
+
   m_state = SerialDeviceState::executeInProgress;
 }
 
-Promise<void> SerialDevice::Impl::execute(const string &cmd, const string& params, unsigned int timeoutInMilliseconds) {
+Promise<void> SerialDevice::Impl::execute(const string& cmd, const string& params, unsigned int timeoutInMilliseconds) {
   if (params != "") {
     writeSerial(cmd + " " + params + "\r\n", timeoutInMilliseconds);
   } else {
@@ -351,24 +355,24 @@ Promise<void> SerialDevice::Impl::execute(const string &cmd, const string& param
   return m_executePromise;
 }
 
-Promise<string> SerialDevice::Impl::executeString(const string &cmd, const string& params, unsigned int timeoutInMilliseconds) {
+Promise<string> SerialDevice::Impl::executeString(const string& cmd, const string& params, unsigned int timeoutInMilliseconds) {
   if (params != "") {
     writeSerial(cmd + " " + params + "\r\n", timeoutInMilliseconds);
   } else {
     writeSerial(cmd + "\r\n", timeoutInMilliseconds);
   }
-  m_executeStringPromise = Promise<string>();  
+  m_executeStringPromise = Promise<string>();
   m_executedCommand = cmd;
   return m_executeStringPromise;
 }
 
-Promise<SerialGetStateResult> SerialDevice::Impl::executeGetState(const string &cmd, const string& params, unsigned int timeoutInMilliseconds) {  
+Promise<SerialGetStateResult> SerialDevice::Impl::executeGetState(const string& cmd, const string& params, unsigned int timeoutInMilliseconds) {
   if (params != "") {
     writeSerial(cmd + " " + params + "\r\n", timeoutInMilliseconds);
   } else {
     writeSerial(cmd + "\r\n", timeoutInMilliseconds);
-  }  
-  m_executeGetStatePromise = Promise<SerialGetStateResult>();  
+  }
+  m_executeGetStatePromise = Promise<SerialGetStateResult>();
   m_executedCommand = cmd;
   return m_executeGetStatePromise;
 }
@@ -376,19 +380,19 @@ Promise<SerialGetStateResult> SerialDevice::Impl::executeGetState(const string &
 void SerialDevice::Impl::handleTimeout(const boost::system::error_code& err) {
   lock_guard<recursive_mutex> guard(m_mutex);
 
-  if (err == boost::asio::error::operation_aborted) {    
+  if (err == boost::asio::error::operation_aborted) {
     return;
   }
 
   switch (m_state) {
-    case SerialDeviceState::executeInProgress:
-      m_state = SerialDeviceState::idle;
-      rejectPendingPromises(make_exception_ptr(Errors::OperationTimeout()));
+  case SerialDeviceState::executeInProgress:
+    m_state = SerialDeviceState::idle;
+    rejectPendingPromises(make_exception_ptr(Errors::OperationTimeout()));
     break;
-    default:
-      m_log.e() << "handle timeout call, while no active operation in progress" << Logger::endl;
+  default:
+    m_log.e() << "handle timeout call, while no active operation in progress" << Logger::endl;
     break;
-  }  
+  }
 }
 
 void SerialDevice::Impl::rejectPendingPromises(std::exception_ptr exception) {

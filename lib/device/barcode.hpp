@@ -4,7 +4,7 @@
 #include <string>
 
 namespace JetBeep {
-  enum class BarcodeType: int {
+  enum class BarcodeType : int {
     unknown = 0,
     upca = 1,
     upce = 2,
@@ -52,6 +52,6 @@ namespace JetBeep {
     std::string value;
     BarcodeType type;
   };
-}
+} // namespace JetBeep
 
 #endif

@@ -26,7 +26,7 @@ namespace JetBeep {
     logLevel,
     merchantId,
     domainShopId
-  };  
+  };
 }
 
 #endif
