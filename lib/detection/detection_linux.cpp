@@ -252,7 +252,7 @@ void DeviceDetection::Impl::detectConnected() {
 // DeviceDetection
 
 DeviceDetection::DeviceDetection(IOContext context)
-	: m_impl(new Impl(&this->callback), context) {}
+	: m_impl(new Impl(&this->callback, context)) {}
 
 DeviceDetection::~DeviceDetection() {}
 
