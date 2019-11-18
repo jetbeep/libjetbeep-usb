@@ -7,16 +7,18 @@ namespace JetBeep {
   class IOContext {
   public:
     IOContext();
+    IOContext(const IOContext& other);
 
-    static IOContext context;      
+    static IOContext context;
+    IOContext& operator=(const IOContext &other);
   private:
     class Impl;
-    std::unique_ptr<Impl> m_impl;
+    std::shared_ptr<Impl> m_impl;
 
     friend class AutoDevice;
     friend class SerialDevice;
     friend class DeviceDetection;
   };
-}
+} // namespace JetBeep
 
 #endif

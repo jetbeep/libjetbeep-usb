@@ -4,6 +4,7 @@
 #include "device_types.hpp"
 #include "device_parameter.hpp"
 #include "../utils/promise.hpp"
+#include "../io/iocontext.hpp"
 
 #include <memory>
 #include <string>
@@ -13,7 +14,7 @@
 namespace JetBeep {      
   class SerialDevice {
   public:
-    SerialDevice();
+    SerialDevice(IOContext context = IOContext::context);
     virtual ~SerialDevice();
 
     void open(const std::string& path);
