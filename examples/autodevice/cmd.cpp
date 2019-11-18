@@ -34,6 +34,8 @@ void Cmd::process(const std::string& cmd, const std::vector<std::string>& params
     connectionState();
   } else if (cmd == "multi_test" || cmd == "multitest") {
     multiTest();
+  } else {
+    m_log.e() << "invalid command" << Logger::endl;
   }
 }
 
