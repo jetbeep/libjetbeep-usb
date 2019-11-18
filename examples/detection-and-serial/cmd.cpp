@@ -1,7 +1,6 @@
 #include "cmd.hpp"
-#include "../lib/libjetbeep.h"
-#include "../lib/device/device_utils.hpp"
-#include "utils.hpp"
+#include "../../lib/libjetbeep.hpp"
+#include "../../lib/device/device_utils.hpp"
 
 #include <stdlib.h>
 #include <functional>
@@ -180,11 +179,11 @@ void Cmd::createPayment(const vector<string>& params) {
           });        
       } else {
         auto rawMetadata = params.at(3);
-        auto splittedMetadata = splitString(rawMetadata, ";");
+        auto splittedMetadata = Utils::splitString(rawMetadata, ";");
         PaymentMetadata metadata;
 
         for (auto it = splittedMetadata.begin(); it != splittedMetadata.end(); ++it) {
-          auto keyValue = splitString(*it, ":");
+          auto keyValue = Utils::splitString(*it, ":");
 
           if (keyValue.size() != 2) {
             throw runtime_error("invalid key value");
@@ -249,11 +248,11 @@ void Cmd::createPaymentToken(const vector<string>& params) {
           });
       } else {
         auto rawMetadata = params.at(3);
-        auto splittedMetadata = splitString(rawMetadata, ";");
+        auto splittedMetadata = Utils::splitString(rawMetadata, ";");
         PaymentMetadata metadata;
 
         for (auto it = splittedMetadata.begin(); it != splittedMetadata.end(); ++it) {
-          auto keyValue = splitString(*it, ":");
+          auto keyValue = Utils::splitString(*it, ":");
 
           if (keyValue.size() != 2) {
             throw runtime_error("invalid key value");

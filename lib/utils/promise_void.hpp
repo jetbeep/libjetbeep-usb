@@ -32,35 +32,45 @@ namespace JetBeep {
       :m_impl(new Promise<void>::Impl()) {
     }
                 
-    void resolve() {
-      if (m_impl->m_state != PromiseState::undefined) {
+    void resolve() {      
+/* we have to copy shared_ptr as in case when *this* will be reassigned with other value
+ during execution of m_resolvedCallbacks and m_rejectCallbacks will be undefined (will cause EXC_BAD_ACCESS)
+*/
+      auto impl = m_impl; 
+
+      if (impl->m_state != PromiseState::undefined) {
         throw std::runtime_error("promise is already resolved");
       }
-      m_impl->m_state = PromiseState::resolved;
-      for (auto it = m_impl->m_resolvedCallbacks.begin(); it != m_impl->m_resolvedCallbacks.end(); ++it) {
+      impl->m_state = PromiseState::resolved;
+      for (auto it = impl->m_resolvedCallbacks.begin(); it != impl->m_resolvedCallbacks.end(); ++it) {
         if (*it) {
           (*it)();
         }
       }
-      m_impl->m_resolvedCallbacks.clear();
-      m_impl->m_rejectedCallbacks.clear();
+      impl->m_resolvedCallbacks.clear();
+      impl->m_rejectedCallbacks.clear();
     }
 
     void reject(std::exception_ptr error) {
-      if (m_impl->m_state != PromiseState::undefined) {
+/* we have to copy shared_ptr as in case when *this* will be reassigned with other value
+ during execution of m_resolvedCallbacks and m_rejectCallbacks will be undefined (will cause EXC_BAD_ACCESS)
+*/     
+      auto impl = m_impl;
+
+      if (impl->m_state != PromiseState::undefined) {
         throw std::runtime_error("promise is already resolved");
       }
 
-      m_impl->m_state = PromiseState::rejected;
-      m_impl->m_error = error;
-      for (auto it = m_impl->m_rejectedCallbacks.begin(); it != m_impl->m_rejectedCallbacks.end(); ++it) {
+      impl->m_state = PromiseState::rejected;
+      impl->m_error = error;
+      for (auto it = impl->m_rejectedCallbacks.begin(); it != impl->m_rejectedCallbacks.end(); ++it) {
         if (*it) {
           (*it)();
         }
       }
 
-      m_impl->m_resolvedCallbacks.clear();
-      m_impl->m_rejectedCallbacks.clear();
+      impl->m_resolvedCallbacks.clear();
+      impl->m_rejectedCallbacks.clear();
     }
 
     template <typename ReturnType, 

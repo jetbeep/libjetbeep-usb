@@ -18,3 +18,11 @@ bool DeviceDetection::isValidVidPid(const VidPid &vidpid) {
 	}
 	return false;
 }
+
+bool DeviceCandidate::operator==(const DeviceCandidate &other) {
+	return path == other.path;
+}
+
+bool DeviceCandidate::operator!=(const DeviceCandidate &other) {
+	return !(*this == other);
+}

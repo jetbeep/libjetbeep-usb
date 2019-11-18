@@ -1,7 +1,7 @@
 .DS_Store
 build
 
-examples/jetbeep_usb_test
+examples/detection-and-serial/jetbeep_usb_test
 lib/libjetbeep.0.1.0.dylib
 lib/libjetbeep.dylib
 lib/libjetbeep_static.a

@@ -24,7 +24,16 @@ namespace JetBeep {
       public:
         virtual char const* what() const noexcept { return "Device returned invalid response"; } 
       };
+      
+      class DeviceLost: public std::exception {
+      public:
+        virtual char const* what() const noexcept { return "Device returned invalid response"; }         
+      };
 
+      class InvalidState: public std::exception {
+        public:
+          virtual char const* what() const noexcept { return "Invalid state"; }
+      };
       class ProtocolError: public std::exception {
       public:
         virtual char const* what() const noexcept { return "Protocol error"; } 
@@ -33,7 +42,12 @@ namespace JetBeep {
       class IOError: public std::exception {
       public:
         virtual char const* what() const noexcept { return "Input-output error"; } 
-      };      
+      };
+
+      class OperationCancelled: public std::exception {
+      public:
+        virtual char const* what() const noexcept { return "Operation cancelled"; }         
+      };
   }
 }
 

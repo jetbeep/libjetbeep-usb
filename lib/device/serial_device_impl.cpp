@@ -1,5 +1,5 @@
 #include "serial_device_impl.hpp"
-#include "../utils/split.hpp"
+#include "../utils/utils.hpp"
 #include "device_utils.hpp"
 
 using namespace std;
@@ -9,7 +9,7 @@ using namespace boost::asio;
 
 SerialDevice::Impl::Impl(const SerialDeviceCallbacks& callbacks):
 m_thread(&SerialDevice::Impl::runLoop, this), m_work(m_io_service), m_port(m_io_service),
- m_callbacks(callbacks), m_log("device"), m_state(SerialDeviceState::idle), m_timer(m_io_service) {
+ m_callbacks(callbacks), m_log("serial_device"), m_state(SerialDeviceState::idle), m_timer(m_io_service) {
   // These promises should be already resolved\rejected in constructor to make handleResponse, handleResult, etc functions work properly   
   m_executePromise.reject(make_exception_ptr(Errors::InvalidResponse()));
   m_executeStringPromise.reject(make_exception_ptr(Errors::InvalidResponse()));
@@ -19,6 +19,9 @@ m_thread(&SerialDevice::Impl::runLoop, this), m_work(m_io_service), m_port(m_io_
 SerialDevice::Impl::~Impl() {
   m_io_service.stop();
   m_thread.join();
+  try {
+    m_port.close();
+  } catch (...) {}
 }
 
 void SerialDevice::Impl::open(const string& path) {
@@ -75,7 +78,7 @@ void SerialDevice::Impl::readCompleted(const boost::system::error_code& error) {
 
 void SerialDevice::Impl::handleResponse(const string &response) {
   auto errorCallback = *m_callbacks.errorCallback;
-  auto splitted = splitString(response);
+  auto splitted = Utils::splitString(response);
   lock_guard<recursive_mutex> guard(m_mutex);
 
   m_log.d() << "nrf rx: " << response << Logger::endl;

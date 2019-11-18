@@ -68,6 +68,7 @@ Promise<void> SerialDevice::createPaymentToken(uint32_t amount, const std::strin
     return m_impl->execute(DeviceResponses::createPaymentToken, ss.str());
 }
 
+Promise<void> SerialDevice::confirmPayment() { return m_impl->execute(DeviceResponses::confirmPayment); }
 Promise<void> SerialDevice::cancelPayment() { return m_impl->execute(DeviceResponses::cancelPayment); }
 Promise<void> SerialDevice::resetState() { return m_impl->execute(DeviceResponses::resetState); }
 Promise<string> SerialDevice::get(const DeviceParameter& parameter) { return m_impl->executeString(DeviceResponses::get, DeviceUtils::parameterToString(parameter)); }
