@@ -10,7 +10,6 @@ using namespace std;
 using namespace JetBeep;
 
 Logger l("main");
-SerialDevice d;
 
 static void deviceEvent(const DeviceDetectionEvent& event, const DeviceCandidate &candidate) {
 	string event_type;
@@ -31,7 +30,8 @@ int main() {
 	// PromiseTest test;
 	// test.run();
 
-	DeviceDetection d(deviceEvent);
+	DeviceDetection d;
+	d.callback = deviceEvent;
 
 	l.i() << "starting device detection.." << Logger::endl;
 	try {

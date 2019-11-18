@@ -3,6 +3,7 @@
 #ifdef PLATFORM_OSX
 #include "detection.hpp"
 #include "../utils/logger.hpp"
+#include "../io/iocontext_impl.hpp"
 
 #include <thread>
 #include <unordered_map>
@@ -19,13 +20,14 @@ using namespace std;
 
 class DeviceDetection::Impl {
   public:
-		Impl(DeviceDetectionCallback *callback);
+		Impl(DeviceDetectionCallback *callback, IOContext context);
 
 		void start();
 		void stop();
 
 		virtual ~Impl();
 	private:
+		IOContext m_context;
 		DeviceDetectionCallback *m_callback;
 		Logger m_log;
 		CFRunLoopRef m_loop;
@@ -44,8 +46,8 @@ class DeviceDetection::Impl {
 };
 
 
-DeviceDetection::Impl::Impl(DeviceDetectionCallback *callback)
-:m_callback(callback), m_loop(NULL), m_iterator(0), m_notifyPort(NULL), m_log("detection") {
+DeviceDetection::Impl::Impl(DeviceDetectionCallback *callback, IOContext context)
+:m_callback(callback), m_loop(NULL), m_iterator(0), m_notifyPort(NULL), m_log("detection"), m_context(context) {
 
 }
 
@@ -99,11 +101,12 @@ void DeviceDetection::Impl::deviceAdded(void *refCon, io_iterator_t iterator) {
 
 	    	detection->m_trackedDevices[device.path] = make_pair(device, remove_service);
 
-	    	auto callback = *detection->m_callback;
-
-	    	if (callback != nullptr) {
-	    		callback(DeviceDetectionEvent::added, device);
-	    	}
+				detection->m_context.m_impl->ioService.post([&, device] {
+					auto callback = *detection->m_callback;
+					if (callback != nullptr) {
+						callback(DeviceDetectionEvent::added, device);
+					}
+				});
 	    }
 
 	    IOObjectRelease(service); // yes, you have to release this
@@ -132,11 +135,13 @@ void DeviceDetection::Impl::deviceRemoved(void *refCon, io_service_t service, na
 		return;
 	}
 
-	auto callback = *detection->m_callback;
+	detection->m_context.m_impl->ioService.post([&, device] {
+		auto callback = *detection->m_callback;
 
-	if (callback != nullptr) {
-		callback(DeviceDetectionEvent::removed, device);
-	}
+		if (callback != nullptr) {
+			callback(DeviceDetectionEvent::removed, device);
+		}
+	});
 }
 
 void DeviceDetection::Impl::start() {
@@ -242,8 +247,8 @@ string DeviceDetection::Impl::getDevicePath(const io_service_t &service) {
 
 // DeviceDetection
 
-DeviceDetection::DeviceDetection(DeviceDetectionCallback callback)
-: callback(callback), m_impl(new Impl(&this->callback)) {}
+DeviceDetection::DeviceDetection(IOContext context)
+: m_impl(new Impl(&this->callback, context)) {}
 
 DeviceDetection::~DeviceDetection() {}
 

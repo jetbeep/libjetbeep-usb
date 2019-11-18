@@ -3,6 +3,7 @@
 #ifdef PLATFORM_LINUX
 #include "detection.hpp"
 #include "../utils/logger.hpp"
+#include "../io/iocontext_impl.hpp"
 
 #include <thread>
 #include <atomic>
@@ -18,13 +19,14 @@ typedef struct udev_device uDev;
 
 class DeviceDetection::Impl {
   public:
-	Impl(DeviceDetectionCallback *callback);
+	Impl(DeviceDetectionCallback *callback, IOContext context);
 	void startMonitoring();
 	void stopMonitoring();
 	void detectConnected();
 	virtual ~Impl();
 
   private:
+	IOContext m_context;
 	DeviceDetectionCallback *m_callback = nullptr;
 	Logger m_log;
 	struct udev *udev = nullptr;
@@ -38,8 +40,8 @@ class DeviceDetection::Impl {
 
 // DeviceDetection implementation
 
-DeviceDetection::Impl::Impl(DeviceDetectionCallback *callback)
-	: m_callback(callback), m_log("detection") {
+DeviceDetection::Impl::Impl(DeviceDetectionCallback *callback, IOContext context)
+	: m_callback(callback), m_log("detection"), m_context(context) {
 	udev = udev_new();
 	if (udev == nullptr) {
 		throw runtime_error("Unable to initialize UDEV");
@@ -119,13 +121,11 @@ void DeviceDetection::Impl::startMonitoring() {
 }
 
 void DeviceDetection::Impl::udevMonitorLoop() {
-	auto callback = *m_callback;
-
 	struct udev_enumerate *enumerate = nullptr;
 	uDev *dev = nullptr;
 	struct udev_monitor *mon = nullptr;
 
-	if (!udev || !callback) {
+	if (!udev) {
 		return;
 	}
 
@@ -169,11 +169,23 @@ void DeviceDetection::Impl::udevMonitorLoop() {
 
 			if (action == "add") {
 				if (checkTTYParent(dev, &candidate)) {
-					callback(DeviceDetectionEvent::added, candidate);
+					m_context.m_impl->ioService.post([&, candidate] {
+						auto callback = *m_callback;
+
+						if (callback) {
+							callback(DeviceDetectionEvent::added, candidate);
+						}						
+					});
 				}
 			} else if (action == "remove") {
 				if (checkDevVIDPID(dev, &candidate)) {
-					callback(DeviceDetectionEvent::removed, candidate);
+					m_context.m_impl->ioService.post([&, candidate] {
+						auto callback = *m_callback;
+
+						if (callback) {						
+							callback(DeviceDetectionEvent::removed, candidate);
+						}
+					});										
 				}
 			}
 			//udev_device_unref(dev); //This causes segmentation fault... in some cases
@@ -222,11 +234,13 @@ void DeviceDetection::Impl::detectConnected() {
 		DeviceCandidate deviceCandidate = {0, 0, string(devNode)};
 
 		if (checkTTYParent(dev, &deviceCandidate)) {
-			auto callback = *m_callback;
+			m_context.m_impl->ioService.post([&] {
+				auto callback = *m_callback;
 
-			if (callback) {
-				callback(DeviceDetectionEvent::added, deviceCandidate);
-			}
+				if (callback) {
+					callback(DeviceDetectionEvent::added, deviceCandidate);
+				}
+			});			
 		}
 
 		udev_device_unref(dev);
@@ -237,8 +251,8 @@ void DeviceDetection::Impl::detectConnected() {
 
 // DeviceDetection
 
-DeviceDetection::DeviceDetection(DeviceDetectionCallback callback)
-	: callback(callback), m_impl(new Impl(&this->callback)) {}
+DeviceDetection::DeviceDetection(IOContext context)
+	: m_impl(new Impl(&this->callback), context) {}
 
 DeviceDetection::~DeviceDetection() {}
 

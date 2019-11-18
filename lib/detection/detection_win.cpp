@@ -17,6 +17,7 @@
 
 #include "detection.hpp"
 #include "../utils/logger.hpp"
+#include "../io/iocontext_impl.hpp"
 
 #include <thread>
 #include <atomic>
@@ -66,7 +67,7 @@ static string UTF8Encode(const string &str);
 
 class DeviceDetection::Impl {
   public:
-	Impl(DeviceDetectionCallback *callback);
+	Impl(DeviceDetectionCallback *callback, IOContext context);
 
 	void startMonitoring();
 	void stopMonitoring();
@@ -74,6 +75,7 @@ class DeviceDetection::Impl {
 	virtual ~Impl();
 
   private:
+	IOContext m_context;
 	DeviceDetectionCallback *m_callback = nullptr;
 	Logger m_log;
 	std::atomic<bool> isMonActive;
@@ -120,8 +122,8 @@ class DeviceDetection::Impl {
 
 // DeviceDetection implementation
 
-DeviceDetection::Impl::Impl(DeviceDetectionCallback *callback)
-	: m_callback(callback), m_log("detection") {
+DeviceDetection::Impl::Impl(DeviceDetectionCallback *callback, IOContext context)
+	: m_callback(callback), m_log("detection"), m_context(context) {
 	isMonActive.store(false);
 	if (!m_hInstLib) {
 		loadFunctions();
@@ -160,7 +162,6 @@ void DeviceDetection::Impl::startMonitoring() {
 }
 
 void DeviceDetection::Impl::monitorLoop() {
-	auto callback = *m_callback;
 	char className[MAX_THREAD_WINDOW_NAME];
 	_snprintf_s(className, MAX_THREAD_WINDOW_NAME, "ListnerThreadUsbDetection_%d", GetCurrentThreadId());
 
@@ -206,15 +207,18 @@ void DeviceDetection::Impl::monitorLoop() {
 		DispatchMessage(&msg);
 
 		if (msg.message != APP_UNBLOCK_MSG 
-			&& lastDetectedCandidate.pid != 0 && callback) {
-			callback(lastDetectedAction, lastDetectedCandidate);
+			&& lastDetectedCandidate.pid != 0) {
+			m_context.m_impl->ioService.post([&, lastDetectedAction, lastDetectedCandidate] {
+				auto callback = *m_callback;
+				if (callback) {
+					callback(lastDetectedAction, lastDetectedCandidate);
+				}
+			});			
 		}
 	}
 }
 
-void DeviceDetection::Impl::detectConnected() {
-	auto callback = *m_callback;
-
+void DeviceDetection::Impl::detectConnected() {	
 	DWORD dwFlag = (DIGCF_ALLCLASSES | DIGCF_PRESENT);
 	HDEVINFO hDevInfo = DllSetupDiGetClassDevs(NULL, "USB", NULL, dwFlag);
 
@@ -254,9 +258,14 @@ void DeviceDetection::Impl::detectConnected() {
 		candidate.pid = vidPid.pid;
 
 		string portName = findPortName(hDevInfo, pspDevInfoData);
-		if (portName.length() && callback) {
+		if (portName.length()) {
 			candidate.path = COM_PATH_PREFIX + portName;
-			callback(DeviceDetectionEvent::added, candidate);
+			m_context.m_impl->ioService.post([&, candidate] {
+				auto callback = *m_callback;
+				if (callback) {
+					callback(DeviceDetectionEvent::added, candidate);
+				}
+			});			
 		}
 	}
 
@@ -445,8 +454,8 @@ void  DeviceDetection::Impl::loadFunctions() {
 
 // DeviceDetection
 
-DeviceDetection::DeviceDetection(DeviceDetectionCallback callback)
-	: callback(callback), m_impl(new Impl(&this->callback)) {}
+DeviceDetection::DeviceDetection(IOContext context)
+	: m_impl(new Impl(&this->callback), context) {}
 
 DeviceDetection::~DeviceDetection() {}
 

@@ -7,6 +7,8 @@
 #include <stddef.h>
 #include <functional>
 
+#include "../io/iocontext.hpp"
+
 namespace JetBeep {
 	typedef struct VidPid {
 		uint16_t vid;
@@ -31,7 +33,7 @@ namespace JetBeep {
 
 	class DeviceDetection {
 	public:
-		DeviceDetection(DeviceDetectionCallback callback = nullptr);
+		DeviceDetection(IOContext context = IOContext::context);
 		virtual ~DeviceDetection();
 
 		void start() noexcept(false);
