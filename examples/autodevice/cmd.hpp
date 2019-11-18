@@ -23,6 +23,7 @@ private:
   void confirmPayment();
   void cancelPayment();
   void connectionState();
+  void multiTest();
 
   void onStateChange(JetBeep::AutoDeviceState state, std::exception_ptr error);
   void onPaymentError(const JetBeep::PaymentError& error);

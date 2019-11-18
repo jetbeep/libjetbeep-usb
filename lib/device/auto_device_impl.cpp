@@ -35,7 +35,9 @@ void AutoDevice::Impl::stop() {
   try {
     m_device.close();
   } catch (...) {}
-  m_candidate = DeviceCandidate();  
+  m_candidate = DeviceCandidate();
+  rejectPendingOperations();
+  changeState(AutoDeviceState::invalid);  
 }
 
 void AutoDevice::Impl::onDeviceEvent(const DeviceDetectionEvent& event, const DeviceCandidate& candidate) {
@@ -276,15 +278,15 @@ void AutoDevice::Impl::cancelPayment() {
   enqueueOperation(lambda);    
 }
 
-void AutoDevice::Impl::enqueueOperation(const std::function<void ()>& callback) {
+void AutoDevice::Impl::enqueueOperation(const std::function<void ()>& callback) {  
   if (m_pendingOperations.empty()) {
     callback();
-  }
+  }  
   m_pendingOperations.push_back(callback);
 }
 
 void AutoDevice::Impl::executeNextOperation() {
-  m_pendingOperations.pop_back();
+  m_pendingOperations.erase(m_pendingOperations.begin());
   if (!m_pendingOperations.empty()) {
     m_pendingOperations.front()();
   }  
@@ -385,13 +387,15 @@ void AutoDevice::Impl::runLoop() {
 }
 
 void AutoDevice::Impl::changeState(AutoDeviceState state, exception_ptr exception) {
-  std::lock_guard<recursive_mutex> guard(m_mutex);
-  auto stateCallback = *m_stateCallback;
+  std::lock_guard<recursive_mutex> guard(m_mutex);  
   m_state = state;
-
-  if (stateCallback) {
-    stateCallback(m_state, exception);
-  }
+  
+  m_io_service.post([&, state, exception] {
+    auto stateCallback = *m_stateCallback;
+    if (stateCallback) {
+      stateCallback(state, exception);
+    }
+  });
 }
 
 AutoDeviceState AutoDevice::Impl::state() {

@@ -32,6 +32,8 @@ void Cmd::process(const std::string& cmd, const std::vector<std::string>& params
     cancelPayment();
   } else if (cmd == "connection_state" || cmd == "connectionstate") {
     connectionState();
+  } else if (cmd == "multi_test" || cmd == "multitest") {
+    multiTest();
   }
 }
 
@@ -45,7 +47,7 @@ void Cmd::start() {
 
 void Cmd::stop() {
   try {
-    m_autoDevice.start();
+    m_autoDevice.stop();
   } catch (...) {
     m_log.e() << "unable to stop" << Logger::endl;
   }
@@ -199,6 +201,23 @@ void Cmd::connectionState() {
   }
 
   m_log.i() << "mobile connected: " << connectionState << Logger::endl;
+}
+
+void Cmd::multiTest() {
+  try {
+    m_autoDevice.openSession();
+    m_autoDevice.closeSession();
+    m_autoDevice.openSession();
+    m_autoDevice.requestBarcodes();
+    m_autoDevice.cancelBarcodes();
+    m_autoDevice.createPayment(10, "test");
+    m_autoDevice.cancelPayment();
+    m_autoDevice.createPaymentToken(10, "test");
+    m_autoDevice.cancelPayment();
+    m_autoDevice.closeSession();
+  } catch (...) {
+    m_log.e() << "multitest failed" << Logger::endl;
+  }
 }
 
 void Cmd::onStateChange(AutoDeviceState state, std::exception_ptr error) {
