@@ -1,4 +1,5 @@
 #include "utils.hpp"
+#include <algorithm>
 
 using namespace std;
 using namespace JetBeep;
