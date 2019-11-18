@@ -1,7 +1,8 @@
 #include "../utils/platform.hpp"
 
 #ifdef PLATFORM_WIN
-#include <windows.h> //must be first always
+#include "../io/iocontext_impl.hpp"
+#include <windows.h>
 #include <dbt.h>
 #include <iostream>
 #include <iomanip>
@@ -17,7 +18,6 @@
 
 #include "detection.hpp"
 #include "../utils/logger.hpp"
-#include "../io/iocontext_impl.hpp"
 
 #include <thread>
 #include <atomic>
@@ -455,7 +455,7 @@ void  DeviceDetection::Impl::loadFunctions() {
 // DeviceDetection
 
 DeviceDetection::DeviceDetection(IOContext context)
-	: m_impl(new Impl(&this->callback), context) {}
+	: m_impl(new Impl(&this->callback, context)) {}
 
 DeviceDetection::~DeviceDetection() {}
 
