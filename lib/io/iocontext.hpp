@@ -8,7 +8,7 @@ namespace JetBeep {
   public:
     IOContext();
 
-    static IOContext default;      
+    static IOContext context;      
   private:
     class Impl;
     std::unique_ptr<Impl> m_impl;
