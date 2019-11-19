@@ -9,12 +9,11 @@ std::vector<std::string> Utils::splitString(const std::string& str, const std::s
   auto start = 0U;
   auto end = str.find(delimiter);
 
-  while (end != string::npos)
-  {
-      auto delimitedString = str.substr(start, end - start);
-      return_value.push_back(delimitedString);
-      start = end + delimiter.length();
-      end = str.find(delimiter, start);
+  while (end != string::npos) {
+    auto delimitedString = str.substr(start, end - start);
+    return_value.push_back(delimitedString);
+    start = end + delimiter.length();
+    end = str.find(delimiter, start);
   }
 
   auto delimitedString = str.substr(start, end);
@@ -24,9 +23,9 @@ std::vector<std::string> Utils::splitString(const std::string& str, const std::s
 }
 
 string Utils::toLowerCase(const string& input) {
-	string result = input;
+  string result = input;
 
-	transform(result.begin(), result.end(), result.begin(), (int (*)(int))std::tolower);
+  transform(result.begin(), result.end(), result.begin(), (int (*)(int))std::tolower);
 
-	return result;
+  return result;
 }

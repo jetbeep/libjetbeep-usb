@@ -3,7 +3,7 @@
 using namespace std;
 using namespace JetBeep;
 
-Cmd::Cmd():m_log("cmd") {
+Cmd::Cmd() : m_log("cmd") {
   m_autoDevice.stateCallback = std::bind(&Cmd::onStateChange, this, std::placeholders::_1, std::placeholders::_2);
   m_autoDevice.paymentErrorCallback = std::bind(&Cmd::onPaymentError, this, std::placeholders::_1);
   m_autoDevice.mobileCallback = std::bind(&Cmd::onMobileEvent, this, std::placeholders::_1);
@@ -60,7 +60,7 @@ void Cmd::openSession() {
     m_autoDevice.openSession();
   } catch (...) {
     m_log.e() << "unable to open session" << Logger::endl;
-  }  
+  }
 }
 
 void Cmd::closeSession() {
@@ -68,17 +68,16 @@ void Cmd::closeSession() {
     m_autoDevice.closeSession();
   } catch (...) {
     m_log.e() << "unable to close session" << Logger::endl;
-  }  
+  }
 }
 
 void Cmd::requestBarcodes() {
   try {
     m_autoDevice.requestBarcodes()
-      .then([&] (const vector<Barcode> &barcodes) {
-        m_log.i() << "received "<<barcodes.size() << " barcodes" << Logger::endl;
-      }).catchError([&] (exception_ptr error) {
-        m_log.e() << "unable to receive barcodes" << Logger::endl;
-      });
+      .then([&](const vector<Barcode>& barcodes) {
+        m_log.i() << "received " << barcodes.size() << " barcodes" << Logger::endl;
+      })
+      .catchError([&](exception_ptr error) { m_log.e() << "unable to receive barcodes" << Logger::endl; });
   } catch (...) {
     m_log.e() << "unable to request barcodes" << Logger::endl;
   }
@@ -92,13 +91,13 @@ void Cmd::cancelBarcodes() {
   }
 }
 
-void Cmd::createPayment(const vector<string> &params) {
+void Cmd::createPayment(const vector<string>& params) {
   auto size = params.size();
 
   if (size < 2 || size > 4) {
     m_log.e() << "invalid parameters count: " << params.size() << Logger::endl;
     return;
-  }  
+  }
 
   auto amount = atoi(params.at(0).c_str());
   auto transactionId = params.at(1);
@@ -120,28 +119,25 @@ void Cmd::createPayment(const vector<string> &params) {
           }
 
           metadata[keyValue.at(0)] = keyValue.at(1);
-        } 
+        }
       }
     }
   } catch (...) {
     m_log.e() << "unable to create payment" << Logger::endl;
   }
-  
+
   m_autoDevice.createPayment(amount, transactionId, cashierId, metadata)
-    .then([&] {
-      m_log.i() << "payment successful" << Logger::endl;
-    }).catchError([&] (exception_ptr error) {
-      m_log.e() << "payment is not successful" << Logger::endl;
-    });    
+    .then([&] { m_log.i() << "payment successful" << Logger::endl; })
+    .catchError([&](exception_ptr error) { m_log.e() << "payment is not successful" << Logger::endl; });
 }
 
-void Cmd::createPaymentToken(const vector<string> &params) {
+void Cmd::createPaymentToken(const vector<string>& params) {
   auto size = params.size();
 
   if (size < 2 || size > 4) {
     m_log.e() << "invalid parameters count: " << params.size() << Logger::endl;
     return;
-  }  
+  }
 
   auto amount = atoi(params.at(0).c_str());
   auto transactionId = params.at(1);
@@ -163,19 +159,16 @@ void Cmd::createPaymentToken(const vector<string> &params) {
           }
 
           metadata[keyValue.at(0)] = keyValue.at(1);
-        } 
+        }
       }
     }
   } catch (...) {
     m_log.e() << "unable to create payment" << Logger::endl;
   }
-  
+
   m_autoDevice.createPaymentToken(amount, transactionId, cashierId, metadata)
-    .then([&] (string token) {
-      m_log.i() << "token: " << token << Logger::endl;
-    }).catchError([&] (exception_ptr error) {
-      m_log.e() << "unable to create payment token" << Logger::endl;
-    });    
+    .then([&](string token) { m_log.i() << "token: " << token << Logger::endl; })
+    .catchError([&](exception_ptr error) { m_log.e() << "unable to create payment token" << Logger::endl; });
 }
 
 void Cmd::confirmPayment() {
@@ -183,7 +176,7 @@ void Cmd::confirmPayment() {
     m_autoDevice.confirmPayment();
   } catch (...) {
     m_log.e() << "unable to confirm payment" << Logger::endl;
-  }  
+  }
 }
 
 void Cmd::cancelPayment() {
@@ -191,7 +184,7 @@ void Cmd::cancelPayment() {
     m_autoDevice.cancelPayment();
   } catch (...) {
     m_log.e() << "unable to cancel payment" << Logger::endl;
-  }    
+  }
 }
 
 void Cmd::connectionState() {
@@ -223,8 +216,7 @@ void Cmd::multiTest() {
 }
 
 void Cmd::onStateChange(AutoDeviceState state, std::exception_ptr error) {
-  switch (state)
-  {
+  switch (state) {
   case AutoDeviceState::invalid:
     m_log.i() << "changed state to: invalid" << Logger::endl;
     break;
@@ -246,17 +238,17 @@ void Cmd::onStateChange(AutoDeviceState state, std::exception_ptr error) {
   case AutoDeviceState::waitingForPaymentToken:
     m_log.i() << "changed state to: waitingForPaymentToken" << Logger::endl;
     break;
-  }  
+  }
 }
 
 void Cmd::onPaymentError(const PaymentError& error) {
   m_log.e() << "payment error!" << Logger::endl;
 }
 
-void Cmd::onMobileEvent(const JetBeep::SerialMobileEvent &event) {
+void Cmd::onMobileEvent(const JetBeep::SerialMobileEvent& event) {
   if (event == SerialMobileEvent::connected) {
     m_log.i() << "connected" << Logger::endl;
   } else {
     m_log.e() << "disconnected" << Logger::endl;
-  }  
+  }
 }

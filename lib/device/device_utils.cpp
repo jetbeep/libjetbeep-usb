@@ -54,7 +54,7 @@ std::string DeviceUtils::parameterToString(const DeviceParameter& parameter) {
   }
 }
 
-DeviceParameter DeviceUtils::stringToParameter(const std::string &parameter) {
+DeviceParameter DeviceUtils::stringToParameter(const std::string& parameter) {
   if (parameter == "version") {
     return DeviceParameter::version;
   } else if (parameter == "shopId") {

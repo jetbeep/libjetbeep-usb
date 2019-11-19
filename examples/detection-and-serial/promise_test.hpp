@@ -4,13 +4,13 @@
 #include "../../lib/libjetbeep.hpp"
 
 class PromiseTest {
-  public:
-    PromiseTest();
+public:
+  PromiseTest();
 
-    void run();
-  private:
-    JetBeep::Logger m_log;
+  void run();
+
+private:
+  JetBeep::Logger m_log;
 };
-
 
 #endif

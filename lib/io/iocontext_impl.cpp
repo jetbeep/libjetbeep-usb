@@ -3,9 +3,7 @@
 using namespace JetBeep;
 using namespace std;
 
-IOContext::Impl::Impl()
-:m_thread(&IOContext::Impl::runLoop, this), m_work(ioService) {
-
+IOContext::Impl::Impl() : m_thread(&IOContext::Impl::runLoop, this), m_work(ioService) {
 }
 
 IOContext::Impl::~Impl() {

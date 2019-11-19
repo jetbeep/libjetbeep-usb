@@ -1,16 +1,16 @@
 #ifndef JETBEEP_DEVICE_UTILS__H
 #define JETBEEP_DEVICE_UTILS__H
 
-#include <string>
 #include "device_parameter.hpp"
+#include <string>
 
 namespace JetBeep {
   class DeviceUtils {
   public:
     static std::string parameterToString(const DeviceParameter& parameter);
-    static DeviceParameter stringToParameter(const std::string &parameter);
-  };  
-}
+    static DeviceParameter stringToParameter(const std::string& parameter);
+  };
+} // namespace JetBeep
 
 namespace DeviceResponses {
   // responses
@@ -36,6 +36,6 @@ namespace DeviceResponses {
   const std::string paymentSuccessful = "PAYMENT_SUCCESSFUL";
   const std::string paymentError = "PAYMENT_ERROR";
   const std::string paymentToken = "PAYMENT_TOKEN";
-}
+} // namespace DeviceResponses
 
 #endif
