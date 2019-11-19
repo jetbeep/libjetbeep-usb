@@ -13,6 +13,9 @@ target_include_directories(jetbeep_obj PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${BOOS
 
 add_library(jetbeep SHARED ${JETBEEP_INCLUDES} $<TARGET_OBJECTS:jetbeep_obj>)
 
+find_package(OpenSSL REQUIRED)
+target_link_libraries(jetbeep "OpenSSL::SSL")
+
 if (APPLE) 
 	target_link_libraries(jetbeep "-framework IOKit" "-framework CoreFoundation")
 elseif(UNIX AND NOT APPLE) #linux

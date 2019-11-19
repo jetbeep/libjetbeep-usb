@@ -3,6 +3,10 @@ target_include_directories(detection_and_serial PUBLIC ${BOOST_SOURCE_DIR})
 
 target_link_libraries(detection_and_serial $<TARGET_OBJECTS:jetbeep_obj>)
 
+find_package(OpenSSL REQUIRED)
+target_link_libraries(detection_and_serial "OpenSSL::SSL")
+
+
 if (APPLE)
 	target_link_libraries(detection_and_serial "-framework IOKit" "-framework CoreFoundation")
 elseif(UNIX AND NOT APPLE) #linux

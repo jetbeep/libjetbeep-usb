@@ -7,3 +7,4 @@ add_subdirectory(lib)
 
 add_subdirectory(examples/detection-and-serial)
 add_subdirectory(examples/autodevice)
+add_subdirectory(examples/token-payment)
