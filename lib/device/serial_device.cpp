@@ -7,11 +7,11 @@ using namespace std;
 
 // Device
 
-SerialDevice::SerialDevice() {
+SerialDevice::SerialDevice(IOContext context) {
   SerialDeviceCallbacks callbacks = {&errorCallback, &barcodesCallback, &paymentErrorCallback, 
     &paymentSuccessCallback, &paymentTokenCallback, &mobileCallback};
 
-  m_impl.reset(new Impl(callbacks));
+  m_impl.reset(new Impl(callbacks, context));
 }
 
 SerialDevice::~SerialDevice() {}

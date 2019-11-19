@@ -30,7 +30,7 @@ namespace JetBeep {
 
   class SerialDevice::Impl {
   public:
-    Impl(const SerialDeviceCallbacks& callbacks);
+    Impl(const SerialDeviceCallbacks& callbacks, IOContext context);
     virtual ~Impl();
 
     void open(const std::string& path);
@@ -41,6 +41,7 @@ namespace JetBeep {
     Promise<SerialGetStateResult> executeGetState(const std::string &cmd, const std::string& params = "", unsigned int timeoutInMilliseconds = 2000);
     void cancelPendingOperations();
   private:
+    IOContext m_context;
     SerialDeviceState m_state;
     Promise<void> m_executePromise;
     Promise<std::string> m_executeStringPromise;
@@ -51,12 +52,8 @@ namespace JetBeep {
     boost::asio::streambuf m_readBuffer;
     Logger m_log;
     SerialDeviceCallbacks m_callbacks;
-    boost::asio::io_service m_io_service;
-    boost::asio::io_service::work m_work;
     boost::asio::serial_port m_port;
     boost::asio::deadline_timer m_timer;
-    std::thread m_thread;    
-    void runLoop();
     void writeSerial(const std::string &cmd, unsigned int timeoutInMilliseconds);
 
     void handleTimeout(const boost::system::error_code& err);

@@ -4,8 +4,8 @@
 using namespace std;
 using namespace JetBeep;
 
-AutoDevice::AutoDevice()
-:m_impl(new AutoDevice::Impl(&stateCallback, &paymentErrorCallback, &mobileCallback)) {
+AutoDevice::AutoDevice(IOContext context)
+:m_impl(new AutoDevice::Impl(&stateCallback, &paymentErrorCallback, &mobileCallback, context)) {
 
 }
 AutoDevice::~AutoDevice() {}

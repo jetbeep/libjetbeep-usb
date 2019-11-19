@@ -1,5 +1,5 @@
 Language: Cpp
-AccessModifierOffset: -4
+AccessModifierOffset: -2
 AlignEscapedNewlinesLeft: true
 AlignTrailingComments: true
 AllowAllParametersOfDeclarationOnNextLine: true
@@ -28,7 +28,7 @@ IndentWrappedFunctionNames: false
 IndentFunctionDeclarationAfterType: false
 MaxEmptyLinesToKeep: 1
 KeepEmptyLinesAtTheStartOfBlocks: false
-NamespaceIndentation: None
+NamespaceIndentation: All
 PenaltyBreakBeforeFirstCallParameter: 1
 PenaltyBreakComment: 300
 PenaltyBreakString: 1000
