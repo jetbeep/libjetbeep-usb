@@ -3,8 +3,10 @@
 
 #include "../io/iocontext.hpp"
 #include "../utils/promise.hpp"
+#include "./http_errors.hpp"
 #include <memory>
 #include <string>
+#include <vector>
 
 using namespace std;
 
@@ -22,8 +24,10 @@ namespace JetBeep {
   } EasyPayError;
 
   class EasyPayResult {
+    public:
     string Uid;
-    EasyPayError Errors[10];
+    vector<EasyPayError> Errors;
+    string _rawResponse;
 
     bool isError() {
       return m_errorsCount > 0;
