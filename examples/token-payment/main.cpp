@@ -10,7 +10,7 @@ int main() {
   Logger::level = LoggerLevel::verbose;
   auto backend = EasyPayBackend(EasyPayHostEnv::Development, "test");
 
-  backend.getPaymentStatus("test")
+  backend.getPaymentStatus("test", 100500, 90)
     .then([=](EasyPayResult result) { l.i() << "Request result: " << result._rawResponse << Logger::endl; })
     .catchError([=](const std::exception_ptr error) {
       try {
@@ -19,6 +19,8 @@ int main() {
         l.e() << e.what() << Logger::endl;
       } catch (JetBeep::HttpErrors::ServerError& e) {
         l.e() << e.what() << " status code: " << e.statusCode << Logger::endl;
+      } catch (JetBeep::HttpErrors::RequestError& e) {
+        l.e() << "request error:" << e.getRequestError() << Logger::endl;
       } catch (std::exception& e) {
         l.e() << e.what() << Logger::endl;
       }

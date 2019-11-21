@@ -3,51 +3,34 @@
 
 #include "../io/iocontext.hpp"
 #include "../utils/promise.hpp"
+#include "./easypay_request.hpp"
+#include "./easypay_response.hpp"
 #include "./http_errors.hpp"
+
 #include <memory>
-#include <string>
-#include <vector>
 
 using namespace std;
 
 namespace JetBeep {
 
+  using namespace EasyPayAPI;
+
   enum class EasyPayHostEnv { Development, Production };
-
-  typedef struct {
-    string Error;
-    long CodeId;
-    string CodeName;
-    string ErrorMessage;
-    string UserMessage;
-    string Reason;
-  } EasyPayError;
-
-  class EasyPayResult {
-  public:
-    string Uid;
-    vector<EasyPayError> Errors;
-    string _rawResponse;
-    int statusCode;
-
-    bool isError() {
-      return m_errorsCount > 0;
-    }
-
-  private:
-    int m_errorsCount = 0;
-  };
 
   class EasyPayBackend {
   public:
     ~EasyPayBackend();
     EasyPayBackend(EasyPayHostEnv env, string merchantSecretKey);
 
-    Promise<EasyPayResult> makePayment(string paymentToken);
+    Promise<EasyPayResult> makePayment(string merchantTransactionId,
+                                       string paymentToken,
+                                       uint32_t amountInCoins,
+                                       uint32_t deviceId,
+                                       string cashierId = "unspecified");
 
-    Promise<EasyPayResult> getPaymentStatus(string pspTransactionId);
+    Promise<EasyPayResult> getPaymentStatus(string merchantTransactionId, uint32_t amountInCoins, uint32_t deviceId);
 
-    Promise<EasyPayResult> makeRefund(string pspTransactionId);
+    Promise<EasyPayResult> makeRefund(string pspTransactionId, uint32_t amountInCoins, uint32_t deviceId);
 
   private:
     class Impl;

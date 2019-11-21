@@ -6,10 +6,13 @@
 namespace JetBeep {
   namespace HttpErrors {
     class RequestError : public std::exception {
-    public:
-      virtual char const* what() const noexcept {
-        return "HTTP request error";
+      public:
+      RequestError(std::string msg = "HTTP request error"): m_serverMessage(msg){}
+      std::string getRequestError() {
+        return m_serverMessage;
       }
+      private:
+      std::string m_serverMessage;
     };
     class NetworkError : public std::exception {
     public:
@@ -26,7 +29,12 @@ namespace JetBeep {
       }
       int statusCode;
     };
-
+    class APIError : public std::exception {
+    public:
+      virtual char const* what() const noexcept {
+        return "API error";
+      }
+    };
   } // namespace HttpErrors
 } // namespace JetBeep
 

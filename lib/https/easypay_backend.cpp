@@ -12,11 +12,11 @@ struct EasyPayBackend::Impl {
 
   ~Impl();
 
-  Promise<EasyPayResult> makePayment(string paymentToken);
+  Promise<EasyPayResult> makePayment(string merchantTransactionId, string paymentToken, uint32_t amountInCoins, uint32_t deviceId, string cashierId);
 
-  Promise<EasyPayResult> getPaymentStatus(string pspTransactionId);
+  Promise<EasyPayResult> getPaymentStatus(string merchantTransactionId, uint32_t amountInCoins, uint32_t deviceId);
 
-  Promise<EasyPayResult> makeRefund(string pspTransactionId);
+  Promise<EasyPayResult> makeRefund(string pspTransactionId, uint32_t amountInCoins, uint32_t deviceId);
 
 private:
   Https::HttpsClient m_httpsClient;
@@ -25,7 +25,7 @@ private:
   int m_port;
   Logger m_log;
 
-  string makeMerchantSignature();
+  string makeMerchantSignature(string date, uint32_t deviceId);
 };
 
 EasyPayBackend::Impl::~Impl() = default;
@@ -36,34 +36,32 @@ EasyPayBackend::EasyPayBackend(EasyPayHostEnv env, string merchantSecretKey)
 
 EasyPayBackend::~EasyPayBackend() = default;
 
-Promise<EasyPayResult> EasyPayBackend::makePayment(string paymentToken) {
-  return m_impl->makePayment(paymentToken);
+Promise<EasyPayResult> EasyPayBackend::makePayment(
+  string merchantTransactionId, string paymentToken, uint32_t amountInCoins, uint32_t deviceId, string cashierId) {
+  return m_impl->makePayment(merchantTransactionId, paymentToken, amountInCoins, deviceId, cashierId);
 }
 
-Promise<EasyPayResult> EasyPayBackend::getPaymentStatus(string pspTransactionId) {
-  return m_impl->getPaymentStatus(pspTransactionId);
+Promise<EasyPayResult> EasyPayBackend::getPaymentStatus(string merchantTransactionId, uint32_t amountInCoins, uint32_t deviceId) {
+  return m_impl->getPaymentStatus(merchantTransactionId, amountInCoins, deviceId);
 }
 
-Promise<EasyPayResult> EasyPayBackend::makeRefund(string pspTransactionId) {
-  return m_impl->makeRefund(pspTransactionId);
+Promise<EasyPayResult> EasyPayBackend::makeRefund(string pspTransactionId, uint32_t amountInCoins, uint32_t deviceId) {
+  return m_impl->makeRefund(pspTransactionId, amountInCoins, deviceId);
 }
+Promise<EasyPayResult> EasyPayBackend::Impl::makePayment(
+  string merchantTransactionId, string paymentToken, uint32_t amountInCoins, uint32_t deviceId, string cashierId) {
+  const string path = "/api/Payment/Box";
+  TokenPaymentRequest data;
 
-Promise<EasyPayResult> EasyPayBackend::Impl::makePayment(string paymentToken) {
-  const string path = "/api/Payment/Box"; // POST
-  string reqBody = R"JSON(
-    {
-        "Fields": {
-          "DeviceId": "test",
-          "MerchantCashboxId": "test",
-          "MerchantTransactionId": "test"
-        },
-        "AmountInCoin": 100500,
-        "DateRequest": "yyyy-MM-ddTHH:mm:ssZ"
-        "SignatureMerchant": "base64",
-        "SignatureBox": "base64",
-        "PaymentToken": "base64"
-    }
-  )JSON";
+  data.AmountInCoin = amountInCoins;
+  data.DateRequest = "2018-06-26T06:53:03.691Z"; // TODO dates
+  data.MerchantCashboxId = cashierId;
+  data.MerchantTransactionId = merchantTransactionId;
+  data.PaymentTokenFull = paymentToken;
+  data.SignatureMerchant = makeMerchantSignature(data.DateRequest, deviceId);
+
+  string reqBody = tokenPaymentReqToJSON(data);
+
   Https::RequestOptions options;
   options.method = Https::RequestMethod::POST;
   options.contentType = Https::RequestContentType::JSON;
@@ -73,29 +71,37 @@ Promise<EasyPayResult> EasyPayBackend::Impl::makePayment(string paymentToken) {
   options.body = reqBody;
 
   return m_httpsClient.request(options).thenPromise<EasyPayResult, Promise>([=](Https::Response res) {
-    EasyPayResult result;
-    result._rawResponse = res.body;
-    result.statusCode = res.statusCode;
     auto promise = Promise<EasyPayResult>();
     if (res.isHttpError) {
       promise.reject(make_exception_ptr(HttpErrors::ServerError(res.statusCode)));
-    } else {
-      promise.resolve(result);
+      return promise;
     }
-    return promise;
+    try {
+      auto result = parseTokenPaymentResult(res.body);
+      result._rawResponse = res.body;
+      result.statusCode = res.statusCode;
+      if (result.isError()) {
+        promise.reject(make_exception_ptr(HttpErrors::RequestError(result.primaryErrorMsg)));
+        return promise;
+      }
+      promise.resolve(result);
+    } catch (...) {
+      promise.reject(make_exception_ptr(HttpErrors::APIError()));
+    }
   });
 }
 
-Promise<EasyPayResult> EasyPayBackend::Impl::getPaymentStatus(string pspTransactionId) {
-  const string path = "/api/Payment/GetStatusTransaction"; // GET
-  string reqBody = R"JSON(
-    {
-        "DateRequest": "2019-01-01T01:01:01Z",
-        "SignatureMerchant": "string",
-        "AmountInCoin": 1000,
-        "MerchantTransactionId": "string"
-    }
-  )JSON";
+Promise<EasyPayResult> EasyPayBackend::Impl::getPaymentStatus(string merchantTransactionId, uint32_t amountInCoins, uint32_t deviceId) {
+  const string path = "/api/Payment/GetStatusTransaction";
+  TokenGetStatusRequest data;
+
+  data.AmountInCoin = amountInCoins;
+  data.DateRequest = "2018-06-26T06:53:03.691Z"; // TODO dates
+  data.MerchantTransactionId = merchantTransactionId;
+  data.SignatureMerchant = makeMerchantSignature(data.DateRequest, deviceId);
+
+  string reqBody = tokenGetStatusReqToJSON(data);
+
   Https::RequestOptions options;
   options.method = Https::RequestMethod::GET;
   options.contentType = Https::RequestContentType::JSON;
@@ -105,28 +111,40 @@ Promise<EasyPayResult> EasyPayBackend::Impl::getPaymentStatus(string pspTransact
   options.body = reqBody;
 
   return m_httpsClient.request(options).thenPromise<EasyPayResult, Promise>([=](Https::Response res) {
-    EasyPayResult result;
-    result._rawResponse = res.body;
-    result.statusCode = res.statusCode;
     auto promise = Promise<EasyPayResult>();
     if (res.isHttpError) {
       promise.reject(make_exception_ptr(HttpErrors::ServerError(res.statusCode)));
-    } else {
+      return promise;
+    }
+    try {
+      auto result = parseTokenGetStatusResult(res.body);
+      result._rawResponse = res.body;
+      result.statusCode = res.statusCode;
+
+      if (result.isError()) {
+        promise.reject(make_exception_ptr(HttpErrors::RequestError(result.primaryErrorMsg)));
+        return promise;
+      }
+
       promise.resolve(result);
+    } catch (...) {
+      promise.reject(make_exception_ptr(HttpErrors::APIError()));
     }
     return promise;
   });
 }
 
-Promise<EasyPayResult> EasyPayBackend::Impl::makeRefund(string pspTransactionId) {
-  const string path = "/api/Payment/Refund"; // POST
-  string reqBody = R"JSON(
-    {
-        "DateRequest": "2019-01-01T01:01:01Z",
-        "SignatureMerchant": "string",
-        "MerchantTransactionId": "string"
-    }
-  )JSON";
+Promise<EasyPayResult> EasyPayBackend::Impl::makeRefund(string pspTransactionId, uint32_t amountInCoins, uint32_t deviceId) {
+  const string path = "/api/Payment/Refund";
+  TokenRefundRequest data;
+
+  data.AmountInCoin = amountInCoins;
+  data.DateRequest = "2018-06-26T06:53:03.691Z"; // TODO dates
+  data.TransactionId = pspTransactionId;
+  data.SignatureMerchant = makeMerchantSignature(data.DateRequest, deviceId);
+
+  string reqBody = tokenRefundReqToJSON(data);
+
   Https::RequestOptions options;
   options.method = Https::RequestMethod::POST;
   options.contentType = Https::RequestContentType::JSON;
@@ -136,20 +154,28 @@ Promise<EasyPayResult> EasyPayBackend::Impl::makeRefund(string pspTransactionId)
   options.body = reqBody;
 
   return m_httpsClient.request(options).thenPromise<EasyPayResult, Promise>([=](Https::Response res) {
-    EasyPayResult result;
-    result._rawResponse = res.body;
-    result.statusCode = res.statusCode;
     auto promise = Promise<EasyPayResult>();
     if (res.isHttpError) {
       promise.reject(make_exception_ptr(HttpErrors::ServerError(res.statusCode)));
-    } else {
+      return promise;
+    }
+    try {
+      auto result = parseTokenRefundResult(res.body);
+      result._rawResponse = res.body;
+      result.statusCode = res.statusCode;
+      if (result.isError()) {
+        promise.reject(make_exception_ptr(HttpErrors::RequestError(result.primaryErrorMsg)));
+        return promise;
+      }
       promise.resolve(result);
+    } catch (...) {
+      promise.reject(make_exception_ptr(HttpErrors::APIError()));
     }
     return promise;
   });
 }
 
-string EasyPayBackend::Impl::makeMerchantSignature() {
+string EasyPayBackend::Impl::makeMerchantSignature(string date, uint32_t deviceId) {
   // TODO
   /*
   function createMerchantSignature(paymentData, secretkey) {
