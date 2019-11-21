@@ -93,7 +93,7 @@ Promise<EasyPayResult> EasyPayBackend::Impl::getPaymentStatus(string pspTransact
         "DateRequest": "2019-01-01T01:01:01Z",
         "SignatureMerchant": "string",
         "AmountInCoin": 1000,
-        "MerchantTransactionID": "string"
+        "MerchantTransactionId": "string"
     }
   )JSON";
   Https::RequestOptions options;
@@ -124,7 +124,7 @@ Promise<EasyPayResult> EasyPayBackend::Impl::makeRefund(string pspTransactionId)
     {
         "DateRequest": "2019-01-01T01:01:01Z",
         "SignatureMerchant": "string",
-        "MerchantTransactionID": "string"
+        "MerchantTransactionId": "string"
     }
   )JSON";
   Https::RequestOptions options;
