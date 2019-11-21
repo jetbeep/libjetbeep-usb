@@ -21,9 +21,9 @@ using tcp = net::ip::tcp;
 using namespace JetBeep;
 using namespace std;
 
-Https::HttpsClient::HttpsClient():m_log("https_client") {
-    m_isCanceled.store(false);
-    m_isPending.store(false);
+Https::HttpsClient::HttpsClient() : m_log("https_client") {
+  m_isCanceled.store(false);
+  m_isPending.store(false);
 };
 
 Https::HttpsClient::~HttpsClient() {
@@ -34,10 +34,10 @@ Https::HttpsClient::~HttpsClient() {
   m_isPending.store(false);
 }
 
-Promise<string> Https::HttpsClient::request(RequestOptions& options) {
+Promise<Https::Response> Https::HttpsClient::request(RequestOptions& options) {
   m_isCanceled.store(false);
   m_isPending.store(true);
-  m_pendingRequest = Promise<string>();
+  m_pendingRequest = Promise<Response>();
   m_thread = thread(&Https::HttpsClient::doRequest, this, options);
   return m_pendingRequest;
 };
@@ -46,6 +46,8 @@ void Https::HttpsClient::doRequest(RequestOptions options) {
   try {
     net::io_context ioc;
     ssl::context ctx(ssl::context::tlsv12_client);
+
+    m_log.d() << "HTTPS request to: " << options.host << ":" << options.port << options.path << Logger::endl;
 
     // TODO
     // This holds the root certificate used for verification
@@ -58,12 +60,10 @@ void Https::HttpsClient::doRequest(RequestOptions options) {
     beast::ssl_stream<beast::tcp_stream> stream(ioc, ctx);
 
     if (options.timeout) {
-        stream.next_layer().expires_after(std::chrono::milliseconds(options.timeout));
+      stream.next_layer().expires_after(std::chrono::milliseconds(options.timeout));
     }
 
-    auto closeStream = [&stream]() {
-      stream.next_layer().close();
-    };
+    auto closeStream = [&stream]() { stream.next_layer().close(); };
 
     if (!SSL_set_tlsext_host_name(stream.native_handle(), options.host.c_str())) {
       beast::error_code ec{static_cast<int>(::ERR_get_error()), net::error::get_ssl_category()};
@@ -128,11 +128,15 @@ void Https::HttpsClient::doRequest(RequestOptions options) {
 
     m_isPending.store(false);
 
-    cout << res; //TODO
-    m_pendingRequest.resolve("success");
+    Response response;
+    response.body = boost::beast::buffers_to_string(res.body().data());
+    response.statusCode = res.result_int();
+    response.isHttpError = Https::HttpsClient::isErrorStatusCode(response.statusCode);
+
+    m_pendingRequest.resolve(response);
 
   } catch (std::exception const& e) {
     m_log.e() << e.what() << Logger::endl;
-    m_pendingRequest.reject(make_exception_ptr(HttpErrors::RequestError()));
+    m_pendingRequest.reject(make_exception_ptr(HttpErrors::NetworkError()));
   }
 }

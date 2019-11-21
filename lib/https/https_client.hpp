@@ -1,8 +1,8 @@
 #ifndef HTTPS_CLIENT_HPP
 #define HTTPS_CLIENT_HPP
 
-#include "../utils/promise.hpp"
 #include "../utils/logger.hpp"
+#include "../utils/promise.hpp"
 #include "./http_errors.hpp"
 #include <atomic>
 #include <map>
@@ -26,25 +26,36 @@ namespace JetBeep::Https {
     string host;
     int port = DEFAULT_HTTPS_PORT;
     string path;
-    map<string, string> headers; //TODO implement
-    map<string, string> queryParams; //TODO implement
+    map<string, string> headers;     // TODO implement
+    map<string, string> queryParams; // TODO implement
     RequestContentType contentType = RequestContentType::JSON;
-    int timeout = DEFAULT_TIMEOUT_MS; //not implemented https://stackoverflow.com/questions/56828654/timeout-for-boostbeast-sync-http-client
+    int timeout = DEFAULT_TIMEOUT_MS; // not implemented https://stackoverflow.com/questions/56828654/timeout-for-boostbeast-sync-http-client
   } RequestOptions;
+
+  typedef struct {
+    int statusCode;
+    string body;
+    bool isHttpError;
+  } Response;
 
   class HttpsClient {
   public:
-    Promise<std::string> request(RequestOptions& options);
+    Promise<Response> request(RequestOptions& options);
     HttpsClient();
     ~HttpsClient();
 
   private:
-    Promise<std::string> m_pendingRequest;
+    Promise<Response> m_pendingRequest;
     std::thread m_thread;
     std::atomic<bool> m_isCanceled;
     std::atomic<bool> m_isPending;
     Logger m_log;
     void doRequest(RequestOptions options);
+
+    static bool isErrorStatusCode(int statusCode) {
+      int major = (int)(statusCode / 100);
+      return major == 4 || major == 5;
+    }
   };
 
 } // namespace JetBeep::Https

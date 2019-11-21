@@ -24,10 +24,11 @@ namespace JetBeep {
   } EasyPayError;
 
   class EasyPayResult {
-    public:
+  public:
     string Uid;
     vector<EasyPayError> Errors;
     string _rawResponse;
+    int statusCode;
 
     bool isError() {
       return m_errorsCount > 0;
@@ -40,7 +41,7 @@ namespace JetBeep {
   class EasyPayBackend {
   public:
     ~EasyPayBackend();
-    EasyPayBackend(EasyPayHostEnv env);
+    EasyPayBackend(EasyPayHostEnv env, string merchantSecretKey);
 
     Promise<EasyPayResult> makePayment(string paymentToken);
 
