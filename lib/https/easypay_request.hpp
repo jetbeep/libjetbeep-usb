@@ -8,6 +8,11 @@ using namespace std;
 
 namespace JetBeep::EasyPayAPI {
   typedef struct {
+    string date;
+    string signature;
+  } RequestSignature;
+
+  typedef struct {
     uint32_t AmountInCoin;
     string SignatureMerchant;
     string PaymentTokenFull;

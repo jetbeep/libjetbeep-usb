@@ -1,7 +1,11 @@
 #include "./easypay_backend.hpp"
 #include "../utils/logger.hpp"
 #include "./https_client.hpp"
+#include "../utils/cryptlite/sha256.h"
 #include <iostream>
+#include <ctime>
+#include <iomanip>
+#include <time.h>
 
 using namespace JetBeep;
 using namespace std;
@@ -25,7 +29,7 @@ private:
   int m_port;
   Logger m_log;
 
-  string makeMerchantSignature(string date, uint32_t deviceId);
+  RequestSignature makeMerchantSignature(uint32_t deviceId);
 };
 
 EasyPayBackend::Impl::~Impl() = default;
@@ -48,17 +52,19 @@ Promise<EasyPayResult> EasyPayBackend::getPaymentStatus(string merchantTransacti
 Promise<EasyPayResult> EasyPayBackend::makeRefund(string pspTransactionId, uint32_t amountInCoins, uint32_t deviceId) {
   return m_impl->makeRefund(pspTransactionId, amountInCoins, deviceId);
 }
+
 Promise<EasyPayResult> EasyPayBackend::Impl::makePayment(
   string merchantTransactionId, string paymentToken, uint32_t amountInCoins, uint32_t deviceId, string cashierId) {
   const string path = "/api/Payment/Box";
   TokenPaymentRequest data;
+  auto sigData = makeMerchantSignature(deviceId);
 
   data.AmountInCoin = amountInCoins;
-  data.DateRequest = "2018-06-26T06:53:03.691Z"; // TODO dates
+  data.DateRequest = sigData.date;
   data.MerchantCashboxId = cashierId;
   data.MerchantTransactionId = merchantTransactionId;
   data.PaymentTokenFull = paymentToken;
-  data.SignatureMerchant = makeMerchantSignature(data.DateRequest, deviceId);
+  data.SignatureMerchant = sigData.signature;
 
   string reqBody = tokenPaymentReqToJSON(data);
 
@@ -95,10 +101,12 @@ Promise<EasyPayResult> EasyPayBackend::Impl::getPaymentStatus(string merchantTra
   const string path = "/api/Payment/GetStatusTransaction";
   TokenGetStatusRequest data;
 
+  auto sigData = makeMerchantSignature(deviceId);
+
   data.AmountInCoin = amountInCoins;
-  data.DateRequest = "2018-06-26T06:53:03.691Z"; // TODO dates
+  data.DateRequest = sigData.date;
   data.MerchantTransactionId = merchantTransactionId;
-  data.SignatureMerchant = makeMerchantSignature(data.DateRequest, deviceId);
+  data.SignatureMerchant = sigData.signature;
 
   string reqBody = tokenGetStatusReqToJSON(data);
 
@@ -137,11 +145,12 @@ Promise<EasyPayResult> EasyPayBackend::Impl::getPaymentStatus(string merchantTra
 Promise<EasyPayResult> EasyPayBackend::Impl::makeRefund(string pspTransactionId, uint32_t amountInCoins, uint32_t deviceId) {
   const string path = "/api/Payment/Refund";
   TokenRefundRequest data;
+  auto sigData = makeMerchantSignature(deviceId);
 
   data.AmountInCoin = amountInCoins;
-  data.DateRequest = "2018-06-26T06:53:03.691Z"; // TODO dates
+  data.DateRequest = sigData.date;
   data.TransactionId = pspTransactionId;
-  data.SignatureMerchant = makeMerchantSignature(data.DateRequest, deviceId);
+  data.SignatureMerchant = sigData.signature;
 
   string reqBody = tokenRefundReqToJSON(data);
 
@@ -175,29 +184,41 @@ Promise<EasyPayResult> EasyPayBackend::Impl::makeRefund(string pspTransactionId,
   });
 }
 
-string EasyPayBackend::Impl::makeMerchantSignature(string date, uint32_t deviceId) {
-  // TODO
-  /*
-  function createMerchantSignature(paymentData, secretkey) {
-  const firstDate = moment.utc([1988, 5 /* 0 based *//*, 27, 22, 15, 0, 0]);
-  const nowDate = moment.utc(paymentData.datePaymentStart);
-  const secondsDiff = nowDate.diff(firstDate, 'seconds');
+RequestSignature EasyPayBackend::Impl::makeMerchantSignature(uint32_t deviceId) {
+  RequestSignature sigFields;
+  
+  //current time
+  std::time_t now = std::time(NULL);
+  std::tm* p_now = std::gmtime(&now);
+  stringstream isoNowStream;
+  isoNowStream << std::put_time(p_now, "%FT%TZ");
+  sigFields.date = isoNowStream.str();
 
-  let crypto = null;
-  try {
-    Buffer.from([]);
-    crypto = window.require('crypto');
-  } catch (er) {
-    console.warn(er);
-    window.alert('This tool does not work on browser environment');
-    return null;
-  }
 
-  const body = Buffer.from(`${secretkey}${secondsDiff}${paymentData.deviceId}`, 'utf8');
+  //easyPay point in time 1988-06-27T22:15:00Z
+  struct tm m_time;
 
-  return crypto.createHash('sha256').update(body).digest('base64');
-}
-  */
+  m_time.tm_sec = 0;
+  m_time.tm_min = 15;
+  m_time.tm_hour = 22;
+  m_time.tm_mday = 27;
+  m_time.tm_mon = 5;
+  m_time.tm_year = 1988 - 1900;
+  m_time.tm_wday = 1;
+  m_time.tm_yday = 178;
+  m_time.tm_isdst = -1;
+  m_time.tm_gmtoff = 0;
+  m_time.tm_zone = "GMT";
 
-  return "test";
+// TODO mkgmtime for WIN if required
+  std::time_t t_now2 =  timegm(p_now);    
+  std::time_t t_then2 = timegm(&m_time);  
+
+  int secondsDiff = (int)difftime(t_now2, t_then2);
+
+  string body = m_merchantSecretKey + std::to_string(secondsDiff) + std::to_string(deviceId);
+
+  sigFields.signature = cryptlite::sha256::hash_base64(body);
+
+  return sigFields;
 }
