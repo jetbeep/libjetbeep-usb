@@ -20,7 +20,7 @@ struct EasyPayBackend::Impl {
 
   Promise<EasyPayResult> getPaymentStatus(string merchantTransactionId, uint32_t amountInCoins, uint32_t deviceId);
 
-  Promise<EasyPayResult> makeRefund(string pspTransactionId, uint32_t amountInCoins, uint32_t deviceId);
+  Promise<EasyPayResult> makeRefund(long pspTransactionId, uint32_t amountInCoins, uint32_t deviceId);
 
 private:
   Https::HttpsClient m_httpsClient;
@@ -35,7 +35,7 @@ private:
 EasyPayBackend::Impl::~Impl() = default;
 
 EasyPayBackend::EasyPayBackend(EasyPayHostEnv env, string merchantSecretKey)
-  : m_impl(new Impl(env == EasyPayHostEnv::Production ? "sastest.easypay.ua" : "sas.easypay.ua", merchantSecretKey)) {
+  : m_impl(new Impl(env == EasyPayHostEnv::Production ? "sas.easypay.ua" : "sastest.easypay.ua", merchantSecretKey)) {
 }
 
 EasyPayBackend::~EasyPayBackend() = default;
@@ -49,7 +49,7 @@ Promise<EasyPayResult> EasyPayBackend::getPaymentStatus(string merchantTransacti
   return m_impl->getPaymentStatus(merchantTransactionId, amountInCoins, deviceId);
 }
 
-Promise<EasyPayResult> EasyPayBackend::makeRefund(string pspTransactionId, uint32_t amountInCoins, uint32_t deviceId) {
+Promise<EasyPayResult> EasyPayBackend::makeRefund(long pspTransactionId, uint32_t amountInCoins, uint32_t deviceId) {
   return m_impl->makeRefund(pspTransactionId, amountInCoins, deviceId);
 }
 
@@ -142,7 +142,7 @@ Promise<EasyPayResult> EasyPayBackend::Impl::getPaymentStatus(string merchantTra
   });
 }
 
-Promise<EasyPayResult> EasyPayBackend::Impl::makeRefund(string pspTransactionId, uint32_t amountInCoins, uint32_t deviceId) {
+Promise<EasyPayResult> EasyPayBackend::Impl::makeRefund(long pspTransactionId, uint32_t amountInCoins, uint32_t deviceId) {
   const string path = "/api/Payment/Refund";
   TokenRefundRequest data;
   auto sigData = makeMerchantSignature(deviceId);

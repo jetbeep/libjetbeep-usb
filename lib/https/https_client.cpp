@@ -35,6 +35,9 @@ Https::HttpsClient::~HttpsClient() {
 }
 
 Promise<Https::Response> Https::HttpsClient::request(RequestOptions& options) {
+  if (m_isPending.load() == true) {
+    throw runtime_error("previous request is not completed");
+  }
   m_isCanceled.store(false);
   m_isPending.store(true);
   m_pendingRequest = Promise<Response>();
@@ -43,6 +46,7 @@ Promise<Https::Response> Https::HttpsClient::request(RequestOptions& options) {
 };
 
 void Https::HttpsClient::doRequest(RequestOptions options) {
+  m_thread.detach();
   try {
     net::io_context ioc;
     ssl::context ctx(ssl::context::tlsv12_client);
@@ -126,12 +130,13 @@ void Https::HttpsClient::doRequest(RequestOptions options) {
     http::read(stream, buffer, res);
     closeStream();
 
-    m_isPending.store(false);
-
     Response response;
     response.body = boost::beast::buffers_to_string(res.body().data());
     response.statusCode = res.result_int();
     response.isHttpError = Https::HttpsClient::isErrorStatusCode(response.statusCode);
+
+    m_isPending.store(false);
+    m_log.d() << "API response (" << response.statusCode << "): " << response.body << Logger::endl;
 
     m_pendingRequest.resolve(response);
 

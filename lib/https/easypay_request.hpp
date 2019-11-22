@@ -32,7 +32,7 @@ namespace JetBeep::EasyPayAPI {
     string DateRequest;
     string SignatureMerchant;
     uint32_t AmountInCoin;
-    string TransactionId; //note: this is PSP transaction ID
+    long TransactionId; //note: this is PSP transaction ID
   } TokenRefundRequest;
 
   string tokenPaymentReqToJSON(TokenPaymentRequest& data);

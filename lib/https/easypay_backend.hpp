@@ -30,7 +30,7 @@ namespace JetBeep {
 
     Promise<EasyPayResult> getPaymentStatus(string merchantTransactionId, uint32_t amountInCoins, uint32_t deviceId);
 
-    Promise<EasyPayResult> makeRefund(string pspTransactionId, uint32_t amountInCoins, uint32_t deviceId);
+    Promise<EasyPayResult> makeRefund(long pspTransactionId, uint32_t amountInCoins, uint32_t deviceId);
 
   private:
     class Impl;
