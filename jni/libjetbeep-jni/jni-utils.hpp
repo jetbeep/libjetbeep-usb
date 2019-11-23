@@ -14,7 +14,7 @@ namespace JetBeep {
     static JNIEnv* attachCurrentThread();
     static void detachCurrentThread();
     static jobject convertAutoDeviceState(JNIEnv* env, const AutoDeviceState& state);
-
+    static jobject getJObject(AutoDevice *autoDevice);
   private:
     static Logger m_log;
     static JavaVM* m_jvm;

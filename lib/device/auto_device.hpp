@@ -40,13 +40,21 @@ namespace JetBeep {
     Promise<std::vector<Barcode>> requestBarcodes();
     void cancelBarcodes();
 
-    Promise<void> createPayment(uint32_t amount, const std::string& transactionId, const std::string& cashierId = "", const PaymentMetadata& metadata = PaymentMetadata());
+    Promise<void> createPayment(uint32_t amount,
+                                const std::string& transactionId,
+                                const std::string& cashierId = "",
+                                const PaymentMetadata& metadata = PaymentMetadata());
     void confirmPayment();
 
-    Promise<std::string> createPaymentToken(uint32_t amount, const std::string& transactionId, const std::string& cashierId = "", const PaymentMetadata& metadata = PaymentMetadata());
+    Promise<std::string> createPaymentToken(uint32_t amount,
+                                            const std::string& transactionId,
+                                            const std::string& cashierId = "",
+                                            const PaymentMetadata& metadata = PaymentMetadata());
     void cancelPayment();
 
     bool isMobileConnected();
+
+    void* opaque;
 
     AutoDeviceStateCallback stateCallback;
     AutoDevicePaymentErrorCallback paymentErrorCallback;

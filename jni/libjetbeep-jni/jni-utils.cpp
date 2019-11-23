@@ -102,7 +102,7 @@ void JniUtils::detachCurrentThread() {
 }
 
 jobject JniUtils::convertAutoDeviceState(JNIEnv* env, const AutoDeviceState& state) {
-  string className = "AutoDevice$State";
+  string className = "com/jetbeep/AutoDevice$State";
   jclass jAutoDeviceState = env->FindClass(className.c_str());
   jobject returnValue = nullptr;
   jfieldID field = nullptr;
@@ -140,4 +140,8 @@ jobject JniUtils::convertAutoDeviceState(JNIEnv* env, const AutoDeviceState& sta
   }
 
   return returnValue;
+}
+
+jobject JniUtils::getJObject(AutoDevice *autoDevice) {  
+  return reinterpret_cast<jobject>(autoDevice->opaque);
 }

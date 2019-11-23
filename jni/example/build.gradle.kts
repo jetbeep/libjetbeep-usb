@@ -16,3 +16,7 @@ val jar by tasks.getting(Jar::class) {
         attributes["Main-Class"] = "example.Main"
     }
 }
+
+val run by tasks.getting(JavaExec::class) {
+    standardInput = System.`in`
+}

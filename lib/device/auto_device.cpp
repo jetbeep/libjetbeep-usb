@@ -4,7 +4,8 @@
 using namespace std;
 using namespace JetBeep;
 
-AutoDevice::AutoDevice(IOContext context) : m_impl(new AutoDevice::Impl(&stateCallback, &paymentErrorCallback, &mobileCallback, context)) {
+AutoDevice::AutoDevice(IOContext context)
+  : m_impl(new AutoDevice::Impl(&stateCallback, &paymentErrorCallback, &mobileCallback, context)), opaque(nullptr) {
 }
 AutoDevice::~AutoDevice() {
 }
@@ -33,7 +34,10 @@ void AutoDevice::cancelBarcodes() {
   m_impl->cancelBarcodes();
 }
 
-Promise<void> AutoDevice::createPayment(uint32_t amount, const std::string& transactionId, const std::string& cashierId, const PaymentMetadata& metadata) {
+Promise<void> AutoDevice::createPayment(uint32_t amount,
+                                        const std::string& transactionId,
+                                        const std::string& cashierId,
+                                        const PaymentMetadata& metadata) {
   return m_impl->createPayment(amount, transactionId, cashierId, metadata);
 }
 
@@ -41,7 +45,10 @@ void AutoDevice::confirmPayment() {
   m_impl->confirmPayment();
 }
 
-Promise<std::string> AutoDevice::createPaymentToken(uint32_t amount, const std::string& transactionId, const std::string& cashierId, const PaymentMetadata& metadata) {
+Promise<std::string> AutoDevice::createPaymentToken(uint32_t amount,
+                                                    const std::string& transactionId,
+                                                    const std::string& cashierId,
+                                                    const PaymentMetadata& metadata) {
   return m_impl->createPaymentToken(amount, transactionId, cashierId, metadata);
 }
 

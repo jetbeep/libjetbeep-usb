@@ -15,9 +15,11 @@ Logger AutoDeviceJni::log = Logger("autodevice-jni");
 
 JNIEXPORT jlong JNICALL Java_com_jetbeep_AutoDevice_init(JNIEnv* env, jobject object) {
   JniUtils::storeJvm(env);
-  auto ptr = new AutoDevice();
-  ptr->stateCallback = [object](AutoDeviceState state, exception_ptr ptr) {
+  auto device = new AutoDevice();
+  device->opaque = env->NewGlobalRef(object);
+  device->stateCallback = [device](AutoDeviceState state, exception_ptr ptr) {
     auto env = JniUtils::attachCurrentThread();
+    auto object = JniUtils::getJObject(device);
     if (env == nullptr) {
       AutoDeviceJni::log.e() << "unable to get env" << Logger::endl;
       return;
@@ -38,14 +40,14 @@ JNIEXPORT jlong JNICALL Java_com_jetbeep_AutoDevice_init(JNIEnv* env, jobject ob
     auto jState = JniUtils::convertAutoDeviceState(env, state);
     if (jState == nullptr) {
       AutoDeviceJni::log.e() << "unable to get jState" << Logger::endl;
-      return JniUtils::detachCurrentThread();      
+      return JniUtils::detachCurrentThread();
     }
 
     env->CallVoidMethod(object, onStateChange, jState);
 
     JniUtils::detachCurrentThread();
   };
-  return (jlong)(ptr);
+  return (jlong)(device);
 }
 
 JNIEXPORT void JNICALL Java_com_jetbeep_AutoDevice_free(JNIEnv* env, jobject object, jlong ptr) {
@@ -54,6 +56,7 @@ JNIEXPORT void JNICALL Java_com_jetbeep_AutoDevice_free(JNIEnv* env, jobject obj
     return;
   }
 
+  env->DeleteGlobalRef(JniUtils::getJObject(device));
   delete device;
 }
 
@@ -121,8 +124,9 @@ JNIEXPORT void JNICALL Java_com_jetbeep_AutoDevice_requestBarcodes(JNIEnv* env, 
 
   try {
     device->requestBarcodes()
-      .then([object](vector<Barcode> barcodes) {
+      .then([device](vector<Barcode> barcodes) {        
         auto env = JniUtils::attachCurrentThread();
+        auto object = JniUtils::getJObject(device);
         if (env == nullptr) {
           AutoDeviceJni::log.e() << "unable to get env" << Logger::endl;
           return;
@@ -215,8 +219,9 @@ JNIEXPORT void JNICALL Java_com_jetbeep_AutoDevice_createPaymentToken(
 
   try {
     device->createPaymentToken(amount, transactionId, cashierId, metadata)
-      .then([object](std::string token) {
+      .then([device](std::string token) {
         auto env = JniUtils::attachCurrentThread();
+        auto object = JniUtils::getJObject(device);
         if (env == nullptr) {
           AutoDeviceJni::log.e() << "unable to get env" << Logger::endl;
           return JniUtils::detachCurrentThread();
