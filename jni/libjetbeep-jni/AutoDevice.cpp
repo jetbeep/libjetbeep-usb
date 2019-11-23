@@ -16,6 +16,35 @@ Logger AutoDeviceJni::log = Logger("autodevice-jni");
 JNIEXPORT jlong JNICALL Java_com_jetbeep_AutoDevice_init(JNIEnv* env, jobject object) {
   JniUtils::storeJvm(env);
   auto ptr = new AutoDevice();
+  ptr->stateCallback = [object](AutoDeviceState state, exception_ptr ptr) {
+    auto env = JniUtils::attachCurrentThread();
+    if (env == nullptr) {
+      AutoDeviceJni::log.e() << "unable to get env" << Logger::endl;
+      return;
+    }
+
+    auto autoDeviceClass = env->GetObjectClass(object);
+    if (autoDeviceClass == nullptr) {
+      AutoDeviceJni::log.e() << "unable to get AutoDevice class" << Logger::endl;
+      return JniUtils::detachCurrentThread();
+    }
+
+    auto onStateChange = env->GetMethodID(autoDeviceClass, "onStateChange", "(Lcom/jetbeep/AutoDevice$State;)V");
+    if (onStateChange == nullptr) {
+      AutoDeviceJni::log.e() << "unable to get onStateChange method" << Logger::endl;
+      return JniUtils::detachCurrentThread();
+    }
+
+    auto jState = JniUtils::convertAutoDeviceState(env, state);
+    if (jState == nullptr) {
+      AutoDeviceJni::log.e() << "unable to get jState" << Logger::endl;
+      return JniUtils::detachCurrentThread();      
+    }
+
+    env->CallVoidMethod(object, onStateChange, jState);
+
+    JniUtils::detachCurrentThread();
+  };
   return (jlong)(ptr);
 }
 
@@ -244,44 +273,7 @@ JNIEXPORT jobject JNICALL Java_com_jetbeep_AutoDevice_state(JNIEnv* env, jobject
   }
 
   auto state = device->state();
-  string className = "AutoDevice$State";
-  jclass jAutoDeviceState = env->FindClass(className.c_str());
-  jobject returnValue = nullptr;
-  jfieldID field = nullptr;
-  auto signatureFun = [&]() -> string { return "L" + className + ";"; };
-
-  switch (state) {
-  case AutoDeviceState::invalid:
-    field = env->GetStaticFieldID(jAutoDeviceState, "invalid", signatureFun().c_str());
-    returnValue = env->GetStaticObjectField(jAutoDeviceState, field);
-    break;
-  case AutoDeviceState::sessionOpened:
-    field = env->GetStaticFieldID(jAutoDeviceState, "sessionOpened", signatureFun().c_str());
-    returnValue = env->GetStaticObjectField(jAutoDeviceState, field);
-    break;
-  case AutoDeviceState::sessionClosed:
-    field = env->GetStaticFieldID(jAutoDeviceState, "sessionClosed", signatureFun().c_str());
-    returnValue = env->GetStaticObjectField(jAutoDeviceState, field);
-    break;
-  case AutoDeviceState::waitingForBarcodes:
-    field = env->GetStaticFieldID(jAutoDeviceState, "waitingForBarcodes", signatureFun().c_str());
-    returnValue = env->GetStaticObjectField(jAutoDeviceState, field);
-    break;
-  case AutoDeviceState::waitingForPaymentResult:
-    field = env->GetStaticFieldID(jAutoDeviceState, "waitingForPaymentResult", signatureFun().c_str());
-    returnValue = env->GetStaticObjectField(jAutoDeviceState, field);
-    break;
-  case AutoDeviceState::waitingForConfirmation:
-    field = env->GetStaticFieldID(jAutoDeviceState, "waitingForConfirmation", signatureFun().c_str());
-    returnValue = env->GetStaticObjectField(jAutoDeviceState, field);
-    break;
-  case AutoDeviceState::waitingForPaymentToken:
-    field = env->GetStaticFieldID(jAutoDeviceState, "waitingForPaymentToken", signatureFun().c_str());
-    returnValue = env->GetStaticObjectField(jAutoDeviceState, field);
-    break;
-  }
-
-  return returnValue;
+  return JniUtils::convertAutoDeviceState(env, state);
 }
 
 JNIEXPORT jboolean JNICALL Java_com_jetbeep_AutoDevice_isMobileConnected(JNIEnv* env, jobject object, jlong ptr) {

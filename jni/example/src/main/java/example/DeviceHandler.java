@@ -13,4 +13,8 @@ public class DeviceHandler extends AutoDevice {
   public void onPaymentToken(String token) {
     System.out.println("received token: " + token);
   }
+
+  public void onStateChange(AutoDevice.State newState) {
+    System.out.println("state changed to: " + newState.toString());
+  }
 }

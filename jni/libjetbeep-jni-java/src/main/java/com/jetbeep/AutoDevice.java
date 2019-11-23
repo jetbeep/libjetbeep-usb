@@ -93,6 +93,7 @@ abstract public class AutoDevice {
 
   abstract public void onBarcodes(Barcode[] barcodes);
   abstract public void onPaymentToken(String token);
+  abstract public void onStateChange(State newState);
 
   private void onBarcodeBegin(int size) {
     m_barcodes = new Barcode[size];

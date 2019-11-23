@@ -35,9 +35,9 @@ void JniUtils::throwNullPointerException(JNIEnv* env, const std::string& message
   if (env->ThrowNew(exClass, message.c_str()) != 0) {
     m_log.e() << "unable to throwNew" << Logger::endl;
     return;
-  }  
+  }
 }
-bool JniUtils::getAutoDevicePointer(JNIEnv *env, jlong ptr, AutoDevice **autoDevice) {
+bool JniUtils::getAutoDevicePointer(JNIEnv* env, jlong ptr, AutoDevice** autoDevice) {
   if (0 == ptr) {
     JniUtils::throwNullPointerException(env, "AutoDevice pointer is null");
     *autoDevice = nullptr;
@@ -47,14 +47,14 @@ bool JniUtils::getAutoDevicePointer(JNIEnv *env, jlong ptr, AutoDevice **autoDev
   return true;
 }
 
-std::string JniUtils::getString(JNIEnv *env, jstring string) {
+std::string JniUtils::getString(JNIEnv* env, jstring string) {
   auto cstr = env->GetStringUTFChars(string, nullptr);
   std::string returnString = std::string(cstr == nullptr ? "" : cstr);
   env->ReleaseStringUTFChars(string, cstr);
   return returnString;
 }
 
-void JniUtils::storeJvm(JNIEnv *env) {
+void JniUtils::storeJvm(JNIEnv* env) {
   if (m_jvm != nullptr) {
     return;
   }
@@ -76,7 +76,7 @@ JNIEnv* JniUtils::attachCurrentThread() {
     return nullptr;
   }
 
-  errorCode = jvm->AttachCurrentThread((void **)&env, nullptr);
+  errorCode = jvm->AttachCurrentThread((void**)&env, nullptr);
   if (errorCode != JNI_OK) {
     m_log.e() << "unable to attach current thread: " << errorCode << Logger::endl;
     return nullptr;
@@ -91,7 +91,7 @@ void JniUtils::detachCurrentThread() {
 
   if (jvm == nullptr) {
     m_log.e() << "detachCurrentThread: JVM is null!" << Logger::endl;
-    return;    
+    return;
   }
 
   errorCode = jvm->DetachCurrentThread();
@@ -99,4 +99,45 @@ void JniUtils::detachCurrentThread() {
     m_log.e() << "unable to detach current thread: " << errorCode << Logger::endl;
     return;
   }
+}
+
+jobject JniUtils::convertAutoDeviceState(JNIEnv* env, const AutoDeviceState& state) {
+  string className = "AutoDevice$State";
+  jclass jAutoDeviceState = env->FindClass(className.c_str());
+  jobject returnValue = nullptr;
+  jfieldID field = nullptr;
+  auto signatureFun = [&]() -> string { return "L" + className + ";"; };
+
+  switch (state) {
+  case AutoDeviceState::invalid:
+    field = env->GetStaticFieldID(jAutoDeviceState, "invalid", signatureFun().c_str());
+    returnValue = env->GetStaticObjectField(jAutoDeviceState, field);
+    break;
+  case AutoDeviceState::sessionOpened:
+    field = env->GetStaticFieldID(jAutoDeviceState, "sessionOpened", signatureFun().c_str());
+    returnValue = env->GetStaticObjectField(jAutoDeviceState, field);
+    break;
+  case AutoDeviceState::sessionClosed:
+    field = env->GetStaticFieldID(jAutoDeviceState, "sessionClosed", signatureFun().c_str());
+    returnValue = env->GetStaticObjectField(jAutoDeviceState, field);
+    break;
+  case AutoDeviceState::waitingForBarcodes:
+    field = env->GetStaticFieldID(jAutoDeviceState, "waitingForBarcodes", signatureFun().c_str());
+    returnValue = env->GetStaticObjectField(jAutoDeviceState, field);
+    break;
+  case AutoDeviceState::waitingForPaymentResult:
+    field = env->GetStaticFieldID(jAutoDeviceState, "waitingForPaymentResult", signatureFun().c_str());
+    returnValue = env->GetStaticObjectField(jAutoDeviceState, field);
+    break;
+  case AutoDeviceState::waitingForConfirmation:
+    field = env->GetStaticFieldID(jAutoDeviceState, "waitingForConfirmation", signatureFun().c_str());
+    returnValue = env->GetStaticObjectField(jAutoDeviceState, field);
+    break;
+  case AutoDeviceState::waitingForPaymentToken:
+    field = env->GetStaticFieldID(jAutoDeviceState, "waitingForPaymentToken", signatureFun().c_str());
+    returnValue = env->GetStaticObjectField(jAutoDeviceState, field);
+    break;
+  }
+
+  return returnValue;
 }
