@@ -6,7 +6,15 @@
 using namespace std;
 using namespace JetBeep;
 
+class AutoDeviceJni {
+public:
+  static Logger log;
+};
+
+Logger AutoDeviceJni::log = Logger("autodevice-jni");
+
 JNIEXPORT jlong JNICALL Java_com_jetbeep_AutoDevice_init(JNIEnv* env, jobject object) {
+  JniUtils::storeJvm(env);
   auto ptr = new AutoDevice();
   return (jlong)(ptr);
 }
@@ -84,11 +92,55 @@ JNIEXPORT void JNICALL Java_com_jetbeep_AutoDevice_requestBarcodes(JNIEnv* env, 
 
   try {
     device->requestBarcodes()
-      .then([](vector<Barcode> barcodes) {
-        // TODO
+      .then([object](vector<Barcode> barcodes) {
+        auto env = JniUtils::attachCurrentThread();        
+        if (env == nullptr) {
+          AutoDeviceJni::log.e() << "unable to get env" << Logger::endl;
+          return;
+        }
+        auto autoDeviceClass = env->GetObjectClass(object);
+        if (autoDeviceClass == nullptr) {
+          AutoDeviceJni::log.e() << "unable to get AutoDevice class" << Logger::endl;
+          return JniUtils::detachCurrentThread();
+        }
+
+        auto onBarcodeBegin = env->GetMethodID(autoDeviceClass, "onBarcodeBegin", "(I)V");
+        if (onBarcodeBegin == nullptr) {
+          AutoDeviceJni::log.e() << "unable to get onBarcodeBegin method" << Logger::endl;
+          return JniUtils::detachCurrentThread();
+        }
+
+        auto onBarcodeValue = env->GetMethodID(autoDeviceClass, "onBarcodeValue", "(ILjava/lang/String;I)V");
+        if (onBarcodeValue == nullptr) {
+          AutoDeviceJni::log.e() << "unable to get onBarcodeValue method" << Logger::endl;
+          return JniUtils::detachCurrentThread();
+        }
+
+        auto onBarcodeEnd = env->GetMethodID(autoDeviceClass, "onBarcodeEnd", "()V");
+        if (onBarcodeEnd == nullptr) {
+          AutoDeviceJni::log.e() << "unable to get onBarcodeEnd method" << Logger::endl;
+          return JniUtils::detachCurrentThread();
+        }
+
+        env->CallVoidMethod(object, onBarcodeBegin, barcodes.size());
+
+        for (auto it = barcodes.begin(); it != barcodes.end(); ++it) {
+          jstring jValue = env->NewStringUTF((*it).value.c_str());
+          if (jValue == nullptr) {
+            AutoDeviceJni::log.e() << "unable to create jString" << Logger::endl;
+            return JniUtils::detachCurrentThread();
+          }
+          jint jType = (jint)(*it).type;
+
+          env->CallVoidMethod(object, onBarcodeValue, jValue, jType);
+        }
+
+        env->CallVoidMethod(object, onBarcodeEnd);
+
+        JniUtils::detachCurrentThread();
       })
       .catchError([](exception_ptr ptr) {
-        // TODO
+        // we don't have to handle this error here, as it will be passed to errorCallback as well
       });
   } catch (...) {
     // TODO: handle all exceptions separetely

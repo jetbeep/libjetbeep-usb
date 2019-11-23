@@ -1,10 +1,13 @@
 package com.jetbeep;
 
 import java.util.Map;
+
+import com.jetbeep.Barcode;
+
 import java.util.HashMap;
 import java.util.Iterator;
 
-public class AutoDevice {
+abstract public class AutoDevice {
   static {
     System.loadLibrary("jetbeep-jni");
   }
@@ -87,6 +90,25 @@ public class AutoDevice {
   public boolean isMobileConnected() {
     return isMobileConnected(ptr);    
   }
+
+  abstract public void onBarcodes(Barcode[] barcodes);
+
+  private void onBarcodeBegin(int size) {
+    m_barcodes = new Barcode[size];
+  }
+
+  private void onBarcodeValue(int index, String cvalue, int ctype) {
+    Barcode.Type type = Barcode.Type.fromInt(ctype);
+    Barcode barcode = new Barcode(cvalue, type);
+    m_barcodes[index] = barcode;
+  }
+
+  private void onBarcodeEnd() {
+    onBarcodes(m_barcodes);
+    m_barcodes = null;
+  }
+
+  private Barcode[] m_barcodes;
 
   private native long init();  
   private native void free(long ptr);

@@ -3,7 +3,8 @@
 using namespace std;
 using namespace JetBeep;
 
-Logger JniUtils::log = Logger("jni-utils");
+Logger JniUtils::m_log = Logger("jni-utils");
+JavaVM* JniUtils::m_jvm = nullptr;
 
 void JniUtils::throwIllegalStateException(JNIEnv* env, const std::string& message) {
   jclass exClass;
@@ -11,12 +12,12 @@ void JniUtils::throwIllegalStateException(JNIEnv* env, const std::string& messag
 
   exClass = env->FindClass(className);
   if (exClass == NULL) {
-    log.e() << "unable to find illegalstate exception" << Logger::endl;
+    m_log.e() << "unable to find illegalstate exception" << Logger::endl;
     return;
   }
 
   if (env->ThrowNew(exClass, message.c_str()) != 0) {
-    log.e() << "unable to throwNew" << Logger::endl;
+    m_log.e() << "unable to throwNew" << Logger::endl;
     return;
   }
 }
@@ -27,12 +28,12 @@ void JniUtils::throwNullPointerException(JNIEnv* env, const std::string& message
 
   exClass = env->FindClass(className);
   if (exClass == NULL) {
-    log.e() << "unable to find NullPointerException exception" << Logger::endl;
+    m_log.e() << "unable to find NullPointerException exception" << Logger::endl;
     return;
   }
 
   if (env->ThrowNew(exClass, message.c_str()) != 0) {
-    log.e() << "unable to throwNew" << Logger::endl;
+    m_log.e() << "unable to throwNew" << Logger::endl;
     return;
   }  
 }
@@ -51,4 +52,51 @@ std::string JniUtils::getString(JNIEnv *env, jstring string) {
   std::string returnString = std::string(cstr == nullptr ? "" : cstr);
   env->ReleaseStringUTFChars(string, cstr);
   return returnString;
+}
+
+void JniUtils::storeJvm(JNIEnv *env) {
+  if (m_jvm != nullptr) {
+    return;
+  }
+
+  env->GetJavaVM(&m_jvm);
+}
+
+JavaVM* JniUtils::getJvm() {
+  return m_jvm;
+}
+
+JNIEnv* JniUtils::attachCurrentThread() {
+  auto jvm = JniUtils::getJvm();
+  JNIEnv* env = nullptr;
+  jint errorCode = 0;
+
+  if (jvm == nullptr) {
+    m_log.e() << "attachCurrentThread: JVM is null!" << Logger::endl;
+    return nullptr;
+  }
+
+  errorCode = jvm->AttachCurrentThread((void **)&env, nullptr);
+  if (errorCode != JNI_OK) {
+    m_log.e() << "unable to attach current thread: " << errorCode << Logger::endl;
+    return nullptr;
+  }
+
+  return env;
+}
+
+void JniUtils::detachCurrentThread() {
+  auto jvm = JniUtils::getJvm();
+  jint errorCode = 0;
+
+  if (jvm == nullptr) {
+    m_log.e() << "detachCurrentThread: JVM is null!" << Logger::endl;
+    return;    
+  }
+
+  errorCode = jvm->DetachCurrentThread();
+  if (errorCode != JNI_OK) {
+    m_log.e() << "unable to detach current thread: " << errorCode << Logger::endl;
+    return;
+  }
 }

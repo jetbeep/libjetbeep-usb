@@ -9,7 +9,12 @@ namespace JetBeep {
     static void throwNullPointerException(JNIEnv* env, const std::string& message);
     static bool getAutoDevicePointer(JNIEnv *env, jlong ptr, AutoDevice **autoDevice);
     static std::string getString(JNIEnv *env, jstring string);
+    static void storeJvm(JNIEnv *env);
+    static JavaVM* getJvm();
+    static JNIEnv* attachCurrentThread();
+    static void detachCurrentThread();
   private:
-    static Logger log;
+    static Logger m_log;
+    static JavaVM *m_jvm;
   };
 } // namespace JetBeep
