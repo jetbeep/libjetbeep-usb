@@ -47,6 +47,33 @@ JNIEXPORT jlong JNICALL Java_com_jetbeep_AutoDevice_init(JNIEnv* env, jobject ob
 
     JniUtils::detachCurrentThread();
   };
+
+  device->mobileCallback = [device](SerialMobileEvent event) {
+    auto env = JniUtils::attachCurrentThread();
+    auto object = JniUtils::getJObject(device);
+    if (env == nullptr) {
+      AutoDeviceJni::log.e() << "unable to get env" << Logger::endl;
+      return;
+    }
+
+    auto autoDeviceClass = env->GetObjectClass(object);
+    if (autoDeviceClass == nullptr) {
+      AutoDeviceJni::log.e() << "unable to get AutoDevice class" << Logger::endl;
+      return JniUtils::detachCurrentThread();
+    }
+
+    auto onMobileConnectionChange = env->GetMethodID(autoDeviceClass, "onMobileConnectionChange", "(Z)V");
+    if (onMobileConnectionChange == nullptr) {
+      AutoDeviceJni::log.e() << "unable to get onMobileConnectionChange method" << Logger::endl;
+      return JniUtils::detachCurrentThread();
+    }
+
+    jboolean isConnected = (jboolean)(event == SerialMobileEvent::connected);
+    env->CallVoidMethod(object, onMobileConnectionChange, isConnected);
+
+    JniUtils::detachCurrentThread();
+  };
+
   return (jlong)(device);
 }
 
@@ -124,7 +151,7 @@ JNIEXPORT void JNICALL Java_com_jetbeep_AutoDevice_requestBarcodes(JNIEnv* env, 
 
   try {
     device->requestBarcodes()
-      .then([device](vector<Barcode> barcodes) {        
+      .then([device](vector<Barcode> barcodes) {
         auto env = JniUtils::attachCurrentThread();
         auto object = JniUtils::getJObject(device);
         if (env == nullptr) {

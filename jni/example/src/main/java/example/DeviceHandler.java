@@ -17,4 +17,8 @@ public class DeviceHandler extends AutoDevice {
   public void onStateChange(AutoDevice.State newState) {
     System.out.println("state changed to: " + newState.toString());
   }
+
+  public void onMobileConnectionChange(boolean isConnected) {
+    System.out.println("is mobile connected == " + isConnected);
+  }
 }
