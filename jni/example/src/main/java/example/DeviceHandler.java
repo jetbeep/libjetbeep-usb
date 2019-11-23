@@ -9,4 +9,8 @@ public class DeviceHandler extends AutoDevice {
       System.out.println(barcodes[i].value);
     }    
   }
+
+  public void onPaymentToken(String token) {
+    System.out.println("received token: " + token);
+  }
 }

@@ -93,7 +93,7 @@ JNIEXPORT void JNICALL Java_com_jetbeep_AutoDevice_requestBarcodes(JNIEnv* env, 
   try {
     device->requestBarcodes()
       .then([object](vector<Barcode> barcodes) {
-        auto env = JniUtils::attachCurrentThread();        
+        auto env = JniUtils::attachCurrentThread();
         if (env == nullptr) {
           AutoDeviceJni::log.e() << "unable to get env" << Logger::endl;
           return;
@@ -186,11 +186,36 @@ JNIEXPORT void JNICALL Java_com_jetbeep_AutoDevice_createPaymentToken(
 
   try {
     device->createPaymentToken(amount, transactionId, cashierId, metadata)
-      .then([](std::string token) {
-        // TODO
+      .then([object](std::string token) {
+        auto env = JniUtils::attachCurrentThread();
+        if (env == nullptr) {
+          AutoDeviceJni::log.e() << "unable to get env" << Logger::endl;
+          return JniUtils::detachCurrentThread();
+        }
+
+        auto autoDeviceClass = env->GetObjectClass(object);
+        if (autoDeviceClass == nullptr) {
+          AutoDeviceJni::log.e() << "unable to get AutoDevice class" << Logger::endl;
+          return JniUtils::detachCurrentThread();
+        }
+
+        auto onPaymentToken = env->GetMethodID(autoDeviceClass, "onPaymentToken", "(Ljava/lang/String;)V");
+        if (onPaymentToken == nullptr) {
+          AutoDeviceJni::log.e() << "unable to get onPaymentToken method" << Logger::endl;
+          return JniUtils::detachCurrentThread();
+        }
+
+        jstring jToken = env->NewStringUTF(token.c_str());
+        if (jToken == nullptr) {
+          AutoDeviceJni::log.e() << "unable to create jString" << Logger::endl;
+          return JniUtils::detachCurrentThread();
+        }
+
+        env->CallVoidMethod(object, onPaymentToken, jToken);
+        JniUtils::detachCurrentThread();
       })
       .catchError([](exception_ptr ptr) {
-        // TODO
+        // we don't have to handle this error here, as it will be passed to errorCallback as well
       });
   } catch (...) {
     // TODO: handle all exceptions separetely
