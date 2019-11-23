@@ -1,3 +1,5 @@
 libjetbeep-jni.dylib
 libjetbeep-jni.so
 jetbeep-jni.dll
+
+com_jetbeep_AutoDevice.h

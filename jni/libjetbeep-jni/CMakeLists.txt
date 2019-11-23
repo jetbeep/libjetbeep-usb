@@ -5,11 +5,13 @@ if (NOT JNI_FOUND)
   return()
 endif()
 
-execute_process(COMMAND   
-  javac -h . ../libjetbeep-jni-java/src/main/java/com/jetbeep/JetBeep.java
+add_custom_target(GenerateJavaHeaders COMMAND   
+  javac -h . ../libjetbeep-jni-java/src/main/java/com/jetbeep/AutoDevice.java
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
-add_library(jetbeep-jni SHARED ${JETBEEP_INCLUDES} $<TARGET_OBJECTS:jetbeep_obj> JetBeep.cpp)
+add_library(jetbeep-jni SHARED ${JETBEEP_INCLUDES} $<TARGET_OBJECTS:jetbeep_obj> AutoDevice.cpp jni-utils.cpp)
+add_dependencies(jetbeep-jni GenerateJavaHeaders)
+
 target_include_directories(jetbeep-jni PUBLIC ${JNI_INCLUDE_DIRS})
 
 set_target_properties(jetbeep-jni PROPERTIES
