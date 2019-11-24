@@ -17,6 +17,9 @@ target_include_directories(jetbeep-jni PUBLIC ${JNI_INCLUDE_DIRS})
 set_target_properties(jetbeep-jni PROPERTIES
   LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
+find_package(OpenSSL REQUIRED)
+target_link_libraries(jetbeep-jni ${OPENSSL_CRYPTO_LIBRARY} ${OPENSSL_SSL_LIBRARY})
+
 if (APPLE) 
 	target_link_libraries(jetbeep-jni "-framework IOKit" "-framework CoreFoundation")
 elseif(UNIX AND NOT APPLE) #linux
