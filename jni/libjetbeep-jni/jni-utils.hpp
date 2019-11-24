@@ -8,6 +8,7 @@ namespace JetBeep {
   public:
     static void throwIllegalStateException(JNIEnv* env, const std::string& message);
     static void throwNullPointerException(JNIEnv* env, const std::string& message);
+    static void throwIOException(JNIEnv *env, const std::string& message);
     static bool getAutoDevicePointer(JNIEnv* env, jlong ptr, AutoDevice** autoDevice);
     static std::string getString(JNIEnv* env, jstring string);
     static void storeJvm(JNIEnv* env);

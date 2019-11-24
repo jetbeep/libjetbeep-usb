@@ -4,6 +4,8 @@ import java.util.Map;
 
 import com.jetbeep.Barcode;
 
+import java.lang.IllegalStateException;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 
@@ -33,31 +35,33 @@ abstract public class AutoDevice {
     ptr = 0;
   }  
 
-  public void start() {
+  public void start() throws IllegalStateException, IOException {
     start(ptr);
   }
 
-  public void stop() {
+  public void stop() throws IllegalStateException, IOException {
     stop(ptr);
   }
 
-  public void openSession() {
+  public void openSession() throws IllegalStateException, IOException {
     openSession(ptr);
   }
 
-  public void closeSession() {
+  public void closeSession() throws IllegalStateException, IOException {
     closeSession(ptr);
   }
 
-  public void requestBarcodes() {
+  public void requestBarcodes() throws IllegalStateException, IOException {
     requestBarcodes(ptr);
   }
 
-  public void cancelBarcodes() {
+  public void cancelBarcodes() throws IllegalStateException, IOException {
     cancelBarcodes(ptr);
   }
 
-  public void createPaymentToken(int amount, String transactionId, String cashierId, HashMap<String, String> metadata) {    
+  public void createPaymentToken(int amount, String transactionId, 
+    String cashierId, HashMap<String, String> metadata) 
+    throws IllegalStateException, IOException {    
     String[] keysMetadata = new String[metadata.size()];
     String[] valuesMetadata = new String[metadata.size()];
     int index = 0;
@@ -71,15 +75,17 @@ abstract public class AutoDevice {
     createPaymentToken(ptr, amount, transactionId, cashierId, keysMetadata, valuesMetadata);
   }
 
-  public void createPaymentToken(int amount, String transactionId, String cashierId) {
+  public void createPaymentToken(int amount, String transactionId, String cashierId)
+    throws IllegalStateException, IOException {
     createPaymentToken(amount, transactionId, cashierId, new HashMap<String, String>());
   }
 
-  public void createPaymentToken(int amount, String transactionId) {
+  public void createPaymentToken(int amount, String transactionId)
+    throws IllegalStateException, IOException {
     createPaymentToken(amount, transactionId, new String(""), new HashMap<String, String>());
   }
 
-  public void cancelPayment() {
+  public void cancelPayment() throws IllegalStateException, IOException {
     cancelPayment(ptr);
   }
 
