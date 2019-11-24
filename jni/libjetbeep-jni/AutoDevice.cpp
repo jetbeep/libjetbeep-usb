@@ -17,7 +17,7 @@ JNIEXPORT jlong JNICALL Java_com_jetbeep_AutoDevice_init(JNIEnv* env, jobject ob
   std::lock_guard<recursive_mutex> lock(JniUtils::mutex);
   JniUtils::storeJvm(env);
   auto device = new AutoDevice();
-  JniUtils::storeJObject(env, object, device);
+  JniUtils::storeAutoDeviceJObject(env, object, device);
   device->stateCallback = [device](AutoDeviceState state, exception_ptr ptr) {
     std::lock_guard<recursive_mutex> lock(JniUtils::mutex);
     auto env = JniUtils::attachCurrentThread();
@@ -26,7 +26,7 @@ JNIEXPORT jlong JNICALL Java_com_jetbeep_AutoDevice_init(JNIEnv* env, jobject ob
       return;
     }
 
-    auto object = JniUtils::getJObject(device);
+    auto object = JniUtils::getAutoDeviceJObject(device);
     if (object == nullptr) {
       AutoDeviceJni::log.e() << "unable to get jobject" << Logger::endl;
       return JniUtils::detachCurrentThread();
@@ -63,7 +63,7 @@ JNIEXPORT jlong JNICALL Java_com_jetbeep_AutoDevice_init(JNIEnv* env, jobject ob
       return;
     }
 
-    auto object = JniUtils::getJObject(device);
+    auto object = JniUtils::getAutoDeviceJObject(device);
     if (object == nullptr) {
       AutoDeviceJni::log.e() << "unable to get jobject" << Logger::endl;
       return JniUtils::detachCurrentThread();
@@ -97,7 +97,7 @@ JNIEXPORT void JNICALL Java_com_jetbeep_AutoDevice_free(JNIEnv* env, jobject obj
     return;
   }
 
-  JniUtils::releaseJObject(env, device);
+  JniUtils::releaseAutoDeviceJObject(env, device);
   delete device;
 }
 
@@ -182,7 +182,7 @@ JNIEXPORT void JNICALL Java_com_jetbeep_AutoDevice_requestBarcodes(JNIEnv* env, 
           return;
         }
 
-        auto object = JniUtils::getJObject(device);
+        auto object = JniUtils::getAutoDeviceJObject(device);
         if (object == nullptr) {
           AutoDeviceJni::log.e() << "unable to get jobject" << Logger::endl;
           return JniUtils::detachCurrentThread();
@@ -289,7 +289,7 @@ JNIEXPORT void JNICALL Java_com_jetbeep_AutoDevice_createPaymentToken(
           return JniUtils::detachCurrentThread();
         }
 
-        auto object = JniUtils::getJObject(device);
+        auto object = JniUtils::getAutoDeviceJObject(device);
         if (object == nullptr) {
           AutoDeviceJni::log.e() << "unable to get jobject" << Logger::endl;
           return JniUtils::detachCurrentThread();

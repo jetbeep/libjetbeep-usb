@@ -39,7 +39,7 @@ void JniUtils::throwNullPointerException(JNIEnv* env, const std::string& message
   }
 }
 
-void JniUtils::throwIOException(JNIEnv *env, const std::string& message) {
+void JniUtils::throwIOException(JNIEnv* env, const std::string& message) {
   jclass exClass;
   const char* className = "java/io/IOException";
 
@@ -53,16 +53,6 @@ void JniUtils::throwIOException(JNIEnv *env, const std::string& message) {
     m_log.e() << "unable to throwNew" << Logger::endl;
     return;
   }
-}
-
-bool JniUtils::getAutoDevicePointer(JNIEnv* env, jlong ptr, AutoDevice** autoDevice) {
-  if (0 == ptr) {
-    JniUtils::throwNullPointerException(env, "AutoDevice pointer is null");
-    *autoDevice = nullptr;
-    return false;
-  }
-  *autoDevice = static_cast<AutoDevice*>((void*)ptr);
-  return true;
 }
 
 std::string JniUtils::getString(JNIEnv* env, jstring string) {
@@ -160,14 +150,46 @@ jobject JniUtils::convertAutoDeviceState(JNIEnv* env, const AutoDeviceState& sta
   return returnValue;
 }
 
-void JniUtils::storeJObject(JNIEnv* env, jobject object, AutoDevice* autoDevice) {
+bool JniUtils::getAutoDevicePointer(JNIEnv* env, jlong ptr, AutoDevice** autoDevice) {
+  if (0 == ptr) {
+    JniUtils::throwNullPointerException(env, "AutoDevice pointer is null");
+    *autoDevice = nullptr;
+    return false;
+  }
+  *autoDevice = static_cast<AutoDevice*>((void*)ptr);
+  return true;
+}
+
+void JniUtils::storeAutoDeviceJObject(JNIEnv* env, jobject object, AutoDevice* autoDevice) {
   autoDevice->opaque = env->NewGlobalRef(object);
 }
-void JniUtils::releaseJObject(JNIEnv* env, AutoDevice* autoDevice) {
-  env->DeleteGlobalRef(JniUtils::getJObject(autoDevice));
+void JniUtils::releaseAutoDeviceJObject(JNIEnv* env, AutoDevice* autoDevice) {
+  env->DeleteGlobalRef(JniUtils::getAutoDeviceJObject(autoDevice));
   autoDevice->opaque = nullptr;
 }
 
-jobject JniUtils::getJObject(AutoDevice* autoDevice) {
+jobject JniUtils::getAutoDeviceJObject(AutoDevice* autoDevice) {
   return (jobject)(autoDevice->opaque);
+}
+
+bool JniUtils::getEasyPayBackendPointer(JNIEnv* env, jlong ptr, EasyPayBackend** backend) {
+  if (0 == ptr) {
+    JniUtils::throwNullPointerException(env, "EasyPayBackend pointer is null");
+    *backend = nullptr;
+    return false;
+  }
+  *backend = static_cast<EasyPayBackend*>((void*)ptr);
+  return true;
+}
+
+void JniUtils::storeEasyPayBackendJObject(JNIEnv* env, jobject object, EasyPayBackend* backend) {
+  backend->opaque = env->NewGlobalRef(object);
+}
+void JniUtils::releaseEasyPayBackendJObject(JNIEnv* env, EasyPayBackend* backend) {
+  env->DeleteGlobalRef(JniUtils::getEasyPayBackendJObject(backend));
+  backend->opaque = nullptr;
+}
+
+jobject JniUtils::getEasyPayBackendJObject(EasyPayBackend* backend) {
+  return (jobject)(backend->opaque);
 }
