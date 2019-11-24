@@ -63,3 +63,11 @@ AutoDeviceState AutoDevice::state() {
 bool AutoDevice::isMobileConnected() {
   return m_impl->isMobileConnected();
 }
+
+unsigned long AutoDevice::deviceId() {
+  return m_impl->deviceId();
+}
+
+std::string AutoDevice::version() {
+  return m_impl->version();
+}

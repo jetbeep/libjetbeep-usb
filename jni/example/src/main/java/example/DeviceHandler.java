@@ -16,6 +16,11 @@ public class DeviceHandler extends AutoDevice {
 
   public void onStateChange(AutoDevice.State newState) {
     System.out.println("state changed to: " + newState.toString());
+
+    if (newState == AutoDevice.State.sessionClosed) {
+      System.out.println("deviceId: " + deviceId());
+      System.out.println("version: " + version());
+    }
   }
 
   public void onMobileConnectionChange(boolean isConnected) {

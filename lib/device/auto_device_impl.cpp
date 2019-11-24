@@ -20,7 +20,8 @@ AutoDevice::Impl::Impl(AutoDeviceStateCallback* stateCallback,
     m_log("autodevice"),
     m_timer(context.m_impl->ioService),
     m_mobileConnected(false),
-    m_started(false) {
+    m_started(false),
+    m_deviceId(0) {
   m_detection.callback = std::bind(&AutoDevice::Impl::onDeviceEvent, this, std::placeholders::_1, std::placeholders::_2);
   m_device.barcodesCallback = std::bind(&AutoDevice::Impl::onBarcodes, this, std::placeholders::_1);
   m_device.paymentErrorCallback = std::bind(&AutoDevice::Impl::onPaymentError, this, std::placeholders::_1);
@@ -32,7 +33,8 @@ AutoDevice::Impl::Impl(AutoDeviceStateCallback* stateCallback,
 AutoDevice::Impl::~Impl() {
   try {
     stop();
-  } catch (...) {}
+  } catch (...) {
+  }
 }
 
 void AutoDevice::Impl::start() {
@@ -101,14 +103,24 @@ void AutoDevice::Impl::resetState() {
   m_pendingOperations.clear();
   rejectPendingOperations();
 
-  m_device.resetState().then([&] { changeState(AutoDeviceState::sessionClosed, nullptr); }).catchError([&](exception_ptr exception) {
-    m_log.e() << "unable to reset state!" << Logger::endl;
-    if (m_state != AutoDeviceState::invalid) {
-      changeState(AutoDeviceState::invalid, exception);
-    }
-    m_timer.expires_from_now(boost::posix_time::millisec(2000));
-    m_timer.async_wait(boost::bind(&AutoDevice::Impl::handleTimeout, this, asio::placeholders::error));
-  });
+  m_device.resetState()
+    .thenPromise<std::string, Promise>([&] { return m_device.get(DeviceParameter::deviceId); })
+    .thenPromise<std::string, Promise>([&](std::string strDeviceId) {
+      m_deviceId = std::strtoul(strDeviceId.c_str(), nullptr, 16);
+      return m_device.get(DeviceParameter::version);
+    })
+    .then([&](std::string version) {
+      m_version = version;
+      changeState(AutoDeviceState::sessionClosed, nullptr);
+    })
+    .catchError([&](exception_ptr exception) {
+      m_log.e() << "unable to reset state!" << Logger::endl;
+      if (m_state != AutoDeviceState::invalid) {
+        changeState(AutoDeviceState::invalid, exception);
+      }
+      m_timer.expires_from_now(boost::posix_time::millisec(2000));
+      m_timer.async_wait(boost::bind(&AutoDevice::Impl::handleTimeout, this, asio::placeholders::error));
+    });
 }
 
 void AutoDevice::Impl::handleTimeout(const boost::system::error_code& err) {
@@ -399,4 +411,11 @@ AutoDeviceState AutoDevice::Impl::state() {
 
 bool AutoDevice::Impl::isMobileConnected() {
   return m_mobileConnected;
+}
+
+std::string AutoDevice::Impl::version() {
+  return m_version;
+}
+unsigned long AutoDevice::Impl::deviceId() {
+  return m_deviceId;
 }

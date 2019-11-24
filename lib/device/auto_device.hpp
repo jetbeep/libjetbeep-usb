@@ -53,6 +53,8 @@ namespace JetBeep {
     void cancelPayment();
 
     bool isMobileConnected();
+    std::string version();
+    unsigned long deviceId();
 
     void* opaque;
 

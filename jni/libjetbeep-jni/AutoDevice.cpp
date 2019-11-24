@@ -362,3 +362,24 @@ JNIEXPORT jboolean JNICALL Java_com_jetbeep_AutoDevice_isMobileConnected(JNIEnv*
 
   return device->isMobileConnected();
 }
+
+JNIEXPORT jlong JNICALL Java_com_jetbeep_AutoDevice_deviceId(JNIEnv* env, jobject object, jlong ptr) {
+  std::lock_guard<recursive_mutex> lock(JniUtils::mutex);
+  AutoDevice* device = nullptr;
+  if (!JniUtils::getAutoDevicePointer(env, ptr, &device)) {
+    return 0;
+  }
+
+  return device->deviceId();
+}
+
+JNIEXPORT jstring JNICALL Java_com_jetbeep_AutoDevice_version(JNIEnv* env, jobject object, jlong ptr) {
+  std::lock_guard<recursive_mutex> lock(JniUtils::mutex);
+  AutoDevice* device = nullptr;
+  if (!JniUtils::getAutoDevicePointer(env, ptr, &device)) {
+    return env->NewStringUTF("");;
+  }
+
+  jstring jDeviceId = env->NewStringUTF(device->version().c_str());
+  return jDeviceId;
+}

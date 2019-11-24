@@ -93,6 +93,14 @@ abstract public class AutoDevice {
     return state(ptr);
   }
 
+  public long deviceId() {
+    return deviceId(ptr);
+  }
+
+  public String version() {
+    return version(ptr);
+  }
+
   public boolean isMobileConnected() {
     return isMobileConnected(ptr);    
   }
@@ -133,6 +141,8 @@ abstract public class AutoDevice {
   private native void cancelPayment(long ptr);
   private native AutoDevice.State state(long ptr);
   private native boolean isMobileConnected(long ptr);
+  private native long deviceId(long ptr);
+  private native String version(long ptr);
 
 
   private long ptr;
