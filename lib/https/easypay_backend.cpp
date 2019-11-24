@@ -94,7 +94,8 @@ Promise<EasyPayResult> EasyPayBackend::Impl::makePayment(
     } catch (...) {
       promise.reject(make_exception_ptr(HttpErrors::APIError()));
     }
-  });
+    return promise;
+  });  
 }
 
 Promise<EasyPayResult> EasyPayBackend::Impl::getPaymentStatus(string merchantTransactionId, uint32_t amountInCoins, uint32_t deviceId) {
@@ -208,7 +209,7 @@ RequestSignature EasyPayBackend::Impl::makeMerchantSignature(uint32_t deviceId) 
   m_time.tm_yday = 178;
   m_time.tm_isdst = -1;
   m_time.tm_gmtoff = 0;
-  m_time.tm_zone = "GMT";
+  m_time.tm_zone = (char*)"GMT";
 
 // TODO mkgmtime for WIN if required
   std::time_t t_now2 =  timegm(p_now);    
