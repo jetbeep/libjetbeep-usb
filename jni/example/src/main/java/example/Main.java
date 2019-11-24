@@ -55,6 +55,14 @@ class Main {
             e.printStackTrace();
           }
           break;
+        case "requestbarcodes":
+        case "request_barcodes":
+          try {
+            handler.requestBarcodes();
+          } catch (Exception e) {
+            e.printStackTrace();
+          }
+          break;
         default:
           System.out.println("unknown command: " + cmd);
           break;

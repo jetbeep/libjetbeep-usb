@@ -184,7 +184,8 @@ JNIEXPORT void JNICALL Java_com_jetbeep_AutoDevice_requestBarcodes(JNIEnv* env, 
 
         env->CallVoidMethod(object, onBarcodeBegin, barcodes.size());
 
-        for (auto it = barcodes.begin(); it != barcodes.end(); ++it) {
+        int i = 0;
+        for (auto it = barcodes.begin(); it != barcodes.end(); ++it, ++i) {
           jstring jValue = env->NewStringUTF((*it).value.c_str());
           if (jValue == nullptr) {
             AutoDeviceJni::log.e() << "unable to create jString" << Logger::endl;
@@ -192,7 +193,7 @@ JNIEXPORT void JNICALL Java_com_jetbeep_AutoDevice_requestBarcodes(JNIEnv* env, 
           }
           jint jType = (jint)(*it).type;
 
-          env->CallVoidMethod(object, onBarcodeValue, jValue, jType);
+          env->CallVoidMethod(object, onBarcodeValue, i, jValue, jType);
         }
 
         env->CallVoidMethod(object, onBarcodeEnd);
