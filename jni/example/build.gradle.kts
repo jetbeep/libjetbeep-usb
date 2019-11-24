@@ -20,3 +20,16 @@ val jar by tasks.getting(Jar::class) {
 val run by tasks.getting(JavaExec::class) {
     standardInput = System.`in`
 }
+
+distributions {
+    main {
+        contents {
+            into("libjetbeep-jni") {
+                from(listOf("../libjetbeep-jni/libjetbeep-jni.dylib", "../libjetbeep-jni/libjetbeep-jni.so", "../libjetbeep-jni/jetbeep-jni.dll"))
+            }
+            into("doc") {
+                from(listOf("README.md", "README.pdf"))
+            }
+        }
+    }
+}
