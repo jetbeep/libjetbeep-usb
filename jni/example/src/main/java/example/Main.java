@@ -1,6 +1,7 @@
 package example;
 
 import java.io.BufferedReader;
+import java.lang.System.Logger;
 import java.util.HashMap;
 import java.util.Scanner;
 
@@ -10,6 +11,8 @@ import example.DeviceHandler;
 class Main {
   public static void main(String[] args) {        
     System.out.println("example started");
+    com.jetbeep.Logger.setCoutEnabled(true);
+    com.jetbeep.Logger.setLogLevel(com.jetbeep.Logger.Level.verbose);    
     DeviceHandler handler = new DeviceHandler();
     Scanner scanner = new Scanner(System.in);
 
@@ -112,7 +115,11 @@ class Main {
               metadata.put(keyValue[0], keyValue[1]);
             }          
           }
-          handler.createPaymentToken(amount, transactionId, cashierId, metadata);
+          try {
+            handler.createPaymentToken(amount, transactionId, cashierId, metadata);
+          } catch (Exception e) {
+            e.printStackTrace();
+          }          
           break;
         case "cancelpayment":
         case "cancel_payment":

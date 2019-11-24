@@ -3,3 +3,4 @@ libjetbeep-jni.so
 jetbeep-jni.dll
 
 com_jetbeep_AutoDevice.h
+com_jetbeep_Logger.h
