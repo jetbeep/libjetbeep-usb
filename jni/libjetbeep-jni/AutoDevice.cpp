@@ -14,15 +14,22 @@ public:
 Logger AutoDeviceJni::log = Logger("autodevice-jni");
 
 JNIEXPORT jlong JNICALL Java_com_jetbeep_AutoDevice_init(JNIEnv* env, jobject object) {
+  std::lock_guard<recursive_mutex> lock(JniUtils::mutex);
   JniUtils::storeJvm(env);
   auto device = new AutoDevice();
-  device->opaque = env->NewGlobalRef(object);
+  JniUtils::storeJObject(env, object, device);
   device->stateCallback = [device](AutoDeviceState state, exception_ptr ptr) {
+    std::lock_guard<recursive_mutex> lock(JniUtils::mutex);
     auto env = JniUtils::attachCurrentThread();
-    auto object = JniUtils::getJObject(device);
     if (env == nullptr) {
       AutoDeviceJni::log.e() << "unable to get env" << Logger::endl;
       return;
+    }
+
+    auto object = JniUtils::getJObject(device);
+    if (object == nullptr) {
+      AutoDeviceJni::log.e() << "unable to get jobject" << Logger::endl;
+      return JniUtils::detachCurrentThread();
     }
 
     auto autoDeviceClass = env->GetObjectClass(object);
@@ -49,11 +56,17 @@ JNIEXPORT jlong JNICALL Java_com_jetbeep_AutoDevice_init(JNIEnv* env, jobject ob
   };
 
   device->mobileCallback = [device](SerialMobileEvent event) {
+    std::lock_guard<recursive_mutex> lock(JniUtils::mutex);
     auto env = JniUtils::attachCurrentThread();
-    auto object = JniUtils::getJObject(device);
     if (env == nullptr) {
       AutoDeviceJni::log.e() << "unable to get env" << Logger::endl;
       return;
+    }
+
+    auto object = JniUtils::getJObject(device);
+    if (object == nullptr) {
+      AutoDeviceJni::log.e() << "unable to get jobject" << Logger::endl;
+      return JniUtils::detachCurrentThread();
     }
 
     auto autoDeviceClass = env->GetObjectClass(object);
@@ -78,16 +91,18 @@ JNIEXPORT jlong JNICALL Java_com_jetbeep_AutoDevice_init(JNIEnv* env, jobject ob
 }
 
 JNIEXPORT void JNICALL Java_com_jetbeep_AutoDevice_free(JNIEnv* env, jobject object, jlong ptr) {
+  std::lock_guard<recursive_mutex> lock(JniUtils::mutex);
   AutoDevice* device = nullptr;
   if (!JniUtils::getAutoDevicePointer(env, ptr, &device)) {
     return;
   }
 
-  env->DeleteGlobalRef(JniUtils::getJObject(device));
+  JniUtils::releaseJObject(env, device);
   delete device;
 }
 
 JNIEXPORT void JNICALL Java_com_jetbeep_AutoDevice_start(JNIEnv* env, jobject object, jlong ptr) {
+  std::lock_guard<recursive_mutex> lock(JniUtils::mutex);
   AutoDevice* device = nullptr;
   if (!JniUtils::getAutoDevicePointer(env, ptr, &device)) {
     return;
@@ -102,6 +117,7 @@ JNIEXPORT void JNICALL Java_com_jetbeep_AutoDevice_start(JNIEnv* env, jobject ob
 }
 
 JNIEXPORT void JNICALL Java_com_jetbeep_AutoDevice_stop(JNIEnv* env, jobject object, jlong ptr) {
+  std::lock_guard<recursive_mutex> lock(JniUtils::mutex);
   AutoDevice* device = nullptr;
   if (!JniUtils::getAutoDevicePointer(env, ptr, &device)) {
     return;
@@ -116,6 +132,7 @@ JNIEXPORT void JNICALL Java_com_jetbeep_AutoDevice_stop(JNIEnv* env, jobject obj
 }
 
 JNIEXPORT void JNICALL Java_com_jetbeep_AutoDevice_openSession(JNIEnv* env, jobject object, jlong ptr) {
+  std::lock_guard<recursive_mutex> lock(JniUtils::mutex);
   AutoDevice* device = nullptr;
   if (!JniUtils::getAutoDevicePointer(env, ptr, &device)) {
     return;
@@ -130,6 +147,7 @@ JNIEXPORT void JNICALL Java_com_jetbeep_AutoDevice_openSession(JNIEnv* env, jobj
 }
 
 JNIEXPORT void JNICALL Java_com_jetbeep_AutoDevice_closeSession(JNIEnv* env, jobject object, jlong ptr) {
+  std::lock_guard<recursive_mutex> lock(JniUtils::mutex);
   AutoDevice* device = nullptr;
   if (!JniUtils::getAutoDevicePointer(env, ptr, &device)) {
     return;
@@ -144,6 +162,7 @@ JNIEXPORT void JNICALL Java_com_jetbeep_AutoDevice_closeSession(JNIEnv* env, job
 }
 
 JNIEXPORT void JNICALL Java_com_jetbeep_AutoDevice_requestBarcodes(JNIEnv* env, jobject object, jlong ptr) {
+  std::lock_guard<recursive_mutex> lock(JniUtils::mutex);
   AutoDevice* device = nullptr;
   if (!JniUtils::getAutoDevicePointer(env, ptr, &device)) {
     return;
@@ -152,12 +171,19 @@ JNIEXPORT void JNICALL Java_com_jetbeep_AutoDevice_requestBarcodes(JNIEnv* env, 
   try {
     device->requestBarcodes()
       .then([device](vector<Barcode> barcodes) {
+        std::lock_guard<recursive_mutex> lock(JniUtils::mutex);
         auto env = JniUtils::attachCurrentThread();
-        auto object = JniUtils::getJObject(device);
         if (env == nullptr) {
           AutoDeviceJni::log.e() << "unable to get env" << Logger::endl;
           return;
         }
+
+        auto object = JniUtils::getJObject(device);
+        if (object == nullptr) {
+          AutoDeviceJni::log.e() << "unable to get jobject" << Logger::endl;
+          return JniUtils::detachCurrentThread();
+        }
+
         auto autoDeviceClass = env->GetObjectClass(object);
         if (autoDeviceClass == nullptr) {
           AutoDeviceJni::log.e() << "unable to get AutoDevice class" << Logger::endl;
@@ -210,6 +236,7 @@ JNIEXPORT void JNICALL Java_com_jetbeep_AutoDevice_requestBarcodes(JNIEnv* env, 
 }
 
 JNIEXPORT void JNICALL Java_com_jetbeep_AutoDevice_cancelBarcodes(JNIEnv* env, jobject object, jlong ptr) {
+  std::lock_guard<recursive_mutex> lock(JniUtils::mutex);
   AutoDevice* device = nullptr;
   if (!JniUtils::getAutoDevicePointer(env, ptr, &device)) {
     return;
@@ -225,6 +252,7 @@ JNIEXPORT void JNICALL Java_com_jetbeep_AutoDevice_cancelBarcodes(JNIEnv* env, j
 
 JNIEXPORT void JNICALL Java_com_jetbeep_AutoDevice_createPaymentToken(
   JNIEnv* env, jobject object, jlong ptr, jint jamount, jstring jtransactionId, jstring jcashierId, jobjectArray jmetadataKeys, jobjectArray jmetadataValues) {
+  std::lock_guard<recursive_mutex> lock(JniUtils::mutex);
   AutoDevice* device = nullptr;
   if (!JniUtils::getAutoDevicePointer(env, ptr, &device)) {
     return;
@@ -248,10 +276,16 @@ JNIEXPORT void JNICALL Java_com_jetbeep_AutoDevice_createPaymentToken(
   try {
     device->createPaymentToken(amount, transactionId, cashierId, metadata)
       .then([device](std::string token) {
+        std::lock_guard<recursive_mutex> lock(JniUtils::mutex);
         auto env = JniUtils::attachCurrentThread();
-        auto object = JniUtils::getJObject(device);
         if (env == nullptr) {
           AutoDeviceJni::log.e() << "unable to get env" << Logger::endl;
+          return JniUtils::detachCurrentThread();
+        }
+
+        auto object = JniUtils::getJObject(device);
+        if (object == nullptr) {
+          AutoDeviceJni::log.e() << "unable to get jobject" << Logger::endl;
           return JniUtils::detachCurrentThread();
         }
 
@@ -286,6 +320,7 @@ JNIEXPORT void JNICALL Java_com_jetbeep_AutoDevice_createPaymentToken(
 }
 
 JNIEXPORT void JNICALL Java_com_jetbeep_AutoDevice_cancelPayment(JNIEnv* env, jobject object, jlong ptr) {
+  std::lock_guard<recursive_mutex> lock(JniUtils::mutex);
   AutoDevice* device = nullptr;
   if (!JniUtils::getAutoDevicePointer(env, ptr, &device)) {
     return;
@@ -300,6 +335,7 @@ JNIEXPORT void JNICALL Java_com_jetbeep_AutoDevice_cancelPayment(JNIEnv* env, jo
 }
 
 JNIEXPORT jobject JNICALL Java_com_jetbeep_AutoDevice_state(JNIEnv* env, jobject object, jlong ptr) {
+  std::lock_guard<recursive_mutex> lock(JniUtils::mutex);
   AutoDevice* device = nullptr;
   if (!JniUtils::getAutoDevicePointer(env, ptr, &device)) {
     return nullptr;
@@ -310,6 +346,7 @@ JNIEXPORT jobject JNICALL Java_com_jetbeep_AutoDevice_state(JNIEnv* env, jobject
 }
 
 JNIEXPORT jboolean JNICALL Java_com_jetbeep_AutoDevice_isMobileConnected(JNIEnv* env, jobject object, jlong ptr) {
+  std::lock_guard<recursive_mutex> lock(JniUtils::mutex);
   AutoDevice* device = nullptr;
   if (!JniUtils::getAutoDevicePointer(env, ptr, &device)) {
     return false;

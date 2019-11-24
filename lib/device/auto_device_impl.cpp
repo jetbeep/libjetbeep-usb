@@ -8,7 +8,10 @@ using namespace boost;
 using namespace std;
 using namespace JetBeep;
 
-AutoDevice::Impl::Impl(AutoDeviceStateCallback* stateCallback, AutoDevicePaymentErrorCallback* paymentErrorCallback, SerialMobileCallback* mobileCallback, IOContext context)
+AutoDevice::Impl::Impl(AutoDeviceStateCallback* stateCallback,
+                       AutoDevicePaymentErrorCallback* paymentErrorCallback,
+                       SerialMobileCallback* mobileCallback,
+                       IOContext context)
   : m_context(context),
     m_stateCallback(stateCallback),
     m_paymentErrorCallback(paymentErrorCallback),
@@ -16,7 +19,8 @@ AutoDevice::Impl::Impl(AutoDeviceStateCallback* stateCallback, AutoDevicePayment
     m_state(AutoDeviceState::invalid),
     m_log("autodevice"),
     m_timer(context.m_impl->ioService),
-    m_mobileConnected(false) {
+    m_mobileConnected(false),
+    m_started(false) {
   m_detection.callback = std::bind(&AutoDevice::Impl::onDeviceEvent, this, std::placeholders::_1, std::placeholders::_2);
   m_device.barcodesCallback = std::bind(&AutoDevice::Impl::onBarcodes, this, std::placeholders::_1);
   m_device.paymentErrorCallback = std::bind(&AutoDevice::Impl::onPaymentError, this, std::placeholders::_1);
@@ -26,14 +30,28 @@ AutoDevice::Impl::Impl(AutoDeviceStateCallback* stateCallback, AutoDevicePayment
 }
 
 AutoDevice::Impl::~Impl() {
-  rejectPendingOperations();
+  try {
+    stop();
+  } catch (...) {}
 }
 
 void AutoDevice::Impl::start() {
+  std::lock_guard<recursive_mutex> guard(m_mutex);
+
+  if (m_started) {
+    throw Errors::InvalidState();
+  }
   m_detection.start();
+  m_started = true;
 }
 
 void AutoDevice::Impl::stop() {
+  std::lock_guard<recursive_mutex> guard(m_mutex);
+
+  if (!m_started) {
+    throw Errors::InvalidState();
+  }
+
   m_detection.stop();
   try {
     m_device.close();
@@ -42,6 +60,7 @@ void AutoDevice::Impl::stop() {
   m_candidate = DeviceCandidate();
   rejectPendingOperations();
   changeState(AutoDeviceState::invalid);
+  m_started = false;
 }
 
 void AutoDevice::Impl::onDeviceEvent(const DeviceDetectionEvent& event, const DeviceCandidate& candidate) {
@@ -173,7 +192,10 @@ void AutoDevice::Impl::cancelBarcodes() {
   enqueueOperation(lambda);
 }
 
-Promise<void> AutoDevice::Impl::createPayment(uint32_t amount, const std::string& transactionId, const std::string& cashierId, const PaymentMetadata& metadata) {
+Promise<void> AutoDevice::Impl::createPayment(uint32_t amount,
+                                              const std::string& transactionId,
+                                              const std::string& cashierId,
+                                              const PaymentMetadata& metadata) {
   std::lock_guard<recursive_mutex> guard(m_mutex);
 
   if (m_state != AutoDeviceState::sessionOpened) {
@@ -194,7 +216,10 @@ Promise<void> AutoDevice::Impl::createPayment(uint32_t amount, const std::string
   return m_paymentPromise;
 }
 
-Promise<std::string> AutoDevice::Impl::createPaymentToken(uint32_t amount, const std::string& transactionId, const std::string& cashierId, const PaymentMetadata& metadata) {
+Promise<std::string> AutoDevice::Impl::createPaymentToken(uint32_t amount,
+                                                          const std::string& transactionId,
+                                                          const std::string& cashierId,
+                                                          const PaymentMetadata& metadata) {
   std::lock_guard<recursive_mutex> guard(m_mutex);
 
   if (m_state != AutoDeviceState::sessionOpened) {
@@ -236,7 +261,8 @@ void AutoDevice::Impl::confirmPayment() {
 void AutoDevice::Impl::cancelPayment() {
   std::lock_guard<recursive_mutex> guard(m_mutex);
 
-  if (m_state != AutoDeviceState::waitingForConfirmation && m_state != AutoDeviceState::waitingForPaymentResult && m_state != AutoDeviceState::waitingForPaymentToken) {
+  if (m_state != AutoDeviceState::waitingForConfirmation && m_state != AutoDeviceState::waitingForPaymentResult &&
+      m_state != AutoDeviceState::waitingForPaymentToken) {
     throw Errors::InvalidState();
   }
 

@@ -5,6 +5,7 @@ using namespace JetBeep;
 
 Logger JniUtils::m_log = Logger("jni-utils");
 JavaVM* JniUtils::m_jvm = nullptr;
+recursive_mutex JniUtils::mutex = recursive_mutex();
 
 void JniUtils::throwIllegalStateException(JNIEnv* env, const std::string& message) {
   jclass exClass;
@@ -142,6 +143,14 @@ jobject JniUtils::convertAutoDeviceState(JNIEnv* env, const AutoDeviceState& sta
   return returnValue;
 }
 
-jobject JniUtils::getJObject(AutoDevice *autoDevice) {  
-  return reinterpret_cast<jobject>(autoDevice->opaque);
+void JniUtils::storeJObject(JNIEnv* env, jobject object, AutoDevice* autoDevice) {
+  autoDevice->opaque = env->NewGlobalRef(object);
+}
+void JniUtils::releaseJObject(JNIEnv* env, AutoDevice* autoDevice) {
+  env->DeleteGlobalRef(JniUtils::getJObject(autoDevice));
+  autoDevice->opaque = nullptr;
+}
+
+jobject JniUtils::getJObject(AutoDevice* autoDevice) {
+  return (jobject)(autoDevice->opaque);
 }

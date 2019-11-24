@@ -42,6 +42,7 @@ namespace JetBeep {
 
   private:
     IOContext m_context;
+    bool m_started;
     bool m_mobileConnected;
     AutoDeviceStateCallback* m_stateCallback;
     AutoDevicePaymentErrorCallback* m_paymentErrorCallback;
