@@ -117,6 +117,9 @@ class Main {
           }
           try {
             handler.createPaymentToken(amount, transactionId, cashierId, metadata);
+            handler.amountInCoins = amount;
+            handler.transactionId = transactionId;
+            handler.cashierId = cashierId;
           } catch (Exception e) {
             e.printStackTrace();
           }          
@@ -125,6 +128,19 @@ class Main {
         case "cancel_payment":
           try {
             handler.cancelPayment();
+          } catch (Exception e) {
+            e.printStackTrace();
+          }
+          break;
+        case "refund":
+          if (splitted.length != 2) {
+            System.out.println("invalid params count");
+            break;
+          }
+          
+          try {
+            long easyPayTransactionId = Long.parseLong(splitted[1]);
+            handler.backend.makeRefund(easyPayTransactionId, handler.amountInCoins, handler.deviceId());
           } catch (Exception e) {
             e.printStackTrace();
           }

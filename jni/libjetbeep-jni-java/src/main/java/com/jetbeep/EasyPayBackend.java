@@ -17,8 +17,8 @@ abstract public class EasyPayBackend {
   }
 
   public class PaymentResult {    
-    String errorString;
-    long easyPayTransactionId;
+    public String errorString;
+    public long easyPayTransactionId;
 
     public boolean isSuccessful() {
       return errorString == null;
@@ -31,7 +31,7 @@ abstract public class EasyPayBackend {
   }
 
   public class RefundResult {
-    String errorString;
+    public String errorString;
 
     public boolean isSuccessful() {
       return errorString == null;
