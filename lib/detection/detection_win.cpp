@@ -204,10 +204,12 @@ void DeviceDetection::Impl::monitorLoop() {
     DispatchMessage(&msg);
 
     if (msg.message != APP_UNBLOCK_MSG && lastDetectedCandidate.pid != 0) {
-      m_context.m_impl->ioService.post([&, lastDetectedAction, lastDetectedCandidate] {
+      auto action = DeviceDetection::Impl::lastDetectedAction;
+      auto candidat = DeviceDetection::Impl::lastDetectedCandidate;
+      m_context.m_impl->ioService.post([&, action, candidat] {
         auto callback = *m_callback;
         if (callback) {
-          callback(lastDetectedAction, lastDetectedCandidate);
+          callback(action, candidat);
         }
       });
     }
