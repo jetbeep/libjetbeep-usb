@@ -41,6 +41,7 @@ string EasyPayAPI::tokenPaymentReqToJSON(TokenPaymentRequest& data) {
 
 string EasyPayAPI::tokenGetStatusReqToJSON(TokenGetStatusRequest& data) {
   pt::ptree json;
+  json.put("DeviceId", data.DeviceId);
   json.put("DateRequest", data.DateRequest);
   json.put("SignatureMerchant", data.SignatureMerchant);
   json.put("AmountInCoin", data.AmountInCoin);
@@ -54,6 +55,7 @@ string EasyPayAPI::tokenGetStatusReqToJSON(TokenGetStatusRequest& data) {
 
 string EasyPayAPI::tokenRefundReqToJSON(TokenRefundRequest& data) {
   pt::ptree json;
+  json.put("DeviceId", data.DeviceId);
   json.put("DateRequest", data.DateRequest);
   json.put("SignatureMerchant", data.SignatureMerchant);
   json.put("TransactionId", data.TransactionId);

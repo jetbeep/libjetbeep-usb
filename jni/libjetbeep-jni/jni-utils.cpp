@@ -121,6 +121,10 @@ jobject JniUtils::convertAutoDeviceState(JNIEnv* env, const AutoDeviceState& sta
     field = env->GetStaticFieldID(jAutoDeviceState, "invalid", signatureFun().c_str());
     returnValue = env->GetStaticObjectField(jAutoDeviceState, field);
     break;
+  case AutoDeviceState::firmwareVersionNotSupported:
+    field = env->GetStaticFieldID(jAutoDeviceState, "firmwareVersionNotSupported", signatureFun().c_str());
+    returnValue = env->GetStaticObjectField(jAutoDeviceState, field);
+    break;
   case AutoDeviceState::sessionOpened:
     field = env->GetStaticFieldID(jAutoDeviceState, "sessionOpened", signatureFun().c_str());
     returnValue = env->GetStaticObjectField(jAutoDeviceState, field);

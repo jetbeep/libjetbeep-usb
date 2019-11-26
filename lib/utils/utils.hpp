@@ -9,6 +9,7 @@ namespace JetBeep {
   public:
     static std::vector<std::string> splitString(const std::string& str, const std::string& delimiter = " ");
     static std::string toLowerCase(const std::string& input);
+    static uint32_t deviceFWVerToNumber(const std::string &fwStr);
   };
 } // namespace JetBeep
 

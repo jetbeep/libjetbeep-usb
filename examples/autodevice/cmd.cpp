@@ -217,6 +217,9 @@ void Cmd::multiTest() {
 
 void Cmd::onStateChange(AutoDeviceState state, std::exception_ptr error) {
   switch (state) {
+  case AutoDeviceState::firmwareVersionNotSupported:
+    m_log.i() << "changed state to: firmwareVersionNotSupported" << Logger::endl;
+    break;
   case AutoDeviceState::invalid:
     m_log.i() << "changed state to: invalid" << Logger::endl;
     break;

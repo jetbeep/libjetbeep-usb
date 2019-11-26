@@ -22,6 +22,7 @@ namespace JetBeep::EasyPayAPI {
   } TokenPaymentRequest;
 
   typedef struct {
+    uint32_t DeviceId;
     string DateRequest;
     string SignatureMerchant;
     uint32_t AmountInCoin;
@@ -29,6 +30,7 @@ namespace JetBeep::EasyPayAPI {
   } TokenGetStatusRequest;
 
   typedef struct {
+    uint32_t DeviceId;
     string DateRequest;
     string SignatureMerchant;
     uint32_t AmountInCoin;
