@@ -111,16 +111,9 @@ void AutoDevice::Impl::initDevice() {
       m_version = version;
       return m_device.get(DeviceParameter::deviceId);
     })
-    .thenPromise<std::string, Promise>([&](std::string strDeviceId) {
+    .thenPromise([&](std::string strDeviceId) {
       m_deviceId = std::strtoul(strDeviceId.c_str(), nullptr, 16);
-      return m_device
-        .resetState()
-        // TODO @Oleg improve Promise to handle this case
-        .thenPromise<std::string, Promise>([]() {
-          Promise<std::string> p;
-          p.resolve("hack");
-          return p;
-        });
+      return m_device.resetState();
     })
     .then([&](...) { changeState(AutoDeviceState::sessionClosed, nullptr); })
     .catchError([&](const std::exception_ptr error) {
