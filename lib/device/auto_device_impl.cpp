@@ -1,7 +1,7 @@
 #include "auto_device_impl.hpp"
 #include "../io/iocontext_impl.hpp"
-#include "device_errors.hpp"
 #include "../utils/utils.hpp"
+#include "device_errors.hpp"
 
 #include <functional>
 
@@ -106,7 +106,11 @@ void AutoDevice::Impl::initDevice() {
   m_device.get(DeviceParameter::version)
     .thenPromise<std::string, Promise>([&](std::string version) {
       if (Utils::deviceFWVerToNumber(version) < Utils::deviceFWVerToNumber(JETBEEP_DEVICE_MIN_FW_VER)) {
-        throw Errors::FirmwareVersionNotSupported();
+        Promise<std::string> hack2;
+        hack2.reject(make_exception_ptr(Errors::FirmwareVersionNotSupported()));
+        // TODO @Oleg improve Promise to handle this case
+        // throw Errors::FirmwareVersionNotSupported();
+        return hack2;
       }
       m_version = version;
       return m_device.get(DeviceParameter::deviceId);
@@ -115,7 +119,7 @@ void AutoDevice::Impl::initDevice() {
       m_deviceId = std::strtoul(strDeviceId.c_str(), nullptr, 16);
       return m_device
         .resetState()
-        //TODO @Oleg improve Promise to handle this case
+        // TODO @Oleg improve Promise to handle this case
         .thenPromise<std::string, Promise>([]() {
           Promise<std::string> p;
           p.resolve("hack");
@@ -123,22 +127,27 @@ void AutoDevice::Impl::initDevice() {
         });
     })
     .then([&](...) { changeState(AutoDeviceState::sessionClosed, nullptr); })
-    .catchError([&](const std::exception_ptr& error) {
+    .catchError([&](const std::exception_ptr error) {
+      m_log.e() << "catchError" << Logger::endl;
       try {
         std::rethrow_exception(error);
       } catch (const Errors::FirmwareVersionNotSupported& fwError) {
+        m_log.w() << "Device firmware version too low" << Logger::endl;
         if (m_state != AutoDeviceState::firmwareVersionNotSupported) {
           changeState(AutoDeviceState::firmwareVersionNotSupported, make_exception_ptr(fwError));
         }
-        m_log.e() << "Device firmware version too low" << Logger::endl;
+        try {
+          m_device.close();
+        } catch (...) {
+        }
       } catch (...) {
         if (m_state != AutoDeviceState::invalid) {
           changeState(AutoDeviceState::invalid, error);
         }
         m_log.e() << "unable to init device" << Logger::endl;
+        m_timer.expires_from_now(boost::posix_time::millisec(2000));
+        m_timer.async_wait(boost::bind(&AutoDevice::Impl::handleInitError, this, asio::placeholders::error));
       }
-      m_timer.expires_from_now(boost::posix_time::millisec(2000));
-      m_timer.async_wait(boost::bind(&AutoDevice::Impl::handleTimeout, this, asio::placeholders::error));
     });
 }
 
@@ -146,18 +155,14 @@ void AutoDevice::Impl::resetState() {
   m_pendingOperations.clear();
   rejectPendingOperations();
 
-  m_device.resetState()
-    .then([&]() {
-      changeState(AutoDeviceState::sessionClosed, nullptr);
-    })
-    .catchError([&](exception_ptr exception) {
-      m_log.e() << "unable to reset state!" << Logger::endl;
-      if (m_state != AutoDeviceState::invalid) {
-        changeState(AutoDeviceState::invalid, exception);
-      }
-      m_timer.expires_from_now(boost::posix_time::millisec(2000));
-      m_timer.async_wait(boost::bind(&AutoDevice::Impl::handleTimeout, this, asio::placeholders::error));
-    });
+  m_device.resetState().then([&]() { changeState(AutoDeviceState::sessionClosed, nullptr); }).catchError([&](exception_ptr exception) {
+    m_log.e() << "unable to reset state!" << Logger::endl;
+    if (m_state != AutoDeviceState::invalid) {
+      changeState(AutoDeviceState::invalid, exception);
+    }
+    m_timer.expires_from_now(boost::posix_time::millisec(2000));
+    m_timer.async_wait(boost::bind(&AutoDevice::Impl::handleTimeout, this, asio::placeholders::error));
+  });
 }
 
 void AutoDevice::Impl::handleTimeout(const boost::system::error_code& err) {
@@ -168,6 +173,16 @@ void AutoDevice::Impl::handleTimeout(const boost::system::error_code& err) {
   }
   m_log.i() << "trying to issue reset state one more time..." << Logger::endl;
   resetState();
+}
+
+void AutoDevice::Impl::handleInitError(const boost::system::error_code& err) {
+  std::lock_guard<recursive_mutex> guard(m_mutex);
+
+  if (err == boost::asio::error::operation_aborted) {
+    return;
+  }
+  m_log.i() << "trying to init device one more time..." << Logger::endl;
+  initDevice();
 }
 
 void AutoDevice::Impl::openSession() {

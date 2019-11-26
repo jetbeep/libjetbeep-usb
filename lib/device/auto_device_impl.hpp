@@ -77,6 +77,7 @@ namespace JetBeep {
     void resetState();
     void initDevice();
     void handleTimeout(const boost::system::error_code& err);
+    void handleInitError(const boost::system::error_code& err);
     void executeNextOperation();
     void enqueueOperation(const std::function<void()>& callback);
     void onBarcodes(const std::vector<Barcode>& barcodes);
