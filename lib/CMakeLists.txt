@@ -15,7 +15,6 @@ target_include_directories(jetbeep_obj PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${BOOS
 
 add_library(jetbeep SHARED ${JETBEEP_INCLUDES} $<TARGET_OBJECTS:jetbeep_obj>)
 
-
 target_link_libraries(jetbeep ${OPENSSL_CRYPTO_LIBRARY} ${OPENSSL_SSL_LIBRARY})
 
 if (APPLE) 
@@ -28,11 +27,10 @@ endif()
 
 target_include_directories(jetbeep PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-#set_target_properties(jetbeep PROPERTIES
-#  VERSION ${PROJECT_VERSION}
-#  SOVERSION 0.1.0
-#  PUBLIC_HEADER ${JETBEEP_INCLUDES}
-#)
+set_target_properties(jetbeep PROPERTIES
+    VERSION ${PROJECT_VERSION}
+    SOVERSION ${PROJECT_VERSION}
+)
 
 install(TARGETS jetbeep
  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}

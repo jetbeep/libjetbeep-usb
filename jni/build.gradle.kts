@@ -1,5 +1,5 @@
 subprojects {
-    version = "0.1.0-alpha"
+    version = file("../../VERSION").readText()
 }
 
 val cmake = tasks.register<Exec>("cmake") {

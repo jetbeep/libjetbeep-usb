@@ -2,7 +2,7 @@ package com.jetbeep;
 
 abstract public class EasyPayBackend {
   static {
-    System.loadLibrary("jetbeep-jni");
+    Library.loadAndCheckVersion();
   }
     
   public enum Environment {
