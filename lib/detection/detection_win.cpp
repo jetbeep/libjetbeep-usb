@@ -1,37 +1,28 @@
 #include "../utils/platform.hpp"
 
 #ifdef PLATFORM_WIN
-<<<<<<< HEAD
-#include <algorithm>
-#include <cctype>
-=======
 #include "../io/iocontext_impl.hpp"
 #include <windows.h>
->>>>>>> dev
 #include <dbt.h>
-#include <iomanip>
 #include <iostream>
+#include <iomanip>
 #include <string>
-#include <windows.h> //must be first always
+#include <cctype>
+#include <algorithm>
 
 #include <Cfgmgr32.h>
-#include <Setupapi.h>
 #include <stdio.h>
-#include <strsafe.h>
 #include <tchar.h>
+#include <strsafe.h>
+#include <Setupapi.h>
 
-<<<<<<< HEAD
-#include "../io/iocontext_impl.hpp"
+#include "detection.hpp"
 #include "../utils/logger.hpp"
-#include "detection.hpp"
-=======
-  #include "../utils/logger.hpp"
-#include "detection.hpp"
->>>>>>> dev
 
+#include <thread>
 #include <atomic>
 #include <stdexcept>
-#include <thread>
+
 
 #define VID_TAG "VID_"
 #define PID_TAG "PID_"
@@ -213,10 +204,12 @@ void DeviceDetection::Impl::monitorLoop() {
     DispatchMessage(&msg);
 
     if (msg.message != APP_UNBLOCK_MSG && lastDetectedCandidate.pid != 0) {
-      m_context.m_impl->ioService.post([&, lastDetectedAction, lastDetectedCandidate] {
+      auto action = DeviceDetection::Impl::lastDetectedAction;
+      auto candidat = DeviceDetection::Impl::lastDetectedCandidate;
+      m_context.m_impl->ioService.post([&, action, candidat] {
         auto callback = *m_callback;
         if (callback) {
-          callback(lastDetectedAction, lastDetectedCandidate);
+          callback(action, candidat);
         }
       });
     }
