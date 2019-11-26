@@ -128,7 +128,6 @@ void AutoDevice::Impl::initDevice() {
     })
     .then([&](...) { changeState(AutoDeviceState::sessionClosed, nullptr); })
     .catchError([&](const std::exception_ptr error) {
-      m_log.e() << "catchError" << Logger::endl;
       try {
         std::rethrow_exception(error);
       } catch (const Errors::FirmwareVersionNotSupported& fwError) {
