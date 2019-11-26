@@ -5,16 +5,6 @@ if (NOT JNI_FOUND)
   return()
 endif()
 
-add_custom_target(GenerateJavaHeaders COMMAND   
-  javac -h . 
-  ../libjetbeep-jni-java/src/main/java/com/jetbeep/AutoDevice.java 
-  ../libjetbeep-jni-java/src/main/java/com/jetbeep/Barcode.java 
-  ../libjetbeep-jni-java/src/main/java/com/jetbeep/Logger.java 
-  ../libjetbeep-jni-java/src/main/java/com/jetbeep/Barcode.java 
-  ../libjetbeep-jni-java/src/main/java/com/jetbeep/EasyPayBackend.java
-  ../libjetbeep-jni-java/src/main/java/com/jetbeep/Library.java
-  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-
 file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/../libjetbeep-jni-java/src/main/java/com/jetbeep/Library.java"
 "package com.jetbeep;
 
@@ -41,6 +31,16 @@ public class Library {
   public static native String getNativeVersion();
 }"
 )
+
+add_custom_target(GenerateJavaHeaders COMMAND   
+  javac -h . 
+  ../libjetbeep-jni-java/src/main/java/com/jetbeep/AutoDevice.java 
+  ../libjetbeep-jni-java/src/main/java/com/jetbeep/Barcode.java 
+  ../libjetbeep-jni-java/src/main/java/com/jetbeep/Logger.java 
+  ../libjetbeep-jni-java/src/main/java/com/jetbeep/Barcode.java 
+  ../libjetbeep-jni-java/src/main/java/com/jetbeep/EasyPayBackend.java
+  ../libjetbeep-jni-java/src/main/java/com/jetbeep/Library.java
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_library(jetbeep-jni SHARED ${JETBEEP_INCLUDES} $<TARGET_OBJECTS:jetbeep_obj> 
   AutoDevice.cpp Logger.cpp EasyPayBackend.cpp Library.cpp jni-utils.cpp)
