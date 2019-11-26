@@ -15,6 +15,9 @@ Logger l("main");
 
 void onStateChange(AutoDeviceState state, std::exception_ptr error) {
   switch (state) {
+  case AutoDeviceState::firmwareVersionNotSupported:
+    l.i() << "changed state to: firmwareVersionNotSupported" << Logger::endl;
+    break;
   case AutoDeviceState::invalid:
     l.i() << "changed state to: invalid" << Logger::endl;
     break;

@@ -13,6 +13,8 @@
 namespace JetBeep {
   enum class AutoDeviceState {
     invalid,
+    firmwareVersionNotSupported,
+
     sessionOpened,
     sessionClosed,
     waitingForBarcodes,

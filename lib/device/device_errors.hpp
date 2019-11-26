@@ -66,6 +66,13 @@ namespace JetBeep {
         return "Operation cancelled";
       }
     };
+
+    class FirmwareVersionNotSupported : public std::exception {
+    public:
+      virtual char const* what() const noexcept {
+        return "Device firmware version is not supported";
+      }
+    };
   } // namespace Errors
 } // namespace JetBeep
 

@@ -75,6 +75,7 @@ namespace JetBeep {
     void onDeviceEvent(const DeviceDetectionEvent& event, const DeviceCandidate& candidate);
     void changeState(AutoDeviceState state, std::exception_ptr exception = nullptr);
     void resetState();
+    void initDevice();
     void handleTimeout(const boost::system::error_code& err);
     void executeNextOperation();
     void enqueueOperation(const std::function<void()>& callback);
