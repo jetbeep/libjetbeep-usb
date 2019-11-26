@@ -12,10 +12,42 @@ add_custom_target(GenerateJavaHeaders COMMAND
   ../libjetbeep-jni-java/src/main/java/com/jetbeep/Logger.java 
   ../libjetbeep-jni-java/src/main/java/com/jetbeep/Barcode.java 
   ../libjetbeep-jni-java/src/main/java/com/jetbeep/EasyPayBackend.java
+  ../libjetbeep-jni-java/src/main/java/com/jetbeep/Library.java
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
+file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/../libjetbeep-jni-java/src/main/java/com/jetbeep/Library.java"
+"package com.jetbeep;
+
+import java.lang.RuntimeException;
+
+public class Library {
+  static {
+    Library.loadAndCheckVersion();
+  }
+
+  private Library() {
+
+  }
+
+  public static void loadAndCheckVersion() {
+    System.loadLibrary(\"jetbeep-jni\");
+    if (!Library.version.equals(Library.getNativeVersion())) {
+      throw new RuntimeException(\"java(\" + Library.version +\") and native(\"+Library.getNativeVersion()+\") version mismatch\");
+    }
+  }
+  public static final String version = \"${PROJECT_VERSION}\";
+  public static native String getNativeVersion();
+}"
+)
+
 add_library(jetbeep-jni SHARED ${JETBEEP_INCLUDES} $<TARGET_OBJECTS:jetbeep_obj> 
-  AutoDevice.cpp Logger.cpp EasyPayBackend.cpp jni-utils.cpp)
+  AutoDevice.cpp Logger.cpp EasyPayBackend.cpp Library.cpp jni-utils.cpp)
+
+set_target_properties(jetbeep-jni PROPERTIES
+  VERSION ${PROJECT_VERSION}
+  SOVERSION ${PROJECT_VERSION}
+)
+
 add_dependencies(jetbeep-jni GenerateJavaHeaders)
 
 target_include_directories(jetbeep-jni PUBLIC ${JNI_INCLUDE_DIRS})

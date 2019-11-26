@@ -11,7 +11,7 @@ import java.util.Iterator;
 
 abstract public class AutoDevice {
   static {
-    System.loadLibrary("jetbeep-jni");
+    Library.loadAndCheckVersion();
   }
 
   public enum State {
