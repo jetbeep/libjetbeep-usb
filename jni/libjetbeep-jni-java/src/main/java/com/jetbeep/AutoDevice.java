@@ -15,6 +15,9 @@ abstract public class AutoDevice {
   }
 
   public enum State {
+    /**
+     * 
+     */
     invalid,
     sessionOpened,
     sessionClosed,
