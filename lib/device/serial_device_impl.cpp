@@ -234,6 +234,7 @@ bool SerialDevice::Impl::handleEvent(const string& event, const vector<string>& 
     if (*m_callbacks.mobileCallback) {
       (*m_callbacks.mobileCallback)(SerialMobileEvent::disconnected);
     }
+    return true;
   } else if (event == DeviceResponses::barcodes) {
     vector<Barcode> barcodes;
 
@@ -270,6 +271,7 @@ bool SerialDevice::Impl::handleEvent(const string& event, const vector<string>& 
     if (*m_callbacks.paymentTokenCallback) {
       (*m_callbacks.paymentTokenCallback)(paymentToken);
     }
+    return true;
   } else if (event == DeviceResponses::paymentError) {
     if (params.size() != 1) {
       m_log.e() << "invalid params count of payment error: " << params.size() << Logger::endl;
@@ -308,6 +310,7 @@ bool SerialDevice::Impl::handleEvent(const string& event, const vector<string>& 
     if (*m_callbacks.paymentErrorCallback) {
       (*m_callbacks.paymentErrorCallback)(paymentError);
     }
+    return true;
   } else if (event == DeviceResponses::paymentSuccessful) {
     if (*m_callbacks.paymentSuccessCallback) {
       (*m_callbacks.paymentSuccessCallback)();

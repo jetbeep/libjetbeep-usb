@@ -19,7 +19,10 @@
 namespace JetBeep {
   class AutoDevice::Impl {
   public:
-    Impl(AutoDeviceStateCallback* stateCallback, AutoDevicePaymentErrorCallback* paymentErrorCallback, SerialMobileCallback* mobileCallback, IOContext context);
+    Impl(AutoDeviceStateCallback* stateCallback,
+         AutoDevicePaymentErrorCallback* paymentErrorCallback,
+         SerialMobileCallback* mobileCallback,
+         IOContext context);
     virtual ~Impl();
 
     void start();
@@ -31,14 +34,22 @@ namespace JetBeep {
     Promise<std::vector<Barcode>> requestBarcodes();
     void cancelBarcodes();
 
-    Promise<void> createPayment(uint32_t amount, const std::string& transactionId, const std::string& cashierId = "", const PaymentMetadata& metadata = PaymentMetadata());
+    Promise<void> createPayment(uint32_t amount,
+                                const std::string& transactionId,
+                                const std::string& cashierId = "",
+                                const PaymentMetadata& metadata = PaymentMetadata());
     void confirmPayment();
 
-    Promise<std::string> createPaymentToken(uint32_t amount, const std::string& transactionId, const std::string& cashierId = "", const PaymentMetadata& metadata = PaymentMetadata());
+    Promise<std::string> createPaymentToken(uint32_t amount,
+                                            const std::string& transactionId,
+                                            const std::string& cashierId = "",
+                                            const PaymentMetadata& metadata = PaymentMetadata());
     void cancelPayment();
 
     AutoDeviceState state();
     bool isMobileConnected();
+    std::string version();
+    unsigned long deviceId();
 
   private:
     IOContext m_context;
@@ -58,6 +69,8 @@ namespace JetBeep {
     boost::asio::deadline_timer m_timer;
     std::recursive_mutex m_mutex;
     std::vector<std::function<void()>> m_pendingOperations;
+    std::string m_version;
+    unsigned long m_deviceId;
 
     void onDeviceEvent(const DeviceDetectionEvent& event, const DeviceCandidate& candidate);
     void changeState(AutoDeviceState state, std::exception_ptr exception = nullptr);

@@ -15,7 +15,7 @@ namespace JetBeep {
 
   using namespace EasyPayAPI;
 
-  enum class EasyPayHostEnv { Development, Production };
+  enum class EasyPayHostEnv : int { Development = 0, Production = 1 };
 
   class EasyPayBackend {
   public:
@@ -31,6 +31,8 @@ namespace JetBeep {
     Promise<EasyPayResult> getPaymentStatus(string merchantTransactionId, uint32_t amountInCoins, uint32_t deviceId);
 
     Promise<EasyPayResult> makeRefund(long pspTransactionId, uint32_t amountInCoins, uint32_t deviceId);
+
+    void* opaque;
 
   private:
     class Impl;
