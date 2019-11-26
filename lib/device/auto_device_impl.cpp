@@ -106,11 +106,7 @@ void AutoDevice::Impl::initDevice() {
   m_device.get(DeviceParameter::version)
     .thenPromise<std::string, Promise>([&](std::string version) {
       if (Utils::deviceFWVerToNumber(version) < Utils::deviceFWVerToNumber(JETBEEP_DEVICE_MIN_FW_VER)) {
-        Promise<std::string> hack2;
-        hack2.reject(make_exception_ptr(Errors::FirmwareVersionNotSupported()));
-        // TODO @Oleg improve Promise to handle this case
-        // throw Errors::FirmwareVersionNotSupported();
-        return hack2;
+        throw Errors::FirmwareVersionNotSupported();
       }
       m_version = version;
       return m_device.get(DeviceParameter::deviceId);
