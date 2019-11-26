@@ -32,16 +32,6 @@ set_target_properties(jetbeep PROPERTIES
     SOVERSION ${PROJECT_VERSION}
 )
 
-file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/utils/version.hpp" 
-"#ifndef JETBEEP_VERSION__H
-#define JETBEEP_VERSION__H
-
-namespace JetBeep {
-    const char* const libraryVersion = \"${PROJECT_VERSION}\";
-}
-
-#endif")
-
 install(TARGETS jetbeep
  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
  PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})

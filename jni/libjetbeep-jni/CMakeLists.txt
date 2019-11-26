@@ -31,11 +31,13 @@ public class Library {
 
   public static void loadAndCheckVersion() {
     System.loadLibrary(\"jetbeep-jni\");
-    if (!Library.version.equals(Library.getNativeVersion())) {
-      throw new RuntimeException(\"java(\" + Library.version +\") and native(\"+Library.getNativeVersion()+\") version mismatch\");
+    if (!Library.version().equals(Library.getNativeVersion())) {
+      throw new RuntimeException(\"java(\" + Library.version() +\") and native(\"+Library.getNativeVersion()+\") version mismatch\");
     }
   }
-  public static final String version = \"${PROJECT_VERSION}\";
+  public static final String version() {
+    return \"${PROJECT_VERSION}\";
+  } 
   public static native String getNativeVersion();
 }"
 )

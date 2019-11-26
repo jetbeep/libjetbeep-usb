@@ -8,7 +8,7 @@ application {
 }
 
 dependencies {
-    compile(project(":libjetbeep-jni-java"))
+    implementation(project(":libjetbeep-jni-java"))
 }
 
 val jar by tasks.getting(Jar::class) {
