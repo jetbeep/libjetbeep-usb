@@ -12,7 +12,7 @@
 #include <string>
 
 namespace JetBeep {
-  enum class LoggerLevel { verbose = 0, debug, info, warning, error, silent };
+  enum class LoggerLevel: int { verbose = 0, debug, info, warning, error, silent };
 
   class Logger {
   public:

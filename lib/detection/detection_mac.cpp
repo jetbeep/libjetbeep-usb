@@ -28,6 +28,7 @@ public:
   virtual ~Impl();
 
 private:
+  bool m_started;
   IOContext m_context;
   DeviceDetectionCallback* m_callback;
   Logger m_log;
@@ -47,7 +48,7 @@ private:
 };
 
 DeviceDetection::Impl::Impl(DeviceDetectionCallback* callback, IOContext context)
-  : m_callback(callback), m_loop(NULL), m_iterator(0), m_notifyPort(NULL), m_log("detection"), m_context(context) {
+  : m_callback(callback), m_loop(NULL), m_iterator(0), m_notifyPort(NULL), m_log("detection"), m_context(context), m_started(false) {
 }
 
 DeviceDetection::Impl::~Impl() {
@@ -55,8 +56,13 @@ DeviceDetection::Impl::~Impl() {
 }
 
 void DeviceDetection::Impl::stop() {
-  if (m_loop != NULL) {
+  if (!m_started) {
+    return;
+  }
+
+  if (m_loop != nullptr) {
     CFRunLoopStop(m_loop);
+    m_loop = nullptr;
   }
 
   if (m_thread.joinable()) {
@@ -68,6 +74,8 @@ void DeviceDetection::Impl::stop() {
 
     IOObjectRelease(service);
   }
+
+  m_started = false;
 }
 
 void DeviceDetection::Impl::deviceAdded(void* refCon, io_iterator_t iterator) {
@@ -142,6 +150,11 @@ void DeviceDetection::Impl::deviceRemoved(void* refCon, io_service_t service, na
 }
 
 void DeviceDetection::Impl::start() {
+  if (m_started) {
+    return;
+  }
+  m_started = true;
+
   kern_return_t kr;
   CFMutableDictionaryRef matchingDict;
   CFRunLoopRef gRunLoop;

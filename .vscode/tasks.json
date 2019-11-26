@@ -2,43 +2,17 @@
     "tasks": [
         {
             "type": "shell",
-            "label": "clang++ build active file",
-            "command": "/usr/bin/clang++",
+            "label": "gradle build",
+            "command": "gradle",
             "args": [
-                "-g",
-                "${file}",
-                "-o",
-                "${fileDirname}/${fileBasenameNoExtension}"
+                "build"
             ],
             "options": {
-                "cwd": "/usr/bin"
-            }
-        },
-        {
-            "type": "shell",
-            "label": "g++ build",
-            "command": "g++",
-            "args": [
-                "-g",
-                "${file}",
-                "-o",
-                "${fileDirname}/${fileBasenameNoExtension}"
-            ]
-        },
-        {
-            "label": "msvc build",
-            "type": "shell",
-            "command": "cl.exe",
-            "args": ["/EHsc", "/Zi", "/Fe:", "${fileDirname}/${fileBasenameNoExtension}", "${file}"],
-            "group": {
-              "kind": "build",
-              "isDefault": true
+                "cwd": "${workspaceFolder}/jni"
             },
-            "presentation": {
-              "reveal": "always"
-            },
-            "problemMatcher": "$msCompile"
-          }
+            "group": "build",
+            "problemMatcher": []
+        }
     ],
     "version": "2.0.0"
 }

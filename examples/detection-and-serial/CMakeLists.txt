@@ -4,7 +4,7 @@ target_include_directories(detection_and_serial PUBLIC ${BOOST_SOURCE_DIR})
 target_link_libraries(detection_and_serial $<TARGET_OBJECTS:jetbeep_obj>)
 
 find_package(OpenSSL REQUIRED)
-target_link_libraries(detection_and_serial "OpenSSL::SSL" "OpenSSL::Crypto")
+target_link_libraries(detection_and_serial ${OPENSSL_CRYPTO_LIBRARY} ${OPENSSL_SSL_LIBRARY})
 
 
 if (APPLE)
