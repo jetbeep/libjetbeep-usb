@@ -1,17 +1,29 @@
-## Building from sources
+# General information
 
-### Dependencies
-* ```libopenssl```
+libjetbeep is a set of cross-platform libraries that simplifies and accelarates integration of JetBeep USB device  into existing POS systems. Primarly the library targets to automate the following typical tasks:
 
-Windows build:
-```bash
-cd build
+1. Automatically detect and setup JetBeep device once it's being plugged to USB port;
+1. Request barcodes and loyalty cards;
+1. Perform payments:
+    * Receive payment tokens from smartphones
+    * Make payment requests to EasyPay
+    * Make refunds to EasyPay
 
-cmake .. -G "MinGW Makefiles" -DCMAKE_C_COMPILER="i686-w64-mingw32-gcc.exe" -DCMAKE_CXX_COMPILER="i686-w64-mingw32-g++.exe" -DCMAKE_MAKE_PROGRAM="mingw32-make.exe"
+#### Supported platforms
 
-mingw32-make.exe
-```
+* Windows
+* Linux
+* Mac OS
 
-Linux build:
-```
-```
+#### Avaliable bindings
+
+* [C++ (libjetbeep)](lib/README.md) <- Click here for documentation
+* [Java (libjetbeep-jni)](jni/README.md) <- Click here for documentation
+
+#### Planned bindings
+
+* NodeJS
+* .NET
+* Delphi
+* OPOS
+* JavaPOS
