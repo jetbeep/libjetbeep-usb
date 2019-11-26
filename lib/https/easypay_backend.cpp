@@ -1,3 +1,4 @@
+#include "../utils/platform.hpp"
 #include "./easypay_backend.hpp"
 #include "../utils/logger.hpp"
 #include "./https_client.hpp"
@@ -208,12 +209,15 @@ RequestSignature EasyPayBackend::Impl::makeMerchantSignature(uint32_t deviceId) 
   m_time.tm_wday = 1;
   m_time.tm_yday = 178;
   m_time.tm_isdst = -1;
+#ifdef PLATFORM_WIN
+  std::time_t t_now2 =  _mkgmtime(p_now);    
+  std::time_t t_then2 = _mkgmtime(&m_time);  
+#else
   m_time.tm_gmtoff = 0;
   m_time.tm_zone = (char*)"GMT";
-
-// TODO mkgmtime for WIN if required
   std::time_t t_now2 =  timegm(p_now);    
   std::time_t t_then2 = timegm(&m_time);  
+#endif
 
   int secondsDiff = (int)difftime(t_now2, t_then2);
 
