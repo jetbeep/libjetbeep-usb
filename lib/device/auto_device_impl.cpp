@@ -353,7 +353,7 @@ void AutoDevice::Impl::onPaymentToken(const std::string& token) {
     return;
   }
 
-  changeState(AutoDeviceState::sessionClosed);
+  changeState(AutoDeviceState::sessionOpened);
 
   if (m_paymentTokenPromise.state() != PromiseState::undefined) {
     m_log.e() << "invalid promise state while received payment result" << Logger::endl;
