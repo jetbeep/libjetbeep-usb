@@ -22,7 +22,7 @@ if (APPLE)
 elseif(UNIX AND NOT APPLE) #linux
     target_link_libraries(jetbeep "-lpthread" "-ludev")
 elseif(WIN32)
-    target_link_libraries(jetbeep "-lwsock32")
+    target_link_libraries(jetbeep "-lwsock32" "-lws2_32")
 endif()
 
 target_include_directories(jetbeep PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

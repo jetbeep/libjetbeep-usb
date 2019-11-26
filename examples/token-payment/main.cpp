@@ -15,6 +15,9 @@ Logger l("main");
 
 void onStateChange(AutoDeviceState state, std::exception_ptr error) {
   switch (state) {
+  case AutoDeviceState::firmwareVersionNotSupported:
+    l.i() << "changed state to: firmwareVersionNotSupported" << Logger::endl;
+    break;
   case AutoDeviceState::invalid:
     l.i() << "changed state to: invalid" << Logger::endl;
     break;
@@ -69,7 +72,7 @@ int main() {
   device.stateCallback = onStateChange;
   device.start();
 
-  auto backend = EasyPayBackend(EasyPayHostEnv::Development, MERCHANT_SECRET_KEY);
+  auto backend = EasyPayBackend(EasyPayHostEnv::Production, MERCHANT_SECRET_KEY);
 
   const string merchantTransactionId = random_string();
   const int amountInCoins = 5;
@@ -102,11 +105,18 @@ int main() {
 
   auto onRefundResult = [&](EasyPayResult result) {
     l.i() << "refund status: " << (int)result.Status << Logger::endl;
+    if (result.Status == PaymentStatus::Accepted) {
+      l.i() << "REFUND SUCCESS!: " << (int)result.Status << Logger::endl;
+    } else {
+      l.i() << "REFUND ERROR" << (int)result.Status << Logger::endl;
+    }
   };
 
   auto onPaymentStatusGet = [&](EasyPayResult result) {
-    l.i() << "payment status: " << (int)result.Status << Logger::endl;
-
+    l.i() << "payment get status result: " << (int)result.Status << Logger::endl;
+    if (result.Status == PaymentStatus::Accepted) {
+      l.i() << "PAYMENT SUCCESS CONFIRMED!: " << (int)result.Status << Logger::endl;
+    }
     backend.makeRefund(result.TransactionId, amountInCoins, DEVICE_ID)
     .then(onRefundResult)
     .catchError(onRequestErrors);

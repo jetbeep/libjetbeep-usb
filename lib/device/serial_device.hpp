@@ -1,6 +1,8 @@
 #ifndef JETBEEP_DEVICE__H
 #define JETBEEP_DEVICE__H
 
+#define JETBEEP_DEVICE_MIN_FW_VER "1.0.4-beta"
+
 #include "../io/iocontext.hpp"
 #include "../utils/promise.hpp"
 #include "device_parameter.hpp"

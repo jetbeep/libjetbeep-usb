@@ -109,6 +109,7 @@ Promise<EasyPayResult> EasyPayBackend::Impl::getPaymentStatus(string merchantTra
   data.DateRequest = sigData.date;
   data.MerchantTransactionId = merchantTransactionId;
   data.SignatureMerchant = sigData.signature;
+  data.DeviceId = deviceId;
 
   string reqBody = tokenGetStatusReqToJSON(data);
 
@@ -153,6 +154,7 @@ Promise<EasyPayResult> EasyPayBackend::Impl::makeRefund(long pspTransactionId, u
   data.DateRequest = sigData.date;
   data.TransactionId = pspTransactionId;
   data.SignatureMerchant = sigData.signature;
+  data.DeviceId = deviceId;
 
   string reqBody = tokenRefundReqToJSON(data);
 

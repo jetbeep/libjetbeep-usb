@@ -102,7 +102,7 @@ class base64 : public boost::noncopyable {
       if (c2 == -1)
         break;
 
-      dest[dest_len++] = static_cast<boost::uint8_t>(((c1 << 2)|((c2 & 0x30) >> 4) & 0xff));
+      dest[dest_len++] = static_cast<boost::uint8_t>(((c1 << 2)|(((c2 & 0x30) >> 4) & 0xff)));
 
       do {
         c3 = s[i++] & 0xff;
@@ -113,7 +113,7 @@ class base64 : public boost::noncopyable {
       if (c3 == -1)
         break;
 
-      dest[dest_len++] = static_cast<boost::uint8_t>((((c2 & 0xf) << 4)|((c3 & 0x3c) >> 2) & 0xff));
+      dest[dest_len++] = static_cast<boost::uint8_t>((((c2 & 0xf) << 4)|(((c3 & 0x3c) >> 2) & 0xff)));
 
       do {
         c4 = s[i++] & 0xff;
@@ -163,7 +163,7 @@ class base64 : public boost::noncopyable {
       if (c2 == -1)
         break;
 
-      dest.push_back(static_cast<boost::uint8_t>(((c1 << 2)|((c2 & 0x30) >> 4) & 0xff)));
+      dest.push_back(static_cast<boost::uint8_t>(((c1 << 2)|(((c2 & 0x30) >> 4) & 0xff))));
 
       do {
         c3 = s[i++] & 0xff;
@@ -174,7 +174,7 @@ class base64 : public boost::noncopyable {
       if (c3 == -1)
         break;
 
-      dest.push_back(static_cast<boost::uint8_t>((((c2 & 0xf) << 4)|((c3 & 0x3c) >> 2) & 0xff)));
+      dest.push_back(static_cast<boost::uint8_t>((((c2 & 0xf) << 4)|(((c3 & 0x3c) >> 2) & 0xff))));
 
       do {
         c4 = s[i++] & 0xff;

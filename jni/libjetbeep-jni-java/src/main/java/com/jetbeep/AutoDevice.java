@@ -19,6 +19,7 @@ abstract public class AutoDevice {
      * 
      */
     invalid,
+    firmwareVersionNotSupported,
     sessionOpened,
     sessionClosed,
     waitingForBarcodes,
