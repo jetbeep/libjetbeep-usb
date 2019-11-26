@@ -16,18 +16,101 @@ abstract public class AutoDevice {
 
   public enum State {
     /**
+     * <p>Possible meanings: </p>
+     * <ul> 
+     * <li>Device is not plugged via USB</li>
+     * <li>Device is not detected by the OS</li>
+     * <li>Error occured on the device. The library automatically attempts to reset and recover</li>
+     * </ul>
      * 
+     * <p>Can be changed to: </p>
+     * 
+     * <ul>
+     * <li>firmwareVersionNotSupported</li>
+     * <li>sessionClosed</li>
+     * </ul>
      */
     invalid,
+    /**
+     * <p>Possible meanings: </p>
+     * <ul>
+     * <li>The device was successfully detected, but its firmware version is outdated. Please update!</li>
+     * </ul>
+     * 
+     * <p>Can be changed to: </p>
+     * <ul>
+     * <li>invalid</li>
+     * </ul>
+     */
     firmwareVersionNotSupported,
-    sessionOpened,
+    /**
+     * <p>Possible meanings: </p>
+     * <ul>
+     * <li>Device is ready to work (recovered from invalid state)</li>
+     * <li>Previous session was closed</li>
+     * </ul>
+     * 
+     * <p>During this state the JetBeep device IS NOT accepting any incoming Bluetooth connections</p>
+     * 
+     * <p>Can be changed to: </p>
+     * <ul>
+     * <li>sessionOpened</li>
+     * <li>invalid</li>
+     * </ul>
+     */
     sessionClosed,
+    /**
+     * <p>Possible meanings: </p>
+     * <ul>
+     * <li>Device is waiting for incoming Bluetooth connections</li>
+     * </ul>
+     * 
+     * <p>During this state the JetBeep device IS accepting any incoming Bluetooth connections</p>
+     * 
+     * <p>Can be changed to: </p>
+     * <ul>
+     * <li>sessionClosed</li>
+     * <li>waitingForBarcodes</li>
+     * <li>waitingForPaymentToken</li>
+     * <li>invalid</li>
+     * </ul>
+     */
+    sessionOpened, 
+    /**
+     * <p>Possible meanings: </p>
+     * <ul>
+     * <li>Device is waiting for barcodes to be received from the mobile device</li>
+     * </ul>
+     * 
+     * <p>Can be changed to: </p>
+     * <ul>
+     * <li>sessionOpened</li>
+     * <li>invalid</li>
+     * </ul>
+     */
     waitingForBarcodes,
-  
+    /**
+     * <p>Possible meanings: </p>
+     * <ul>
+     * <li>Device is waiting for payment token to be received from the mobile device</li>
+     * </ul>
+     * 
+     * <p>Can be changed to: </p>
+     * <ul>
+     * <li>sessionOpened</li>
+     * <li>invalid</li>
+     * </ul>
+     */
+    waitingForPaymentToken,  
+    /**
+     * Can not be fired by the library. This constant is used for compatibility.
+     */
     waitingForPaymentResult,
-    waitingForConfirmation,
-  
-    waitingForPaymentToken
+    /**
+     * Can not be fired by the library. This constant is used for compatibility.
+     */    
+    waitingForConfirmation
+
   }
 
   public AutoDevice() {
