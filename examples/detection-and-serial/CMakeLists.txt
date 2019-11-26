@@ -12,5 +12,5 @@ if (APPLE)
 elseif(UNIX AND NOT APPLE) #linux
 	target_link_libraries(detection_and_serial "-lpthread" "-ludev")
 elseif(WIN32)
-	target_link_libraries(jetbeep "-lwsock32" "-lws2_32")
+	target_link_libraries(detection_and_serial "-lwsock32" "-lws2_32")
 endif()
