@@ -103,7 +103,7 @@ void Https::HttpsClient::doRequest(RequestOptions options) {
 
     http::request<http::string_body> req{method, options.path, HTTP_VERSION};
     req.set(http::field::host, options.host);
-    req.set(http::field::user_agent, "JetBeep usb-library"); // TODO add version ?
+    req.set(http::field::user_agent, HTTP_USER_AGENT);
 
     if (!options.body.empty()) {
       switch (options.contentType) {

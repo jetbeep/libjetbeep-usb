@@ -8,19 +8,21 @@
 #elif defined(PLATFORM_OSX)
   #define HTTP_CLIENT_BOOST_BEAST
 #elif defined(PLATFORM_LINUX)
-  #define HTTP_CLIENT_BOOST_BEAST
+  #define HTTP_CLIENT_LIBCURL
 #else
   #define HTTP_CLIENT_BOOST_BEAST
 #endif
 
 #include "../../utils/logger.hpp"
 #include "../../utils/promise.hpp"
+#include "../../utils/version.hpp"
 #include "../http_errors.hpp"
 #include <atomic>
 #include <map>
 #include <string>
 #include <thread>
 
+#define HTTP_USER_AGENT ("JetBeep usb-library/" + Version::currentVersion())
 #define DEFAULT_HTTPS_PORT 443
 #define DEFAULT_TIMEOUT_MS (30 * 1000)
 #define HTTP_VERSION 11

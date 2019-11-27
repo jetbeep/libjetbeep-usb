@@ -1,3 +1,7 @@
+Linux build:
+ Ubuntu:
+ > sudo apt-get update
+ > sudo apt-get install libssl-dev libcurl4-openssl-dev
 Windows build:
 install OpenSSL (32bit) https://slproweb.com/products/Win32OpenSSL.html 
 > cd build

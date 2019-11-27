@@ -4,13 +4,19 @@ target_include_directories(token_payment_example PUBLIC ${CMAKE_CURRENT_SOURCE_D
 
 target_link_libraries(token_payment_example $<TARGET_OBJECTS:jetbeep_obj>)
 
-find_package(OpenSSL REQUIRED)
-target_link_libraries(token_payment_example ${OPENSSL_CRYPTO_LIBRARY} ${OPENSSL_SSL_LIBRARY})
-
-if (APPLE)
-	target_link_libraries(token_payment_example "-framework IOKit" "-framework CoreFoundation")
+if (APPLE) 
+    find_package(OpenSSL REQUIRED)
+    target_include_directories(token_payment_example PUBLIC ${OPENSSL_INCLUDE_DIR})
+	target_link_libraries(token_payment_example "-framework IOKit" "-framework CoreFoundation" ${OPENSSL_CRYPTO_LIBRARY} ${OPENSSL_SSL_LIBRARY})
 elseif(UNIX AND NOT APPLE) #linux
-	target_link_libraries(token_payment_example "-lpthread" "-ludev")
+    find_package(OpenSSL REQUIRED)
+    find_package(CURL REQUIRED)
+    add_definitions(-DCURL_STATICLIB)
+    message(STATUS "Using CURL_LIBRARIES: ${CURL_LIBRARIES}.")
+    target_include_directories(token_payment_example PUBLIC ${CURL_INCLUDE_DIRS})
+    target_link_libraries(token_payment_example "-lpthread" "-ludev" ${CURL_LIBRARIES})
 elseif(WIN32)
-	target_link_libraries(token_payment_example "-lwsock32" "-lws2_32")
+    find_package(OpenSSL REQUIRED)
+    target_include_directories(token_payment_example PUBLIC ${OPENSSL_INCLUDE_DIR})
+    target_link_libraries(token_payment_example "-lwsock32" "-lws2_32" ${OPENSSL_CRYPTO_LIBRARY} ${OPENSSL_SSL_LIBRARY})
 endif()

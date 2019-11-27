@@ -9,20 +9,25 @@ set(BOOST_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/boost_1_71_0)
 add_library(jetbeep_obj OBJECT ${JETBEEP_SOURCES} ${JETBEEP_INCLUDES})
 set_property(TARGET jetbeep_obj PROPERTY POSITION_INDEPENDENT_CODE ON)
 
-find_package(OpenSSL REQUIRED)
-
 target_include_directories(jetbeep_obj PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${BOOST_SOURCE_DIR} ${OPENSSL_INCLUDE_DIR})
 
 add_library(jetbeep SHARED ${JETBEEP_INCLUDES} $<TARGET_OBJECTS:jetbeep_obj>)
 
-target_link_libraries(jetbeep ${OPENSSL_CRYPTO_LIBRARY} ${OPENSSL_SSL_LIBRARY})
-
 if (APPLE) 
-	target_link_libraries(jetbeep "-framework IOKit" "-framework CoreFoundation")
+    find_package(OpenSSL REQUIRED)
+    target_include_directories(jetbeep_obj PUBLIC ${OPENSSL_INCLUDE_DIR})
+	target_link_libraries(jetbeep "-framework IOKit" "-framework CoreFoundation" ${OPENSSL_CRYPTO_LIBRARY} ${OPENSSL_SSL_LIBRARY})
 elseif(UNIX AND NOT APPLE) #linux
-    target_link_libraries(jetbeep "-lpthread" "-ludev")
+    find_package(OpenSSL REQUIRED)
+    find_package(CURL REQUIRED)
+    add_definitions(-DCURL_STATICLIB)
+    message(STATUS "Using CURL_LIBRARIES: ${CURL_LIBRARIES}.")
+    target_include_directories(jetbeep_obj PUBLIC ${CURL_INCLUDE_DIRS})
+    target_link_libraries(jetbeep "-lpthread" "-ludev" ${CURL_LIBRARIES})
 elseif(WIN32)
-    target_link_libraries(jetbeep "-lwsock32" "-lws2_32")
+    find_package(OpenSSL REQUIRED)
+    target_include_directories(jetbeep_obj PUBLIC ${OPENSSL_INCLUDE_DIR})
+    target_link_libraries(jetbeep "-lwsock32" "-lws2_32" ${OPENSSL_CRYPTO_LIBRARY} ${OPENSSL_SSL_LIBRARY})
 endif()
 
 target_include_directories(jetbeep PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
