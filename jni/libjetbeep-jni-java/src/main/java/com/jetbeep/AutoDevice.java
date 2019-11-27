@@ -16,6 +16,7 @@ abstract public class AutoDevice {
 
   public enum State {
     invalid,
+    firmwareVersionNotSupported,
     sessionOpened,
     sessionClosed,
     waitingForBarcodes,

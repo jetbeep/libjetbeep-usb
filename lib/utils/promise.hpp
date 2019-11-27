@@ -113,15 +113,20 @@ namespace JetBeep {
       return promise;
     }
 
-    Promise<void> thenPromise(std::function<Promise<void>()> callback) {
+    Promise<void> thenPromise(std::function<Promise<void>(T)> callback) {
       Promise<void> promise;
 
       auto resolveLambda = [=]() mutable {
-        auto resultPromise = callback();
+        try {
+          auto resultPromise = callback(m_impl->m_t);
 
-        resultPromise.then([=]() mutable { promise.resolve(); }).catchError([=](std::exception_ptr error) mutable {
+          resultPromise.then([=]() mutable { promise.resolve(); }).catchError([=](std::exception_ptr error) mutable {
+            promise.reject(error);
+          });
+        } catch (...) {
+          auto error = std::current_exception();
           promise.reject(error);
-        });
+        }
       };
 
       auto rejectLambda = [=, m_impl = m_impl]() mutable { promise.reject(m_impl->m_error); };
@@ -147,11 +152,16 @@ namespace JetBeep {
       Promise<ReturnType> promise;
 
       auto resolveLambda = [=, m_impl = m_impl]() mutable {
-        auto resultPromise = callback(m_impl->m_t);
+        try {
+          auto resultPromise = callback(m_impl->m_t);
 
-        resultPromise.then([=](ReturnType result) mutable { promise.resolve(result); }).catchError([=](std::exception_ptr error) mutable {
+          resultPromise.then([=](ReturnType result) mutable { promise.resolve(result); }).catchError([=](std::exception_ptr error) mutable {
+            promise.reject(error);
+          });
+        } catch (...) {
+          auto error = std::current_exception();
           promise.reject(error);
-        });
+        }
       };
       auto rejectLambda = [=, m_impl = m_impl]() mutable { promise.reject(m_impl->m_error); };
 
