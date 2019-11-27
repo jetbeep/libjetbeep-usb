@@ -1,5 +1,7 @@
 #include "./https_client.hpp"
 
+#ifdef HTTP_CLIENT_BOOST_BEAST
+
 #include <boost/asio/connect.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/error.hpp>
@@ -145,3 +147,5 @@ void Https::HttpsClient::doRequest(RequestOptions options) {
     m_pendingRequest.reject(make_exception_ptr(HttpErrors::NetworkError()));
   }
 }
+
+#endif

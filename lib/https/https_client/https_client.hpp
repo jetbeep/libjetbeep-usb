@@ -1,9 +1,21 @@
 #ifndef HTTPS_CLIENT_HPP
 #define HTTPS_CLIENT_HPP
 
-#include "../utils/logger.hpp"
-#include "../utils/promise.hpp"
-#include "./http_errors.hpp"
+#include "../../utils/platform.hpp"
+
+#ifdef PLATFORM_WIN
+  #define HTTP_CLIENT_BOOST_BEAST
+#elif defined(PLATFORM_OSX)
+  #define HTTP_CLIENT_BOOST_BEAST
+#elif defined(PLATFORM_LINUX)
+  #define HTTP_CLIENT_BOOST_BEAST
+#else
+  #define HTTP_CLIENT_BOOST_BEAST
+#endif
+
+#include "../../utils/logger.hpp"
+#include "../../utils/promise.hpp"
+#include "../http_errors.hpp"
 #include <atomic>
 #include <map>
 #include <string>
