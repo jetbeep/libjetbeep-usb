@@ -116,7 +116,7 @@ namespace JetBeep {
     Promise<void> thenPromise(std::function<Promise<void>(T)> callback) {
       Promise<void> promise;
 
-      auto resolveLambda = [=]() mutable {
+      auto resolveLambda = [=, m_impl = m_impl]() mutable {
         try {
           auto resultPromise = callback(m_impl->m_t);
 
