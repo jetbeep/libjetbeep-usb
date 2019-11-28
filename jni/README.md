@@ -37,6 +37,8 @@
 ./gradlew distZip # use ./gradlew.bat on Windows
 ```
 
+Output files will be in `example/build/distributions/`
+
 #### Example documentation
 
 [Link](example/README.md)
