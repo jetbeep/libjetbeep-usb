@@ -13,6 +13,7 @@
   #define HTTP_CLIENT_BOOST_BEAST
 #endif
 
+#include "../../io/iocontext.hpp"
 #include "../../utils/logger.hpp"
 #include "../../utils/promise.hpp"
 #include "../../utils/version.hpp"
@@ -29,7 +30,7 @@
 
 using namespace std;
 
-namespace JetBeep::Https {
+namespace JetBeep {
   enum class RequestMethod { GET, POST };
 
   enum class RequestContentType { JSON };
@@ -43,7 +44,8 @@ namespace JetBeep::Https {
     map<string, string> headers;     // TODO implement
     map<string, string> queryParams; // TODO implement
     RequestContentType contentType = RequestContentType::JSON;
-    int timeout = DEFAULT_TIMEOUT_MS; // not implemented https://stackoverflow.com/questions/56828654/timeout-for-boostbeast-sync-http-client
+    int timeout = DEFAULT_TIMEOUT_MS;
+    IOContext ioContext;
   } RequestOptions;
 
   typedef struct {

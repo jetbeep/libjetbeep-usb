@@ -2,6 +2,7 @@
 
 #ifdef HTTP_CLIENT_BOOST_BEAST
 
+#include "../../io/iocontext_impl.hpp"
 #include <boost/asio/connect.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/error.hpp>
@@ -23,12 +24,12 @@ using tcp = net::ip::tcp;
 using namespace JetBeep;
 using namespace std;
 
-Https::HttpsClient::HttpsClient() : m_log("https_client") {
+HttpsClient::HttpsClient() : m_log("https_client") {
   m_isCanceled.store(false);
   m_isPending.store(false);
 };
 
-Https::HttpsClient::~HttpsClient() {
+HttpsClient::~HttpsClient() {
   m_isCanceled.store(true);
   if (m_thread.joinable()) {
     m_thread.join();
@@ -36,18 +37,18 @@ Https::HttpsClient::~HttpsClient() {
   m_isPending.store(false);
 }
 
-Promise<Https::Response> Https::HttpsClient::request(RequestOptions& options) {
+Promise<Response> HttpsClient::request(RequestOptions& options) {
   if (m_isPending.load() == true) {
     throw runtime_error("previous request is not completed");
   }
   m_isCanceled.store(false);
   m_isPending.store(true);
   m_pendingRequest = Promise<Response>();
-  m_thread = thread(&Https::HttpsClient::doRequest, this, options);
+  m_thread = thread(&HttpsClient::doRequest, this, options);
   return m_pendingRequest;
 };
 
-void Https::HttpsClient::doRequest(RequestOptions options) {
+void HttpsClient::doRequest(RequestOptions options) {
   m_thread.detach();
   try {
     net::io_context ioc;
@@ -91,10 +92,10 @@ void Https::HttpsClient::doRequest(RequestOptions options) {
 
     http::verb method;
     switch (options.method) {
-    case Https::RequestMethod::GET:
+    case RequestMethod::GET:
       method = http::verb::get;
       break;
-    case Https::RequestMethod::POST:
+    case RequestMethod::POST:
       method = http::verb::post;
       break;
     default:
@@ -107,7 +108,7 @@ void Https::HttpsClient::doRequest(RequestOptions options) {
 
     if (!options.body.empty()) {
       switch (options.contentType) {
-      case Https::RequestContentType::JSON: {
+      case RequestContentType::JSON: {
         req.set(beast::http::field::content_type, "application/json");
         break;
       }
@@ -135,16 +136,20 @@ void Https::HttpsClient::doRequest(RequestOptions options) {
     Response response;
     response.body = boost::beast::buffers_to_string(res.body().data());
     response.statusCode = res.result_int();
-    response.isHttpError = Https::HttpsClient::isErrorStatusCode(response.statusCode);
+    response.isHttpError = HttpsClient::isErrorStatusCode(response.statusCode);
 
     m_isPending.store(false);
     m_log.d() << "API response (" << response.statusCode << "): " << response.body << Logger::endl;
 
-    m_pendingRequest.resolve(response);
+    options.ioContext.m_impl->ioService.post([this, response]{
+      m_pendingRequest.resolve(response); 
+    });
 
   } catch (std::exception const& e) {
     m_log.e() << e.what() << Logger::endl;
-    m_pendingRequest.reject(make_exception_ptr(HttpErrors::NetworkError()));
+    options.ioContext.m_impl->ioService.post([this]{
+      m_pendingRequest.reject(make_exception_ptr(HttpErrors::NetworkError()));
+    });
   }
 }
 

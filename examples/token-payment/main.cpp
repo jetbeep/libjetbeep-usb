@@ -134,7 +134,7 @@ int main() {
     l.i() << "Payment token: " << fullToken << Logger::endl;
     backend.makePayment(merchantTransactionId, fullToken, amountInCoins, DEVICE_ID, CASHIER_ID)
       .then([=](EasyPayResult result) {
-        // l.i() << "Request result: " << result._rawResponse << Logger::endl;
+        l.i() << "Request result: " << result._rawResponse << Logger::endl;
         if (result.Status == EasyPayAPI::PaymentStatus::Accepted) {
           return onPaymentSuccess(result);
         } else {

@@ -3,6 +3,7 @@
 #include "../utils/logger.hpp"
 #include "./https_client/https_client.hpp"
 #include "../utils/cryptlite/sha256.h"
+#include "../io/iocontext_impl.hpp"
 #include <iostream>
 #include <ctime>
 #include <iomanip>
@@ -25,13 +26,13 @@ struct EasyPayBackend::Impl {
 
 private:
   IOContext m_context;
-  Https::HttpsClient m_httpsClient;
+  HttpsClient m_httpsClient;
   string m_serverHost;
   string m_merchantSecretKey;
   int m_port;
   Logger m_log;
 
-  Https::RequestOptions getRequestOptions(string path, Https::RequestMethod method, Https::RequestContentType contentType = Https::RequestContentType::JSON);
+  RequestOptions getRequestOptions(string path, RequestMethod method, RequestContentType contentType = RequestContentType::JSON);
 
   RequestSignature makeMerchantSignature(uint32_t deviceId);
 };
@@ -57,9 +58,9 @@ Promise<EasyPayResult> EasyPayBackend::makeRefund(long pspTransactionId, uint32_
   return m_impl->makeRefund(pspTransactionId, amountInCoins, deviceId);
 }
 
-Https::RequestOptions EasyPayBackend::Impl::getRequestOptions(
-  string path, Https::RequestMethod method, Https::RequestContentType contentType) {
-  Https::RequestOptions options;
+RequestOptions EasyPayBackend::Impl::getRequestOptions(
+  string path, RequestMethod method, RequestContentType contentType) {
+  RequestOptions options;
   options.method = method;
   options.contentType = contentType;
   options.host = m_serverHost;
@@ -81,10 +82,10 @@ Promise<EasyPayResult> EasyPayBackend::Impl::makePayment(
   data.PaymentTokenFull = paymentToken;
   data.SignatureMerchant = sigData.signature;
 
-  auto options = getRequestOptions(path, Https::RequestMethod::POST);
+  auto options = getRequestOptions(path, RequestMethod::POST);
   options.body = tokenPaymentReqToJSON(data);
 
-  return m_httpsClient.request(options).thenPromise<EasyPayResult, Promise>([=](Https::Response res) {
+  return m_httpsClient.request(options).thenPromise<EasyPayResult, Promise>([&](Response res) {
     auto promise = Promise<EasyPayResult>();
     if (res.isHttpError) {
       promise.reject(make_exception_ptr(HttpErrors::ServerError(res.statusCode)));
@@ -118,10 +119,10 @@ Promise<EasyPayResult> EasyPayBackend::Impl::getPaymentStatus(string merchantTra
   data.SignatureMerchant = sigData.signature;
   data.DeviceId = deviceId;
 
-  auto options = getRequestOptions(path, Https::RequestMethod::GET);
+  auto options = getRequestOptions(path, RequestMethod::GET);
   options.body = tokenGetStatusReqToJSON(data);
 
-  return m_httpsClient.request(options).thenPromise<EasyPayResult, Promise>([=](Https::Response res) {
+  return m_httpsClient.request(options).thenPromise<EasyPayResult, Promise>([=](Response res) {
     auto promise = Promise<EasyPayResult>();
     if (res.isHttpError) {
       promise.reject(make_exception_ptr(HttpErrors::ServerError(res.statusCode)));
@@ -156,10 +157,10 @@ Promise<EasyPayResult> EasyPayBackend::Impl::makeRefund(long pspTransactionId, u
   data.SignatureMerchant = sigData.signature;
   data.DeviceId = deviceId;
 
-  auto options = getRequestOptions(path, Https::RequestMethod::POST);
+  auto options = getRequestOptions(path, RequestMethod::POST);
   options.body = tokenRefundReqToJSON(data);
 
-  return m_httpsClient.request(options).thenPromise<EasyPayResult, Promise>([=](Https::Response res) {
+  return m_httpsClient.request(options).thenPromise<EasyPayResult, Promise>([=](Response res) {
     auto promise = Promise<EasyPayResult>();
     if (res.isHttpError) {
       promise.reject(make_exception_ptr(HttpErrors::ServerError(res.statusCode)));

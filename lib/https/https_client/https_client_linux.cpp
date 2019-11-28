@@ -2,11 +2,11 @@
 
 #ifdef HTTP_CLIENT_LIBCURL
 
+#include "../../io/iocontext_impl.hpp"
 #include <cstdlib>
 #include <curl/curl.h>
 #include <iostream>
 #include <string>
-//#include "../../io/iocontext.hpp"
 
 using namespace JetBeep;
 using namespace std;
@@ -15,7 +15,7 @@ typedef size_t(*CURL_WRITEFUNCTION_PTR)(void*, size_t, size_t,  std::string*);
 
 static bool isCurlInited = false;
 
-Https::HttpsClient::HttpsClient() : m_log("https_client") {
+HttpsClient::HttpsClient() : m_log("https_client") {
   m_isCanceled.store(false);
   m_isPending.store(false);
   if (!isCurlInited) {
@@ -24,7 +24,7 @@ Https::HttpsClient::HttpsClient() : m_log("https_client") {
   }
 };
 
-Https::HttpsClient::~HttpsClient() {
+HttpsClient::~HttpsClient() {
   m_isCanceled.store(true);
   if (m_thread.joinable()) {
     m_thread.join();
@@ -32,20 +32,18 @@ Https::HttpsClient::~HttpsClient() {
   m_isPending.store(false);
 }
 
-Promise<Https::Response> Https::HttpsClient::request(RequestOptions& options) {
+Promise<Response> HttpsClient::request(RequestOptions& options) {
   if (m_isPending.load() == true) {
     throw runtime_error("previous request is not completed");
   }
   m_isCanceled.store(false);
   m_isPending.store(true);
   m_pendingRequest = Promise<Response>();
-  m_thread = thread(&Https::HttpsClient::doRequest, this, options);
+  m_thread = thread(&HttpsClient::doRequest, this, options);
   return m_pendingRequest;
 };
 
-void Https::HttpsClient::doRequest(RequestOptions options) {
-  m_thread.detach(); //TODO IOContext
-
+void HttpsClient::doRequest(RequestOptions options) {
   char errorBuffer[CURL_ERROR_SIZE];
   std::string receiveBuffer;
   CURL* curl;
@@ -124,7 +122,7 @@ void Https::HttpsClient::doRequest(RequestOptions options) {
     Response response;
     response.body = receiveBuffer;
     response.statusCode = statusCode;
-    response.isHttpError = Https::HttpsClient::isErrorStatusCode(response.statusCode);
+    response.isHttpError = HttpsClient::isErrorStatusCode(response.statusCode);
 
     m_isPending.store(false);
 
@@ -132,14 +130,19 @@ void Https::HttpsClient::doRequest(RequestOptions options) {
 
     curl_easy_cleanup(curl);
 
-    m_pendingRequest.resolve(response); 
+    options.ioContext.m_impl->ioService.post([this, response]{
+      m_pendingRequest.resolve(response); 
+    });
 
   } catch (std::exception const& e) {
     if (curl) {
       curl_easy_cleanup(curl);
     }
     m_log.e() << e.what() << Logger::endl;
-    m_pendingRequest.reject(make_exception_ptr(HttpErrors::NetworkError()));
+
+    options.ioContext.m_impl->ioService.post([this]{
+      m_pendingRequest.reject(make_exception_ptr(HttpErrors::NetworkError()));
+    });
   }
 }
 
