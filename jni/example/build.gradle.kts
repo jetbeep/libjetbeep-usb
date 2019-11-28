@@ -1,5 +1,11 @@
+import org.gradle.internal.os.OperatingSystem
+
+val osName = System.getProperty("os.name").toLowerCase().replace(" ", "_")
+val osArch = System.getProperty("os.arch").toLowerCase().replace(" ", "_")
+
 plugins {
     application
+    id("org.kordamp.markdown.convert") version "1.2.0"
 }
 
 application {
@@ -21,14 +27,30 @@ val run by tasks.getting(JavaExec::class) {
     standardInput = System.`in`
 }
 
+val mdpdf by tasks.register<Exec>("mdpdf") {
+    commandLine = listOf("mdpdf", "README.md")
+}
+
+tasks.distZip {
+    archiveName = "libjetbeep-jni-$version-$osName-$osArch.zip"
+    dependsOn(mdpdf)
+}
+
 distributions {
     main {
         contents {
-            into("libjetbeep-jni") {
-                from(listOf("../libjetbeep-jni/libjetbeep-jni.dylib", "../libjetbeep-jni/libjetbeep-jni.so", "../libjetbeep-jni/jetbeep-jni.dll"))
+            from("../libjetbeep-jni") {
+                include(listOf("*.dylib", "*.so", "*.dll"))
+                into("libjetbeep-jni")                    
             }
-            into("doc") {
+            into(".") {
                 from(listOf("README.md", "README.pdf"))
+            }
+            into("docs") {
+                from(listOf("../libjetbeep-jni-java/build/docs"))
+            }
+            from("src") {
+                into("src")
             }
         }
     }
