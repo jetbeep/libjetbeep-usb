@@ -5,7 +5,7 @@
 Requirements: 
 
 * Java Runtime
-* libopenssl installed in the system
+* libopenssl, libcurl4-openssl installed in the system
 
 Folder structure:
 

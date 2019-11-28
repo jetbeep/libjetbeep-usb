@@ -1,14 +1,15 @@
 [Back](../README.md)
 
-# Pre-built binary distributions
+# Downloads (pre-built binaries)
 
-TODO
+[Link](https://drive.google.com/open?id=1Ib5gs0VIJdjbKYZgtN78duxFT7A_cc05)
 
 # Building from sources
 
 #### Required 3rd-party libraries
 
 * `libopenssl` - in order to make HTTPS requests to EasyPay backend
+* `libcurl4-openssl`
 
 #### Required tools
 

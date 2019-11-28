@@ -27,3 +27,7 @@ libjetbeep is a set of cross-platform libraries that simplifies and accelarates 
 * Delphi
 * OPOS
 * JavaPOS
+
+#### Downloads (pre-built binaries)
+
+[Link](https://drive.google.com/open?id=1Ib5gs0VIJdjbKYZgtN78duxFT7A_cc05)
