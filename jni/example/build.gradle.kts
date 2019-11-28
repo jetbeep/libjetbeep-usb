@@ -27,8 +27,14 @@ val run by tasks.getting(JavaExec::class) {
     standardInput = System.`in`
 }
 
+var mdpdfCmdName = "";
+if (OperatingSystem.current().isWindows()) {
+    mdpdfCmdName = "mdpdf.cmd"
+} else {
+    mdpdfCmdName = "mdpdf"
+}
 val mdpdf by tasks.register<Exec>("mdpdf") {
-    commandLine = listOf("mdpdf", "README.md")
+    commandLine = listOf(mdpdfCmdName, "README.md")
 }
 
 tasks.distZip {
