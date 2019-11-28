@@ -66,6 +66,7 @@ RequestOptions EasyPayBackend::Impl::getRequestOptions(
   options.host = m_serverHost;
   options.port = m_port;
   options.path = path;
+  options.ioContext = m_context;
   return options;
 }
 
