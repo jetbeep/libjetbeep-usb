@@ -55,7 +55,9 @@ add_dependencies(jetbeep-jni GenerateJavaHeaders)
 target_include_directories(jetbeep-jni PUBLIC ${JNI_INCLUDE_DIRS})
 
 set_target_properties(jetbeep-jni PROPERTIES
-  LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+  RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+  LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+  )
 
 if (APPLE) 
   find_package(OpenSSL REQUIRED)
