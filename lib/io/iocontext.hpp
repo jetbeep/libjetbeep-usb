@@ -19,6 +19,8 @@ namespace JetBeep {
     friend class AutoDevice;
     friend class SerialDevice;
     friend class DeviceDetection;
+    friend class EasyPayBackend;
+    friend class HttpsClient;
   };
 } // namespace JetBeep
 

@@ -1,21 +1,36 @@
 #ifndef HTTPS_CLIENT_HPP
 #define HTTPS_CLIENT_HPP
 
-#include "../utils/logger.hpp"
-#include "../utils/promise.hpp"
-#include "./http_errors.hpp"
+#include "../../utils/platform.hpp"
+
+#ifdef PLATFORM_WIN
+  #define HTTP_CLIENT_BOOST_BEAST
+#elif defined(PLATFORM_OSX)
+  #define HTTP_CLIENT_BOOST_BEAST
+#elif defined(PLATFORM_LINUX)
+  #define HTTP_CLIENT_LIBCURL
+#else
+  #define HTTP_CLIENT_BOOST_BEAST
+#endif
+
+#include "../../io/iocontext.hpp"
+#include "../../utils/logger.hpp"
+#include "../../utils/promise.hpp"
+#include "../../utils/version.hpp"
+#include "../http_errors.hpp"
 #include <atomic>
 #include <map>
 #include <string>
 #include <thread>
 
+#define HTTP_USER_AGENT ("JetBeep usb-library/" + Version::currentVersion())
 #define DEFAULT_HTTPS_PORT 443
 #define DEFAULT_TIMEOUT_MS (30 * 1000)
 #define HTTP_VERSION 11
 
 using namespace std;
 
-namespace JetBeep::Https {
+namespace JetBeep {
   enum class RequestMethod { GET, POST };
 
   enum class RequestContentType { JSON };
@@ -29,7 +44,8 @@ namespace JetBeep::Https {
     map<string, string> headers;     // TODO implement
     map<string, string> queryParams; // TODO implement
     RequestContentType contentType = RequestContentType::JSON;
-    int timeout = DEFAULT_TIMEOUT_MS; // not implemented https://stackoverflow.com/questions/56828654/timeout-for-boostbeast-sync-http-client
+    int timeout = DEFAULT_TIMEOUT_MS;
+    IOContext ioContext;
   } RequestOptions;
 
   typedef struct {

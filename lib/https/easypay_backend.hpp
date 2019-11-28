@@ -20,7 +20,7 @@ namespace JetBeep {
   class EasyPayBackend {
   public:
     ~EasyPayBackend();
-    EasyPayBackend(EasyPayHostEnv env, string merchantSecretKey);
+    EasyPayBackend(EasyPayHostEnv env, string merchantSecretKey, IOContext context = IOContext::context);
 
     Promise<EasyPayResult> makePayment(string merchantTransactionId,
                                        string paymentToken,
