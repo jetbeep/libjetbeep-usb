@@ -128,7 +128,6 @@ abstract public class AutoDevice {
    */
   public void free() {
     free(ptr);
-    ptr = 0;
   }  
 
   

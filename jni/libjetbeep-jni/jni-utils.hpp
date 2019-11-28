@@ -17,7 +17,7 @@ namespace JetBeep {
     static jobject convertAutoDeviceState(JNIEnv* env, const AutoDeviceState& state);
 
     static bool getAutoDevicePointer(JNIEnv* env, jlong ptr, AutoDevice** autoDevice);
-    static void storeAutoDeviceJObject(JNIEnv* env, jobject object, AutoDevice* autoDevice);
+    static jobject storeAutoDeviceJObject(JNIEnv* env, jobject object, AutoDevice* autoDevice);
     static void releaseAutoDeviceJObject(JNIEnv* env, AutoDevice* autoDevice);
     static jobject getAutoDeviceJObject(AutoDevice* autoDevice);
 
@@ -25,6 +25,8 @@ namespace JetBeep {
     static void storeEasyPayBackendJObject(JNIEnv* env, jobject object, EasyPayBackend* backend);
     static void releaseEasyPayBackendJObject(JNIEnv* env, EasyPayBackend* backend);
     static jobject getEasyPayBackendJObject(EasyPayBackend* backend);
+
+    static jfieldID getPtrField(JNIEnv *env, jobject object);
     static std::recursive_mutex mutex;
 
   private:

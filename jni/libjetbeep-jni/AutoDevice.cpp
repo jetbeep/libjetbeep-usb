@@ -17,19 +17,13 @@ JNIEXPORT jlong JNICALL Java_com_jetbeep_AutoDevice_init(JNIEnv* env, jobject ob
   std::lock_guard<recursive_mutex> lock(JniUtils::mutex);
   JniUtils::storeJvm(env);
   auto device = new AutoDevice();
-  JniUtils::storeAutoDeviceJObject(env, object, device);
-  device->stateCallback = [device](AutoDeviceState state, exception_ptr ptr) {
+  auto newObject = JniUtils::storeAutoDeviceJObject(env, object, device);
+  device->stateCallback = [object = newObject](AutoDeviceState state, exception_ptr ptr) {
     std::lock_guard<recursive_mutex> lock(JniUtils::mutex);
     auto env = JniUtils::attachCurrentThread();
     if (env == nullptr) {
       AutoDeviceJni::log.e() << "unable to get env" << Logger::endl;
       return;
-    }
-
-    auto object = JniUtils::getAutoDeviceJObject(device);
-    if (object == nullptr) {
-      AutoDeviceJni::log.e() << "unable to get jobject" << Logger::endl;
-      return JniUtils::detachCurrentThread();
     }
 
     auto autoDeviceClass = env->GetObjectClass(object);
@@ -55,18 +49,12 @@ JNIEXPORT jlong JNICALL Java_com_jetbeep_AutoDevice_init(JNIEnv* env, jobject ob
     JniUtils::detachCurrentThread();
   };
 
-  device->mobileCallback = [device](SerialMobileEvent event) {
+  device->mobileCallback = [object = newObject](SerialMobileEvent event) {
     std::lock_guard<recursive_mutex> lock(JniUtils::mutex);
     auto env = JniUtils::attachCurrentThread();
     if (env == nullptr) {
       AutoDeviceJni::log.e() << "unable to get env" << Logger::endl;
       return;
-    }
-
-    auto object = JniUtils::getAutoDeviceJObject(device);
-    if (object == nullptr) {
-      AutoDeviceJni::log.e() << "unable to get jobject" << Logger::endl;
-      return JniUtils::detachCurrentThread();
     }
 
     auto autoDeviceClass = env->GetObjectClass(object);
@@ -96,6 +84,14 @@ JNIEXPORT void JNICALL Java_com_jetbeep_AutoDevice_free(JNIEnv* env, jobject obj
   if (!JniUtils::getAutoDevicePointer(env, ptr, &device)) {
     return;
   }
+
+  auto ptrField = JniUtils::getPtrField(env, object);
+  if (ptrField == nullptr) {
+    AutoDeviceJni::log.e() << "unable to get ptr field" << Logger::endl;
+    return;
+  }
+
+  env->SetLongField(object, ptrField, 0);
 
   JniUtils::releaseAutoDeviceJObject(env, device);
   delete device;
@@ -377,7 +373,7 @@ JNIEXPORT jstring JNICALL Java_com_jetbeep_AutoDevice_version(JNIEnv* env, jobje
   std::lock_guard<recursive_mutex> lock(JniUtils::mutex);
   AutoDevice* device = nullptr;
   if (!JniUtils::getAutoDevicePointer(env, ptr, &device)) {
-    return env->NewStringUTF("");;
+    return env->NewStringUTF("");
   }
 
   jstring jDeviceId = env->NewStringUTF(device->version().c_str());

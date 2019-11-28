@@ -33,6 +33,7 @@ if (OperatingSystem.current().isWindows()) {
 } else {
     mdpdfCmdName = "mdpdf"
 }
+
 val mdpdf by tasks.register<Exec>("mdpdf") {
     commandLine = listOf(mdpdfCmdName, "README.md")
 }
