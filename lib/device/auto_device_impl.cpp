@@ -106,25 +106,14 @@ void AutoDevice::Impl::initDevice() {
   m_device.get(DeviceParameter::version)
     .thenPromise<std::string, Promise>([&](std::string version) {
       if (Utils::deviceFWVerToNumber(version) < Utils::deviceFWVerToNumber(JETBEEP_DEVICE_MIN_FW_VER)) {
-        Promise<std::string> hack2;
-        hack2.reject(make_exception_ptr(Errors::FirmwareVersionNotSupported()));
-        // TODO @Oleg improve Promise to handle this case
-        // throw Errors::FirmwareVersionNotSupported();
-        return hack2;
+        throw Errors::FirmwareVersionNotSupported();
       }
       m_version = version;
       return m_device.get(DeviceParameter::deviceId);
     })
-    .thenPromise<std::string, Promise>([&](std::string strDeviceId) {
+    .thenPromise([&](std::string strDeviceId) {
       m_deviceId = std::strtoul(strDeviceId.c_str(), nullptr, 16);
-      return m_device
-        .resetState()
-        // TODO @Oleg improve Promise to handle this case
-        .thenPromise<std::string, Promise>([]() {
-          Promise<std::string> p;
-          p.resolve("hack");
-          return p;
-        });
+      return m_device.resetState();
     })
     .then([&](...) { changeState(AutoDeviceState::sessionClosed, nullptr); })
     .catchError([&](const std::exception_ptr error) {
