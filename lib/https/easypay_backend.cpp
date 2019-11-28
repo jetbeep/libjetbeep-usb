@@ -12,8 +12,8 @@ using namespace JetBeep;
 using namespace std;
 
 struct EasyPayBackend::Impl {
-  Impl(string serverHost, string merchantSecretKey, int port = 8193)
-    : m_serverHost(serverHost), m_port(port), m_log("backend"), m_merchantSecretKey(merchantSecretKey){};
+  Impl(string serverHost, string merchantSecretKey, IOContext context, int port = 8193)
+    : m_serverHost(serverHost), m_port(port), m_log("backend"), m_merchantSecretKey(merchantSecretKey), m_context(context){};
 
   ~Impl();
 
@@ -24,19 +24,22 @@ struct EasyPayBackend::Impl {
   Promise<EasyPayResult> makeRefund(long pspTransactionId, uint32_t amountInCoins, uint32_t deviceId);
 
 private:
+  IOContext m_context;
   Https::HttpsClient m_httpsClient;
   string m_serverHost;
   string m_merchantSecretKey;
   int m_port;
   Logger m_log;
 
+  Https::RequestOptions getRequestOptions(string path, Https::RequestMethod method, Https::RequestContentType contentType = Https::RequestContentType::JSON);
+
   RequestSignature makeMerchantSignature(uint32_t deviceId);
 };
 
 EasyPayBackend::Impl::~Impl() = default;
 
-EasyPayBackend::EasyPayBackend(EasyPayHostEnv env, string merchantSecretKey)
-  : m_impl(new Impl(env == EasyPayHostEnv::Production ? "sas.easypay.ua" : "sastest.easypay.ua", merchantSecretKey)) {
+EasyPayBackend::EasyPayBackend(EasyPayHostEnv env, string merchantSecretKey, IOContext context)
+  : m_impl(new Impl(env == EasyPayHostEnv::Production ? "sas.easypay.ua" : "sastest.easypay.ua", merchantSecretKey, context)) {
 }
 
 EasyPayBackend::~EasyPayBackend() = default;
@@ -54,6 +57,17 @@ Promise<EasyPayResult> EasyPayBackend::makeRefund(long pspTransactionId, uint32_
   return m_impl->makeRefund(pspTransactionId, amountInCoins, deviceId);
 }
 
+Https::RequestOptions EasyPayBackend::Impl::getRequestOptions(
+  string path, Https::RequestMethod method, Https::RequestContentType contentType) {
+  Https::RequestOptions options;
+  options.method = method;
+  options.contentType = contentType;
+  options.host = m_serverHost;
+  options.port = m_port;
+  options.path = path;
+  return options;
+}
+
 Promise<EasyPayResult> EasyPayBackend::Impl::makePayment(
   string merchantTransactionId, string paymentToken, uint32_t amountInCoins, uint32_t deviceId, string cashierId) {
   const string path = "/api/Payment/Box";
@@ -67,15 +81,8 @@ Promise<EasyPayResult> EasyPayBackend::Impl::makePayment(
   data.PaymentTokenFull = paymentToken;
   data.SignatureMerchant = sigData.signature;
 
-  string reqBody = tokenPaymentReqToJSON(data);
-
-  Https::RequestOptions options;
-  options.method = Https::RequestMethod::POST;
-  options.contentType = Https::RequestContentType::JSON;
-  options.host = m_serverHost;
-  options.port = m_port;
-  options.path = path;
-  options.body = reqBody;
+  auto options = getRequestOptions(path, Https::RequestMethod::POST);
+  options.body = tokenPaymentReqToJSON(data);
 
   return m_httpsClient.request(options).thenPromise<EasyPayResult, Promise>([=](Https::Response res) {
     auto promise = Promise<EasyPayResult>();
@@ -111,15 +118,8 @@ Promise<EasyPayResult> EasyPayBackend::Impl::getPaymentStatus(string merchantTra
   data.SignatureMerchant = sigData.signature;
   data.DeviceId = deviceId;
 
-  string reqBody = tokenGetStatusReqToJSON(data);
-
-  Https::RequestOptions options;
-  options.method = Https::RequestMethod::GET;
-  options.contentType = Https::RequestContentType::JSON;
-  options.host = m_serverHost;
-  options.port = m_port;
-  options.path = path;
-  options.body = reqBody;
+  auto options = getRequestOptions(path, Https::RequestMethod::GET);
+  options.body = tokenGetStatusReqToJSON(data);
 
   return m_httpsClient.request(options).thenPromise<EasyPayResult, Promise>([=](Https::Response res) {
     auto promise = Promise<EasyPayResult>();
@@ -156,15 +156,8 @@ Promise<EasyPayResult> EasyPayBackend::Impl::makeRefund(long pspTransactionId, u
   data.SignatureMerchant = sigData.signature;
   data.DeviceId = deviceId;
 
-  string reqBody = tokenRefundReqToJSON(data);
-
-  Https::RequestOptions options;
-  options.method = Https::RequestMethod::POST;
-  options.contentType = Https::RequestContentType::JSON;
-  options.host = m_serverHost;
-  options.port = m_port;
-  options.path = path;
-  options.body = reqBody;
+  auto options = getRequestOptions(path, Https::RequestMethod::POST);
+  options.body = tokenRefundReqToJSON(data);
 
   return m_httpsClient.request(options).thenPromise<EasyPayResult, Promise>([=](Https::Response res) {
     auto promise = Promise<EasyPayResult>();

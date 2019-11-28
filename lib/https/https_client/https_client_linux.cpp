@@ -45,7 +45,7 @@ Promise<Https::Response> Https::HttpsClient::request(RequestOptions& options) {
 
 void Https::HttpsClient::doRequest(RequestOptions options) {
   m_thread.detach(); //TODO IOContext
-  //auto ioContext = IOContext::context;
+
   char errorBuffer[CURL_ERROR_SIZE];
   std::string receiveBuffer;
   CURL* curl;
@@ -113,7 +113,6 @@ void Https::HttpsClient::doRequest(RequestOptions options) {
 #endif
     
     /* Perform the request */
-    //TODO fix Segmentation fault
     res = curl_easy_perform(curl);
     if (res != CURLE_OK) {
       throw runtime_error(string(errorBuffer));
@@ -134,11 +133,6 @@ void Https::HttpsClient::doRequest(RequestOptions options) {
     curl_easy_cleanup(curl);
 
     m_pendingRequest.resolve(response); 
-
-  //TODO
-    /*ioContext.post( [&this, &m_pendingRequest, =response]{ 
-      m_pendingRequest.resolve(response); 
-    });*/
 
   } catch (std::exception const& e) {
     if (curl) {
