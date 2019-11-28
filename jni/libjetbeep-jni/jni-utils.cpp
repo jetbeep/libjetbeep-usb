@@ -164,8 +164,10 @@ bool JniUtils::getAutoDevicePointer(JNIEnv* env, jlong ptr, AutoDevice** autoDev
   return true;
 }
 
-void JniUtils::storeAutoDeviceJObject(JNIEnv* env, jobject object, AutoDevice* autoDevice) {
-  autoDevice->opaque = env->NewGlobalRef(object);
+jobject JniUtils::storeAutoDeviceJObject(JNIEnv* env, jobject object, AutoDevice* autoDevice) {
+  auto newObject = env->NewGlobalRef(object);
+  autoDevice->opaque = newObject;
+  return newObject;
 }
 void JniUtils::releaseAutoDeviceJObject(JNIEnv* env, AutoDevice* autoDevice) {
   env->DeleteGlobalRef(JniUtils::getAutoDeviceJObject(autoDevice));
@@ -196,4 +198,19 @@ void JniUtils::releaseEasyPayBackendJObject(JNIEnv* env, EasyPayBackend* backend
 
 jobject JniUtils::getEasyPayBackendJObject(EasyPayBackend* backend) {
   return (jobject)(backend->opaque);
+}
+
+jfieldID JniUtils::getPtrField(JNIEnv* env, jobject object) {
+  auto autoDeviceClass = env->GetObjectClass(object);
+  if (autoDeviceClass == nullptr) {
+    m_log.e() << "unable to get AutoDevice class" << Logger::endl;
+    return nullptr;
+  }
+
+  auto ptrField = env->GetFieldID(autoDeviceClass, "ptr", "J");
+  if (ptrField == nullptr) {
+    m_log.e() << "unable to get ptr field" << Logger::endl;
+    return nullptr;
+  }
+  return ptrField;
 }

@@ -26,7 +26,11 @@ int main() {
     string command = splitted.at(0);
     splitted.erase(splitted.begin());
 
-    cmd.process(command, splitted);
+    if (command == "exit") {
+      break;
+    } else {
+      cmd.process(command, splitted);
+    }
   }
   return 0;
 }
