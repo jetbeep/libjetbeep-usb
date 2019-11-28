@@ -2,6 +2,11 @@ plugins {
     `java-library`
 }
 
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
+
 tasks {
     jar {
         manifest {
