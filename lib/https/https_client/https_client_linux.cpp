@@ -11,6 +11,8 @@
 using namespace JetBeep;
 using namespace std;
 
+typedef size_t(*CURL_WRITEFUNCTION_PTR)(void*, size_t, size_t,  std::string*);
+
 static bool isCurlInited = false;
 
 Https::HttpsClient::HttpsClient() : m_log("https_client") {
@@ -51,12 +53,8 @@ void Https::HttpsClient::doRequest(RequestOptions options) {
     /*CURLcode*/ int code;
     CURLcode res;
 
-    auto onDataReceived = [](char* data, size_t size, size_t nmemb, std::string* buffer) -> int {
-      if (buffer == nullptr) {
-        return 0;
-      }
-
-      buffer->append(data, size * nmemb);
+    auto onDataReceived = [](void* ptr, size_t size, size_t nmemb, std::string* data) -> size_t {
+      data->append(static_cast<char*>(ptr), size * nmemb);
       return size * nmemb;
     };
 
@@ -95,7 +93,7 @@ void Https::HttpsClient::doRequest(RequestOptions options) {
       throw runtime_error("Unable to curl_easy_setopt for some options");
     }
 
-    code = curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, onDataReceived);
+    code = curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, static_cast<CURL_WRITEFUNCTION_PTR>(onDataReceived));
     if (code != CURLE_OK) {
       throw runtime_error("Failed to set error buffer");
     }
