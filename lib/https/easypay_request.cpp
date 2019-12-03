@@ -73,7 +73,7 @@ string EasyPayAPI::tokenRefundReqToJSON(TokenRefundRequest& data) {
   json.put("DeviceId", "{{DeviceId}}");
   json.put("DateRequest", data.DateRequest);
   json.put("SignatureMerchant", data.SignatureMerchant);
-  json.put("TransactionId", data.TransactionId);
+  json.put("TransactionId", "{{TransactionId}}");
 
   std::stringstream stream;
   pt::write_json(stream, json);
@@ -81,6 +81,7 @@ string EasyPayAPI::tokenRefundReqToJSON(TokenRefundRequest& data) {
   string templateJson = stream.str();
 
   replaceJsonTamplate(templateJson, "{{DeviceId}}", std::to_string(data.DeviceId));
+  replaceJsonTamplate(templateJson, "{{TransactionId}}", std::to_string(data.TransactionId));
 
   return templateJson;
 }

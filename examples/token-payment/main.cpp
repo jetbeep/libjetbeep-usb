@@ -63,6 +63,7 @@ std::string random_string() {
 }
 
 int main() {
+  string input;
   Logger::coutEnabled = true;
   Logger::level = LoggerLevel::verbose;
 
@@ -75,11 +76,10 @@ int main() {
   auto backend = EasyPayBackend(EasyPayHostEnv::Production, MERCHANT_SECRET_KEY);
 
   const string merchantTransactionId = random_string();
-  const int amountInCoins = 5;
+  const int amountInCoins = 1;
   const PaymentMetadata metadata; // empty
 
   cout << "Device connected?\n";
-  string input;
   getline(cin, input);
 
   auto state = device.state();

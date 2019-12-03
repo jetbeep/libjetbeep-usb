@@ -4,7 +4,6 @@
 
 #include "../../io/iocontext_impl.hpp"
 #include <cstdlib>
-#include <curl/curl.h>
 #include <iostream>
 #include <string>
 
@@ -20,6 +19,10 @@ HttpsClient::HttpsClient() : m_log("https_client") {
   m_isPending.store(false);
   if (!isCurlInited) {
     curl_global_init(CURL_GLOBAL_DEFAULT);
+    m_curl = curl_easy_init();
+    if (!m_curl) {
+      throw runtime_error("Unable to initializa curl");
+    }
     isCurlInited = true;
   }
 };
@@ -30,6 +33,7 @@ HttpsClient::~HttpsClient() {
     m_thread.join();
   }
   m_isPending.store(false);
+  curl_easy_cleanup(m_curl);
 }
 
 Promise<Response> HttpsClient::request(RequestOptions& options) {
@@ -39,6 +43,9 @@ Promise<Response> HttpsClient::request(RequestOptions& options) {
   m_isCanceled.store(false);
   m_isPending.store(true);
   m_pendingRequest = Promise<Response>();
+  if (m_thread.joinable()) {
+    m_thread.join();
+  }
   m_thread = thread(&HttpsClient::doRequest, this, options);
   return m_pendingRequest;
 };
@@ -46,7 +53,7 @@ Promise<Response> HttpsClient::request(RequestOptions& options) {
 void HttpsClient::doRequest(RequestOptions options) {
   char errorBuffer[CURL_ERROR_SIZE];
   std::string receiveBuffer;
-  CURL* curl;
+  
   try {
     /*CURLcode*/ int code;
     CURLcode res;
@@ -58,21 +65,19 @@ void HttpsClient::doRequest(RequestOptions options) {
       return size * nmemb;
     };
 
-    curl = curl_easy_init();
-
-    if (!curl) {
-      throw runtime_error("Unable to initializa curl");
-    }
-
-    code = curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, errorBuffer);
+    code = curl_easy_setopt(m_curl, CURLOPT_ERRORBUFFER, errorBuffer);
     if (code != CURLE_OK) {
       throw runtime_error("Failed to set error buffer");
     }
     string url = "https://" + options.host + options.path;
-    code += curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-    code += curl_easy_setopt(curl, CURLOPT_PORT, options.port);
-    code += curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT_MS, options.timeout);
-    code += curl_easy_setopt(curl, CURLOPT_USERAGENT, HTTP_USER_AGENT);
+    code += curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str());
+    code += curl_easy_setopt(m_curl, CURLOPT_PORT, options.port);
+    code += curl_easy_setopt(m_curl, CURLOPT_CONNECTTIMEOUT_MS, options.timeout);
+
+    code += curl_easy_setopt(m_curl, CURLOPT_CUSTOMREQUEST, NULL); //reseting
+
+    string uaStr = HTTP_USER_AGENT;
+    code += curl_easy_setopt(m_curl, CURLOPT_USERAGENT, uaStr.c_str());
 
     m_log.d() << "https request to " << url << " " + (options.method == RequestMethod::GET ? string("(GET)") : string("(POST)")) << Logger::endl;
     
@@ -87,21 +92,23 @@ void HttpsClient::doRequest(RequestOptions options) {
         throw runtime_error("Content type not supported");
       }
       
-      curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headersList);
+      curl_easy_setopt(m_curl, CURLOPT_HTTPHEADER, headersList);
 
       m_log.d() << "---- request data -----" << Logger::endl;
       m_log.d() << options.body << Logger::endl << Logger::endl;
       
-      code += curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, options.body.size());
-      code += curl_easy_setopt(curl, CURLOPT_COPYPOSTFIELDS, options.body.c_str());
+      code += curl_easy_setopt(m_curl, CURLOPT_POSTFIELDSIZE, options.body.size());
+      //code += curl_easy_setopt(m_curl, CURLOPT_POSTFIELDS, options.body.c_str());
+      code += curl_easy_setopt(m_curl, CURLOPT_COPYPOSTFIELDS, options.body.c_str());
     }
     
     switch (options.method) {
     case RequestMethod::GET:
-      code += curl_easy_setopt(curl, CURLOPT_HTTPGET, 1L);
+      //code += curl_easy_setopt(m_curl, CURLOPT_HTTPGET, 1L);
+      code +=  curl_easy_setopt(m_curl, CURLOPT_CUSTOMREQUEST, "GET"); //used to hack: GET + body
       break;
     case RequestMethod::POST:
-      code += curl_easy_setopt(curl, CURLOPT_POST, 1L);
+      code += curl_easy_setopt(m_curl, CURLOPT_POST, 1L);
       break;
     }
 
@@ -109,13 +116,13 @@ void HttpsClient::doRequest(RequestOptions options) {
       throw runtime_error("Unable to curl_easy_setopt for some options");
     }
 
-    code = curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, static_cast<CURL_WRITEFUNCTION_PTR>(onDataReceived));
+    code = curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, static_cast<CURL_WRITEFUNCTION_PTR>(onDataReceived));
     if (code != CURLE_OK) {
       throw runtime_error("Failed to set error buffer");
     }
 
     // set pointer which will be 4th param in writer func
-    code = curl_easy_setopt(curl, CURLOPT_WRITEDATA, &receiveBuffer);
+    code = curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, &receiveBuffer);
     if (code != CURLE_OK) {
       throw runtime_error("Failed to set error buffer");
     }
@@ -129,13 +136,13 @@ void HttpsClient::doRequest(RequestOptions options) {
 #endif
     
     /* Perform the request */
-    res = curl_easy_perform(curl);
+    res = curl_easy_perform(m_curl);
     if (res != CURLE_OK) {
       throw runtime_error(string(errorBuffer));
     }
 
     long statusCode;
-    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &statusCode);
+    curl_easy_getinfo(m_curl, CURLINFO_RESPONSE_CODE, &statusCode);
 
     Response response;
     response.body = receiveBuffer;
@@ -146,18 +153,11 @@ void HttpsClient::doRequest(RequestOptions options) {
 
     m_log.d() << "API response (" << response.statusCode << "): " << response.body << Logger::endl;
 
-    curl_easy_cleanup(curl);
-
     options.ioContext.m_impl->ioService.post([this, response]{
       m_pendingRequest.resolve(response); 
     });
-
   } catch (std::exception const& e) {
-    if (curl) {
-      curl_easy_cleanup(curl);
-    }
     m_log.e() << e.what() << Logger::endl;
-
     options.ioContext.m_impl->ioService.post([this]{
       m_pendingRequest.reject(make_exception_ptr(HttpErrors::NetworkError()));
     });

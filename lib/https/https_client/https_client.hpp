@@ -23,6 +23,10 @@
 #include <string>
 #include <thread>
 
+#ifdef HTTP_CLIENT_LIBCURL
+  #include <curl/curl.h>
+#endif
+
 #define HTTP_USER_AGENT ("JetBeep usb-library/" + Version::currentVersion())
 #define DEFAULT_HTTPS_PORT 443
 #define DEFAULT_TIMEOUT_MS (30 * 1000)
@@ -72,6 +76,10 @@ namespace JetBeep {
       int major = (int)(statusCode / 100);
       return major == 4 || major == 5;
     }
+
+    #ifdef HTTP_CLIENT_LIBCURL
+    CURL* m_curl = nullptr;
+    #endif
   };
 
 } // namespace JetBeep::Https
