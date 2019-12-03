@@ -51,6 +51,8 @@ void HttpsClient::doRequest(RequestOptions options) {
     /*CURLcode*/ int code;
     CURLcode res;
 
+    struct curl_slist *headersList = nullptr;
+
     auto onDataReceived = [](void* ptr, size_t size, size_t nmemb, std::string* data) -> size_t {
       data->append(static_cast<char*>(ptr), size * nmemb);
       return size * nmemb;
@@ -75,9 +77,21 @@ void HttpsClient::doRequest(RequestOptions options) {
     m_log.d() << "https request to " << url << " " + (options.method == RequestMethod::GET ? string("(GET)") : string("(POST)")) << Logger::endl;
     
     if (!options.body.empty()) {
+      switch (options.contentType) {
+      case RequestContentType::JSON: {
+        headersList = curl_slist_append(headersList, "Content-Type: application/json");
+        headersList = curl_slist_append(headersList, "Accept: application/json");
+        break;
+      }
+      default:
+        throw runtime_error("Content type not supported");
+      }
+      
+      curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headersList);
+
       m_log.d() << "---- request data -----" << Logger::endl;
       m_log.d() << options.body << Logger::endl << Logger::endl;
-      // curl_easy_setopt(curl, CURLOPT_POSTFIELDS, options.body);
+      
       code += curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, options.body.size());
       code += curl_easy_setopt(curl, CURLOPT_COPYPOSTFIELDS, options.body.c_str());
     }

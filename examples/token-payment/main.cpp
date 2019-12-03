@@ -7,7 +7,7 @@ using namespace JetBeep;
 using namespace std;
 
 #define DEVICE_ID   44
-#define CASHIER_ID "test_cashier_1"
+#define CASHIER_ID "12"
 
 #define MERCHANT_SECRET_KEY "F09612A780C041D3939EE8C9CE8DC560"
 
