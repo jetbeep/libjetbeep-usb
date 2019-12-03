@@ -71,8 +71,12 @@ void HttpsClient::doRequest(RequestOptions options) {
     code += curl_easy_setopt(curl, CURLOPT_PORT, options.port);
     code += curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT_MS, options.timeout);
     code += curl_easy_setopt(curl, CURLOPT_USERAGENT, HTTP_USER_AGENT);
+
+    m_log.d() << "https request to " << url << " " + (options.method == RequestMethod::GET ? string("(GET)") : string("(POST)")) << Logger::endl;
     
     if (!options.body.empty()) {
+      m_log.d() << "---- request data -----" << Logger::endl;
+      m_log.d() << options.body << Logger::endl << Logger::endl;
       // curl_easy_setopt(curl, CURLOPT_POSTFIELDS, options.body);
       code += curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, options.body.size());
       code += curl_easy_setopt(curl, CURLOPT_COPYPOSTFIELDS, options.body.c_str());
