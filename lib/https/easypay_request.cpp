@@ -10,7 +10,7 @@ namespace pt = boost::property_tree;
 using namespace std;
 using namespace JetBeep;
 
-static void replaceJsonTamplate(string& json, const string& placeholder, const string& value) {
+static void replaceJsonTemplate(string& json, const string& placeholder, const string& value) {
     boost::replace_all<string>(json, "\"" + placeholder + "\"", value);
 }
 
@@ -43,8 +43,8 @@ string EasyPayAPI::tokenPaymentReqToJSON(TokenPaymentRequest& data) {
 
   string templateJson = stream.str();
 
-  replaceJsonTamplate(templateJson, "{{DeviceId}}", std::to_string(DeviceId));
-  replaceJsonTamplate(templateJson, "{{AmountInCoin}}", std::to_string(data.AmountInCoin));
+  replaceJsonTemplate(templateJson, "{{DeviceId}}", std::to_string(DeviceId));
+  replaceJsonTemplate(templateJson, "{{AmountInCoin}}", std::to_string(data.AmountInCoin));
 
   return templateJson;
 }
@@ -62,8 +62,8 @@ string EasyPayAPI::tokenGetStatusReqToJSON(TokenGetStatusRequest& data) {
 
   string templateJson = stream.str();
 
-  replaceJsonTamplate(templateJson, "{{DeviceId}}", std::to_string(data.DeviceId));
-  replaceJsonTamplate(templateJson, "{{AmountInCoin}}", std::to_string(data.AmountInCoin));
+  replaceJsonTemplate(templateJson, "{{DeviceId}}", std::to_string(data.DeviceId));
+  replaceJsonTemplate(templateJson, "{{AmountInCoin}}", std::to_string(data.AmountInCoin));
 
   return templateJson;
 }
@@ -80,8 +80,8 @@ string EasyPayAPI::tokenRefundReqToJSON(TokenRefundRequest& data) {
 
   string templateJson = stream.str();
 
-  replaceJsonTamplate(templateJson, "{{DeviceId}}", std::to_string(data.DeviceId));
-  replaceJsonTamplate(templateJson, "{{TransactionId}}", std::to_string(data.TransactionId));
+  replaceJsonTemplate(templateJson, "{{DeviceId}}", std::to_string(data.DeviceId));
+  replaceJsonTemplate(templateJson, "{{TransactionId}}", std::to_string(data.TransactionId));
 
   return templateJson;
 }
