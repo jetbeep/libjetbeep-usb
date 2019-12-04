@@ -3,11 +3,16 @@
 
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
+#include <boost/algorithm/string/replace.hpp>
 
 namespace pt = boost::property_tree;
 
 using namespace std;
 using namespace JetBeep;
+
+static void replaceJsonTemplate(string& json, const string& placeholder, const string& value) {
+    boost::replace_all<string>(json, "\"" + placeholder + "\"", value);
+}
 
 string EasyPayAPI::tokenPaymentReqToJSON(TokenPaymentRequest& data) {
   pt::ptree json;
@@ -24,10 +29,10 @@ string EasyPayAPI::tokenPaymentReqToJSON(TokenPaymentRequest& data) {
   string PaymentToken = tokenParts[0];
 
   //fill JSON
-  json.put("Fields.DeviceId", DeviceId);
+  json.put("Fields.DeviceId", "{{DeviceId}}");
   json.put("Fields.MerchantCashboxId", data.MerchantCashboxId);
   json.put("Fields.MerchantTransactionId", data.MerchantTransactionId);
-  json.put("AmountInCoin", data.AmountInCoin);
+  json.put("AmountInCoin","{{AmountInCoin}}");
   json.put("DateRequest", data.DateRequest);
   json.put("SignatureMerchant", data.SignatureMerchant);
   json.put("SignatureBox", SignatureBox);
@@ -36,32 +41,47 @@ string EasyPayAPI::tokenPaymentReqToJSON(TokenPaymentRequest& data) {
   std::stringstream stream;
   pt::write_json(stream, json);
 
-  return stream.str();
+  string templateJson = stream.str();
+
+  replaceJsonTemplate(templateJson, "{{DeviceId}}", std::to_string(DeviceId));
+  replaceJsonTemplate(templateJson, "{{AmountInCoin}}", std::to_string(data.AmountInCoin));
+
+  return templateJson;
 }
 
 string EasyPayAPI::tokenGetStatusReqToJSON(TokenGetStatusRequest& data) {
   pt::ptree json;
-  json.put("DeviceId", data.DeviceId);
+  json.put("DeviceId", "{{DeviceId}}");
   json.put("DateRequest", data.DateRequest);
   json.put("SignatureMerchant", data.SignatureMerchant);
-  json.put("AmountInCoin", data.AmountInCoin);
+  json.put("AmountInCoin", "{{AmountInCoin}}");
   json.put("MerchantTransactionId", data.MerchantTransactionId);
 
   std::stringstream stream;
   pt::write_json(stream, json);
 
-  return stream.str();
+  string templateJson = stream.str();
+
+  replaceJsonTemplate(templateJson, "{{DeviceId}}", std::to_string(data.DeviceId));
+  replaceJsonTemplate(templateJson, "{{AmountInCoin}}", std::to_string(data.AmountInCoin));
+
+  return templateJson;
 }
 
 string EasyPayAPI::tokenRefundReqToJSON(TokenRefundRequest& data) {
   pt::ptree json;
-  json.put("DeviceId", data.DeviceId);
+  json.put("DeviceId", "{{DeviceId}}");
   json.put("DateRequest", data.DateRequest);
   json.put("SignatureMerchant", data.SignatureMerchant);
-  json.put("TransactionId", data.TransactionId);
+  json.put("TransactionId", "{{TransactionId}}");
 
   std::stringstream stream;
   pt::write_json(stream, json);
 
-  return stream.str();
+  string templateJson = stream.str();
+
+  replaceJsonTemplate(templateJson, "{{DeviceId}}", std::to_string(data.DeviceId));
+  replaceJsonTemplate(templateJson, "{{TransactionId}}", std::to_string(data.TransactionId));
+
+  return templateJson;
 }
