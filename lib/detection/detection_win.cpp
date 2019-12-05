@@ -203,7 +203,7 @@ void DeviceDetection::Impl::monitorLoop() {
     TranslateMessage(&msg);
     DispatchMessage(&msg);
 
-    if (msg.message != APP_UNBLOCK_MSG && lastDetectedCandidate.pid != 0) {
+    if (msg.message == APP_DEVICE_EVENT_MSG && lastDetectedCandidate.pid != 0) {
       auto action = DeviceDetection::Impl::lastDetectedAction;
       auto candidat = DeviceDetection::Impl::lastDetectedCandidate;
       m_context.m_impl->ioService.post([&, action, candidat] {
