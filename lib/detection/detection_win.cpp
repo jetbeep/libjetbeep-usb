@@ -29,6 +29,7 @@
 #define COM_PATH_PREFIX "\\\\.\\"
 
 #define APP_UNBLOCK_MSG (WM_USER + 1)
+#define APP_DEVICE_EVENT_MSG (WM_USER + 2)
 
 typedef std::basic_string<TCHAR> tstring;
 
@@ -383,6 +384,9 @@ LRESULT CALLBACK DeviceDetection::Impl::monitorDetectCallback(HWND m_hwnd, UINT 
       if (pHdr->dbch_devicetype == DBT_DEVTYP_DEVICEINTERFACE) {
         pDevInf = (PDEV_BROADCAST_DEVICEINTERFACE)pHdr;
         checkDetectedDeviceEvent(pDevInf, wParam);
+        if (m_hwnd && !PostMessageA(m_hwnd, APP_DEVICE_EVENT_MSG, 0, 0)) {
+          throw runtime_error("Unable to PostMessageA");
+        }
       }
     }
     // Return TRUE to grant the request.
