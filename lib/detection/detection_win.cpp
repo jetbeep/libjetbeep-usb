@@ -23,7 +23,6 @@
 #include <atomic>
 #include <stdexcept>
 
-
 #define VID_TAG "VID_"
 #define PID_TAG "PID_"
 #define COM_PATH_PREFIX "\\\\.\\"
@@ -306,8 +305,9 @@ void DeviceDetection::Impl::checkDetectedDeviceEvent(PDEV_BROADCAST_DEVICEINTERF
   // USB\Vid_04e8&Pid_503b\0002F9A9828E0F06
   lastDetectedCandidate.pid = 0;
 
-  if (!pDevInf)
+  if (!pDevInf) {
     return;
+  }
 
   lastDetectedAction = (DBT_DEVICEARRIVAL == wParam) ? DeviceDetectionEvent::added : DeviceDetectionEvent::removed;
 
