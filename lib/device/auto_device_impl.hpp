@@ -72,7 +72,7 @@ namespace JetBeep {
     std::string m_version;
     unsigned long m_deviceId;
 
-    void onDeviceEvent(const DeviceDetectionEvent& event, const DeviceCandidate& candidate);
+    void onDeviceEvent(DeviceDetectionEvent event, DeviceCandidate candidate);
     void changeState(AutoDeviceState state, std::exception_ptr exception = nullptr);
     void resetState();
     void initDevice();

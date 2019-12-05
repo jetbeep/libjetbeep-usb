@@ -26,7 +26,7 @@ namespace JetBeep {
     bool operator!=(const DeviceCandidate& other);
   } DeviceCandidate;
 
-  typedef std::function<void(const DeviceDetectionEvent&, const DeviceCandidate&)> DeviceDetectionCallback;
+  typedef std::function<void(DeviceDetectionEvent, DeviceCandidate)> DeviceDetectionCallback;
 
   class DeviceDetection {
   public:
