@@ -235,7 +235,7 @@ void DeviceDetection::Impl::detectConnected() {
     DeviceCandidate deviceCandidate = {0, 0, string(devNode)};
 
     if (checkTTYParent(dev, &deviceCandidate)) {
-      m_context.m_impl->ioService.post([&] {
+      m_context.m_impl->ioService.post([&, deviceCandidate] {
         auto callback = *m_callback;
 
         if (callback) {
