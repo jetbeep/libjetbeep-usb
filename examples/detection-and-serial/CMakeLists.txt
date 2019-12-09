@@ -15,7 +15,5 @@ elseif(UNIX AND NOT APPLE) #linux
     target_include_directories(detection_and_serial PUBLIC ${CURL_INCLUDE_DIRS})
     target_link_libraries(detection_and_serial "-lpthread" "-ludev" ${CURL_LIBRARIES})
 elseif(WIN32)
-    find_package(OpenSSL REQUIRED)
-    target_include_directories(detection_and_serial PUBLIC ${OPENSSL_INCLUDE_DIR})
-    target_link_libraries(detection_and_serial "-lwsock32" "-lws2_32" ${OPENSSL_CRYPTO_LIBRARY} ${OPENSSL_SSL_LIBRARY})
+    target_link_libraries(detection_and_serial "-lwsock32" "-lws2_32" "-lwinhttp")
 endif()
