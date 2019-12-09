@@ -2,6 +2,6 @@
 build
 
 examples/detection-and-serial/jetbeep_usb_test
-lib/libjetbeep.0.1.0.dylib
+lib/libjetbeep.*.dylib
 lib/libjetbeep.dylib
 lib/libjetbeep_static.a
