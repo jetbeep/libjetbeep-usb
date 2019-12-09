@@ -190,7 +190,7 @@ RequestSignature EasyPayBackend::Impl::makeMerchantSignature(uint32_t deviceId) 
   std::time_t now = std::time(NULL);
   std::tm* p_now = std::gmtime(&now);
   stringstream isoNowStream;
-  isoNowStream << std::put_time(p_now, "%FT%TZ");
+  isoNowStream << std::put_time(p_now, "%Y-%m-%dT%H:%M:%SZ"); //dont use %F %T due to issues with some compilers (mingw)
   sigFields.date = isoNowStream.str();
 
 

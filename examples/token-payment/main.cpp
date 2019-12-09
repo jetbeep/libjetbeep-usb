@@ -6,7 +6,7 @@
 using namespace JetBeep;
 using namespace std;
 
-#define DEVICE_ID   44
+#define DEVICE_ID 44
 #define CASHIER_ID "12"
 
 #define MERCHANT_SECRET_KEY "F09612A780C041D3939EE8C9CE8DC560"
@@ -117,17 +117,13 @@ int main() {
     if (result.Status == PaymentStatus::Accepted) {
       l.i() << "PAYMENT SUCCESS CONFIRMED!: " << (int)result.Status << Logger::endl;
     }
-    backend.makeRefund(result.TransactionId, amountInCoins, DEVICE_ID)
-    .then(onRefundResult)
-    .catchError(onRequestErrors);
+    backend.makeRefund(result.TransactionId, amountInCoins, DEVICE_ID).then(onRefundResult).catchError(onRequestErrors);
   };
 
   auto onPaymentSuccess = [&](EasyPayResult result) {
     l.i() << "PAYMENT SUCCESS" << Logger::endl;
 
-    backend.getPaymentStatus(merchantTransactionId, amountInCoins, DEVICE_ID)
-    .then(onPaymentStatusGet)
-    .catchError(onRequestErrors);
+    backend.getPaymentStatus(merchantTransactionId, amountInCoins, DEVICE_ID).then(onPaymentStatusGet).catchError(onRequestErrors);
   };
 
   device.createPaymentToken(amountInCoins, merchantTransactionId, CASHIER_ID, metadata).then([&](string fullToken) {
