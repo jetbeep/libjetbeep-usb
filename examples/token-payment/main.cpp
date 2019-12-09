@@ -74,30 +74,6 @@ int main() {
   device.start();
 
   auto backend = EasyPayBackend(EasyPayHostEnv::Production, MERCHANT_SECRET_KEY);
-/*
-  backend.getPaymentStatus("asfsdgdsgdsfsf234", 1, DEVICE_ID)
-    .then([&](EasyPayResult result) {
-      l.i() << "payment get status result: " << (int)result.Status << Logger::endl;
-      if (result.Status == PaymentStatus::Accepted) {
-        l.i() << "PAYMENT SUCCESS CONFIRMED!: " << (int)result.Status << Logger::endl;
-      }
-    })
-    .catchError([=](const std::exception_ptr error) {
-      try {
-        rethrow_exception(error);
-      } catch (JetBeep::HttpErrors::NetworkError& e) {
-        l.e() << e.what() << Logger::endl;
-      } catch (JetBeep::HttpErrors::ServerError& e) {
-        l.e() << e.what() << " status code: " << e.statusCode << Logger::endl;
-      } catch (JetBeep::HttpErrors::RequestError& e) {
-        l.e() << "request error:" << e.getRequestError() << Logger::endl;
-      } catch (JetBeep::HttpErrors::APIError& e) {
-        l.e() << "API error:" << e.what() << Logger::endl;
-      } catch (std::exception& e) {
-        l.e() << e.what() << Logger::endl;
-      }
-    });
-*/
   const string merchantTransactionId = random_string();
   const int amountInCoins = 1;
   const PaymentMetadata metadata; // empty
