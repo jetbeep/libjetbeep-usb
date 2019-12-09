@@ -66,7 +66,7 @@ void AutoDevice::Impl::stop() {
   m_started = false;
 }
 
-void AutoDevice::Impl::onDeviceEvent(const DeviceDetectionEvent& event, const DeviceCandidate& candidate) {
+void AutoDevice::Impl::onDeviceEvent(DeviceDetectionEvent event, DeviceCandidate candidate) {
   std::lock_guard<recursive_mutex> guard(m_mutex);
 
   switch (event) {
@@ -77,11 +77,12 @@ void AutoDevice::Impl::onDeviceEvent(const DeviceDetectionEvent& event, const De
     }
 
     try {
+      m_log.d() << "Opening device path: " << candidate.path << Logger::endl;
       m_device.open(candidate.path);
       m_candidate = candidate;
       initDevice();
-    } catch (...) {
-      m_log.e() << "unable to open device!" << Logger::endl;
+    } catch (std::exception &error) {
+      m_log.e() << "unable to open device! " << error.what() << Logger::endl;
     }
     break;
   case DeviceDetectionEvent::removed:

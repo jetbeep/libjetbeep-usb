@@ -23,12 +23,12 @@
 #include <atomic>
 #include <stdexcept>
 
-
 #define VID_TAG "VID_"
 #define PID_TAG "PID_"
 #define COM_PATH_PREFIX "\\\\.\\"
 
 #define APP_UNBLOCK_MSG (WM_USER + 1)
+#define APP_DEVICE_EVENT_MSG (WM_USER + 2)
 
 typedef std::basic_string<TCHAR> tstring;
 
@@ -203,7 +203,7 @@ void DeviceDetection::Impl::monitorLoop() {
     TranslateMessage(&msg);
     DispatchMessage(&msg);
 
-    if (msg.message != APP_UNBLOCK_MSG && lastDetectedCandidate.pid != 0) {
+    if (msg.message == APP_DEVICE_EVENT_MSG && lastDetectedCandidate.pid != 0) {
       auto action = DeviceDetection::Impl::lastDetectedAction;
       auto candidat = DeviceDetection::Impl::lastDetectedCandidate;
       m_context.m_impl->ioService.post([&, action, candidat] {
@@ -305,8 +305,9 @@ void DeviceDetection::Impl::checkDetectedDeviceEvent(PDEV_BROADCAST_DEVICEINTERF
   // USB\Vid_04e8&Pid_503b\0002F9A9828E0F06
   lastDetectedCandidate.pid = 0;
 
-  if (!pDevInf)
+  if (!pDevInf) {
     return;
+  }
 
   lastDetectedAction = (DBT_DEVICEARRIVAL == wParam) ? DeviceDetectionEvent::added : DeviceDetectionEvent::removed;
 
@@ -383,6 +384,9 @@ LRESULT CALLBACK DeviceDetection::Impl::monitorDetectCallback(HWND m_hwnd, UINT 
       if (pHdr->dbch_devicetype == DBT_DEVTYP_DEVICEINTERFACE) {
         pDevInf = (PDEV_BROADCAST_DEVICEINTERFACE)pHdr;
         checkDetectedDeviceEvent(pDevInf, wParam);
+        if (m_hwnd && !PostMessageA(m_hwnd, APP_DEVICE_EVENT_MSG, 0, 0)) {
+          throw runtime_error("Unable to PostMessageA");
+        }
       }
     }
     // Return TRUE to grant the request.
