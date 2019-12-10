@@ -155,7 +155,7 @@ void HttpsClient::doRequest(RequestOptions options) {
       }
       result << receiveData;
 
-    } while (dwSize > 0);
+    } while (dwSize > 0 && !m_isCanceled.load());
 
     DWORD dwStatusCode = 0;
     DWORD dwStatusCodeSize = sizeof(dwStatusCode);
