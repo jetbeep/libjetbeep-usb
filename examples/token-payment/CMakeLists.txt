@@ -16,7 +16,5 @@ elseif(UNIX AND NOT APPLE) #linux
     target_include_directories(token_payment_example PUBLIC ${CURL_INCLUDE_DIRS})
     target_link_libraries(token_payment_example "-lpthread" "-ludev" ${CURL_LIBRARIES})
 elseif(WIN32)
-    find_package(OpenSSL REQUIRED)
-    target_include_directories(token_payment_example PUBLIC ${OPENSSL_INCLUDE_DIR})
-    target_link_libraries(token_payment_example "-lwsock32" "-lws2_32" ${OPENSSL_CRYPTO_LIBRARY} ${OPENSSL_SSL_LIBRARY})
+    target_link_libraries(token_payment_example "-lwsock32" "-lws2_32" "-lwinhttp")
 endif()

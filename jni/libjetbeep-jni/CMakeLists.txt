@@ -71,7 +71,5 @@ elseif(UNIX AND NOT APPLE) #linux
   target_include_directories(jetbeep-jni PUBLIC ${CURL_INCLUDE_DIRS})
   target_link_libraries(jetbeep-jni "-lpthread" "-ludev" ${CURL_LIBRARIES})
 elseif(WIN32)
-  find_package(OpenSSL REQUIRED)
-  target_include_directories(jetbeep-jni PUBLIC ${OPENSSL_INCLUDE_DIR})
-  target_link_libraries(jetbeep-jni "-lwsock32" "-lws2_32" ${OPENSSL_CRYPTO_LIBRARY} ${OPENSSL_SSL_LIBRARY})
+  target_link_libraries(jetbeep-jni "-lwsock32" "-lws2_32" "-lwinhttp")
 endif()

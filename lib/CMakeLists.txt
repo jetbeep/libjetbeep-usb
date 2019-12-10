@@ -25,9 +25,7 @@ elseif(UNIX AND NOT APPLE) #linux
     target_include_directories(jetbeep_obj PUBLIC ${CURL_INCLUDE_DIRS})
     target_link_libraries(jetbeep "-lpthread" "-ludev" ${CURL_LIBRARIES})
 elseif(WIN32)
-    find_package(OpenSSL REQUIRED)
-    target_include_directories(jetbeep_obj PUBLIC ${OPENSSL_INCLUDE_DIR})
-    target_link_libraries(jetbeep "-lwsock32" "-lws2_32" ${OPENSSL_CRYPTO_LIBRARY} ${OPENSSL_SSL_LIBRARY})
+    target_link_libraries(jetbeep "-lwsock32" "-lws2_32" "-lwinhttp")
 endif()
 
 target_include_directories(jetbeep PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

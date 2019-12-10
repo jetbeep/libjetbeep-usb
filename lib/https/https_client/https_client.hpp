@@ -4,7 +4,7 @@
 #include "../../utils/platform.hpp"
 
 #ifdef PLATFORM_WIN
-  #define HTTP_CLIENT_BOOST_BEAST
+  #define HTTP_CLIENT_WINHTTP
 #elif defined(PLATFORM_OSX)
   #define HTTP_CLIENT_BOOST_BEAST
 #elif defined(PLATFORM_LINUX)
