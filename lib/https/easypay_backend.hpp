@@ -16,6 +16,8 @@ namespace JetBeep {
   using namespace EasyPayAPI;
 
   enum class EasyPayHostEnv : int { Development = 0, Production = 1 };
+  
+  enum class TransactionEndpointType { SIMPLE, PARTIALS };
 
   class EasyPayBackend {
   public:
@@ -28,9 +30,18 @@ namespace JetBeep {
                                        uint32_t deviceId,
                                        string cashierId = "unspecified");
 
+    Promise<EasyPayResult> makePaymentPartials(string merchantTransactionId,
+                                       string paymentToken,
+                                       uint32_t amountInCoins,
+                                       uint32_t deviceId,
+                                       PaymentMetadata metadata,
+                                       string cashierId = "unspecified");                                   
+
     Promise<EasyPayResult> getPaymentStatus(string merchantTransactionId, uint32_t amountInCoins, uint32_t deviceId);
 
     Promise<EasyPayResult> makeRefund(long pspTransactionId, uint32_t amountInCoins, uint32_t deviceId);
+
+    Promise<EasyPayResult> makeRefundPartials(string pspPaymentRequestUid, uint32_t amountInCoins, uint32_t deviceId);
 
     void* opaque;
 

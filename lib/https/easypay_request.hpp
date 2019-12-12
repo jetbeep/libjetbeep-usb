@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+#include "../device/device_types.hpp"
+
 using namespace std;
 
 namespace JetBeep::EasyPayAPI {
@@ -19,6 +21,7 @@ namespace JetBeep::EasyPayAPI {
     string DateRequest;
     string MerchantCashboxId;
     string MerchantTransactionId;
+    PaymentMetadata Metadata;
   } TokenPaymentRequest;
 
   typedef struct {
@@ -34,7 +37,12 @@ namespace JetBeep::EasyPayAPI {
     string DateRequest;
     string SignatureMerchant;
     uint32_t AmountInCoin;
-    long TransactionId; //note: this is PSP transaction ID
+    /* 
+      TransactionId is used in case of refund payment without metadata, 
+      PaymentRequestUid in case of partials amounts payment (with metadata)
+    */
+    long TransactionId; //note: TransactionId from psp response 
+    string PaymentRequestUid; //note: PaymentRequestUid from psp response
   } TokenRefundRequest;
 
   string tokenPaymentReqToJSON(TokenPaymentRequest& data);
