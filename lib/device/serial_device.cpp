@@ -51,11 +51,14 @@ Promise<void> SerialDevice::createPayment(uint32_t amount,
     if (!metadata.empty()) {
       ss << " ";
 
-      for (auto it = metadata.begin(); it != metadata.end(); ++it) {
+      for (auto it = metadata.begin(); it != metadata.end();) {
         ss << (*it).first << ":" << (*it).second;
-      }
 
-      ss << ";";
+        it++;
+        if (it != metadata.end()) {
+          ss << ";";
+        }
+      }
     }
   }
   return m_impl->execute(DeviceResponses::createPayment, ss.str());
@@ -75,11 +78,14 @@ Promise<void> SerialDevice::createPaymentToken(uint32_t amount,
     if (!metadata.empty()) {
       ss << " ";
 
-      for (auto it = metadata.begin(); it != metadata.end(); ++it) {
+      for (auto it = metadata.begin(); it != metadata.end();) {
         ss << (*it).first << ":" << (*it).second;
-      }
 
-      ss << ";";
+        it++;
+        if (it != metadata.end()) {
+          ss << ";";
+        }
+      }
     }
   }
   return m_impl->execute(DeviceResponses::createPaymentToken, ss.str());
