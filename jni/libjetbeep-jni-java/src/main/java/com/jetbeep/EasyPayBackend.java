@@ -1,5 +1,9 @@
 package com.jetbeep;
 
+import java.util.Map;
+import java.util.HashMap;
+import java.util.Iterator;
+
 abstract public class EasyPayBackend {
   static {
     Library.loadAndCheckVersion();
@@ -34,13 +38,23 @@ abstract public class EasyPayBackend {
      */
     public long easyPayTransactionId;
 
+    /**
+     * UUID of the payment request in the EasyPay processing (used for partials payment refund)
+     */
+    public String easyPaymentRequestUid;
+
     public boolean isSuccessful() {
       return errorString == null;
     }
 
-    PaymentResult(String errorString, long easyPayTransactionId) {
+    PaymentResult(String errorString, long easyPayTransactionId, String easyPaymentRequestUid) {
       this.errorString = errorString;
       this.easyPayTransactionId = easyPayTransactionId;
+      this.easyPaymentRequestUid = easyPaymentRequestUid;
+    }
+
+    PaymentResult(String errorString) {
+      this.errorString = errorString;
     }
   }
 
@@ -95,6 +109,41 @@ abstract public class EasyPayBackend {
     makePayment(ptr, transactionId, token, amountInCoins, deviceId, cashierId);
   }
 
+    /** 
+   * <p>Performs Partials payment to EasyPay backend. The result will be returned </p>
+   * @param transactionId unique POS transaction id (should be the same value as provided to AutoDevice.createPaymentToken)
+   * @param token payment token received from AutoDevice
+   * @param amountInCoins amount in coins. E.g. for $1.05 should be 105. (should be the same value as provided to AutoDevice.createPaymentToken)
+   * @param metadata additional information attached to the payment (payment partials recepients)
+   * @param deviceId current deviceId. Could be obtained as AutoDevice.deviceId()
+   */
+  public void makePaymentPartials(String transactionId, String token, int amountInCoins, long deviceId, HashMap<String, String> metadata) {
+    makePaymentPartials(transactionId, token, amountInCoins, deviceId, metadata, "");
+  }
+
+  
+  /** 
+   * <p>Performs Partials payment to EasyPay backend. The result will be returned </p>
+   * @param transactionId unique POS transaction id (should be the same value as provided to AutoDevice.createPaymentToken)
+   * @param token payment token received from AutoDevice
+   * @param amountInCoins amount in coins. E.g. for $1.05 should be 105. (should be the same value as provided to AutoDevice.createPaymentToken)
+   * @param deviceId current deviceId. Could be obtained as AutoDevice.deviceId()
+   * @param metadata additional information attached to the payment (payment partials recepients)
+   * @param cashierId unique POS id (should be the same value as provided to AutoDevice.createPaymentToken)
+   */
+  public void makePaymentPartials(String transactionId, String token, int amountInCoins, long deviceId,
+      HashMap<String, String> metadata, String cashierId) {
+    String[] keysMetadata = new String[metadata.size()];
+    String[] valuesMetadata = new String[metadata.size()];
+    int index = 0;
+
+    for (Map.Entry<String, String> e : metadata.entrySet()) {
+      keysMetadata[index] = e.getKey();
+      valuesMetadata[index] = e.getValue();
+      ++index;
+    }
+    makePaymentPartials(ptr, transactionId, token, amountInCoins, deviceId, keysMetadata, valuesMetadata, cashierId);
+  }
   
   /** 
    * <p>Result received from the EasyPay backend</p>
@@ -114,6 +163,16 @@ abstract public class EasyPayBackend {
     makeRefund(ptr, easyPayTransactionId, amountInCoins, deviceId);
   }
 
+  /** 
+   * <p>Perform refund operation for Partials payment to EasyPay backend</p>
+   * @param paymentRequestUid PaymentRequestUid received in onPaymentResult
+   * @param amountInCoins amount in coins. E.g. for $1.05 should be 105. (should be the same value as provided to AutoDevice.createPaymentToken)
+   * @param deviceId current deviceId. Could be obtained as AutoDevice.deviceId()
+   */
+  public void makeRefundPartials(String paymentRequestUid, int amountInCoins, long deviceId) {
+    makeRefundPartials(ptr, paymentRequestUid, amountInCoins, deviceId);
+  }
+
   
   /** 
    * <p>Result received from the EasyPay backend</p>
@@ -130,8 +189,8 @@ abstract public class EasyPayBackend {
     ptr = 0;
   }
     
-  private void onNativePaymentResult(String errorString, long easyPayTransactionId) {
-    PaymentResult result = new PaymentResult(errorString, easyPayTransactionId);
+  private void onNativePaymentResult(String errorString, long easyPayTransactionId, String easyPayPaymentRequestUid) {
+    PaymentResult result = new PaymentResult(errorString, easyPayTransactionId, easyPayPaymentRequestUid);
     onPaymentResult(result);
   }
 
@@ -141,8 +200,18 @@ abstract public class EasyPayBackend {
   }
   
   private long ptr;
+
   private native long init(int env, String merchantToken);
-  private native void makePayment(long ptr, String transactionId, String token, int amountInCoins, long deviceId, String cashierId);
+
+  private native void makePayment(long ptr, String transactionId, String token, int amountInCoins, long deviceId,
+      String cashierId);
+
+  private native void makePaymentPartials(long ptr, String transactionId, String token, int amountInCoins,
+      long deviceId, String[] metadataKeys, String[] metadataValues, String cashierId);
+
   private native void makeRefund(long ptr, long easyPayTransactionId, int amountInCoins, long deviceId);
+
+  private native void makeRefundPartials(long ptr, String paymentRequestUid, int amountInCoins, long deviceId);
+
   private native void free(long ptr);
 }
