@@ -4,12 +4,12 @@ import com.jetbeep.*;
 
 class EasyPayHandler extends EasyPayBackend {
   EasyPayHandler() {
-    super(EasyPayBackend.Environment.Production, "here_should_be_merchant_token");
+    super(EasyPayBackend.Environment.Production, "F09612A780C041D3939EE8C9CE8DC560");
   }
 
   public void onPaymentResult(PaymentResult result) {
     if (result.isSuccessful()) {
-      System.out.println("payment successful, easyPayTransactionId: " + result.easyPayTransactionId);      
+      System.out.println("payment successful, easyPayTransactionId: " + result.easyPayTransactionId + ", easyPayPaymentRequestUid: " + result.easyPaymentRequestUid);      
     } else {
       System.out.println("payment error: " + result.errorString);
     }

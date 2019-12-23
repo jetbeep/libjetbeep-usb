@@ -12,17 +12,33 @@
 using namespace JetBeep;
 using namespace std;
 
-struct EasyPayBackend::Impl {
+class TransactionIdWrap {
+public:
+  TransactionEndpointType endpointType;
+  string PaymentRequestUid;
+  long TransactionId;
+  TransactionIdWrap(string requestUid)
+    : PaymentRequestUid(requestUid), endpointType(TransactionEndpointType::PARTIALS){};
+  TransactionIdWrap(long id) : TransactionId(id), endpointType(TransactionEndpointType::SIMPLE){};
+};
+
+class EasyPayBackend::Impl {
+public:
   Impl(string serverHost, string merchantSecretKey, IOContext context, int port = 8193)
     : m_serverHost(serverHost), m_port(port), m_log("backend"), m_merchantSecretKey(merchantSecretKey), m_context(context){};
 
   ~Impl();
 
-  Promise<EasyPayResult> makePayment(string merchantTransactionId, string paymentToken, uint32_t amountInCoins, uint32_t deviceId, string cashierId);
+  Promise<EasyPayResult> makePayment(string merchantTransactionId,
+                                     string paymentToken,
+                                     uint32_t amountInCoins,
+                                     uint32_t deviceId,
+                                     PaymentMetadata& metadata,
+                                     string cashierId);
 
   Promise<EasyPayResult> getPaymentStatus(string merchantTransactionId, uint32_t amountInCoins, uint32_t deviceId);
 
-  Promise<EasyPayResult> makeRefund(long pspTransactionId, uint32_t amountInCoins, uint32_t deviceId);
+  Promise<EasyPayResult> makeRefund(TransactionIdWrap& pspTransactionId, uint32_t amountInCoins, uint32_t deviceId);
 
 private:
   IOContext m_context;
@@ -47,7 +63,17 @@ EasyPayBackend::~EasyPayBackend() = default;
 
 Promise<EasyPayResult> EasyPayBackend::makePayment(
   string merchantTransactionId, string paymentToken, uint32_t amountInCoins, uint32_t deviceId, string cashierId) {
-  return m_impl->makePayment(merchantTransactionId, paymentToken, amountInCoins, deviceId, cashierId);
+  auto emptyMetadata = PaymentMetadata();
+  return m_impl->makePayment(merchantTransactionId, paymentToken, amountInCoins, deviceId, emptyMetadata, cashierId);
+}
+
+Promise<EasyPayResult> EasyPayBackend::makePaymentPartials(string merchantTransactionId,
+                                                           string paymentToken,
+                                                           uint32_t amountInCoins,
+                                                           uint32_t deviceId,
+                                                           PaymentMetadata metadata,
+                                                           string cashierId) {
+  return m_impl->makePayment(merchantTransactionId, paymentToken, amountInCoins, deviceId, metadata, cashierId);
 }
 
 Promise<EasyPayResult> EasyPayBackend::getPaymentStatus(string merchantTransactionId, uint32_t amountInCoins, uint32_t deviceId) {
@@ -55,11 +81,16 @@ Promise<EasyPayResult> EasyPayBackend::getPaymentStatus(string merchantTransacti
 }
 
 Promise<EasyPayResult> EasyPayBackend::makeRefund(long pspTransactionId, uint32_t amountInCoins, uint32_t deviceId) {
-  return m_impl->makeRefund(pspTransactionId, amountInCoins, deviceId);
+  auto id = TransactionIdWrap(pspTransactionId);
+  return m_impl->makeRefund(id, amountInCoins, deviceId);
 }
 
-RequestOptions EasyPayBackend::Impl::getRequestOptions(
-  string path, RequestMethod method, RequestContentType contentType) {
+Promise<EasyPayResult> EasyPayBackend::makeRefundPartials(string pspPaymentRequestUid, uint32_t amountInCoins, uint32_t deviceId) {
+  auto id = TransactionIdWrap(pspPaymentRequestUid);
+  return m_impl->makeRefund(id, amountInCoins, deviceId);
+}
+
+RequestOptions EasyPayBackend::Impl::getRequestOptions(string path, RequestMethod method, RequestContentType contentType) {
   RequestOptions options;
   options.method = method;
   options.contentType = contentType;
@@ -70,9 +101,14 @@ RequestOptions EasyPayBackend::Impl::getRequestOptions(
   return options;
 }
 
-Promise<EasyPayResult> EasyPayBackend::Impl::makePayment(
-  string merchantTransactionId, string paymentToken, uint32_t amountInCoins, uint32_t deviceId, string cashierId) {
-  const string path = "/api/Payment/Box";
+Promise<EasyPayResult> EasyPayBackend::Impl::makePayment(string merchantTransactionId,
+                                                         string paymentToken,
+                                                         uint32_t amountInCoins,
+                                                         uint32_t deviceId,
+                                                         PaymentMetadata& metadata,
+                                                         string cashierId) {
+  const string path = metadata.empty() ? "/api/Payment/Box" : 
+                                         "/api/Payment/BoxPartialAmounts";
   TokenPaymentRequest data;
   auto sigData = makeMerchantSignature(deviceId);
 
@@ -82,6 +118,7 @@ Promise<EasyPayResult> EasyPayBackend::Impl::makePayment(
   data.MerchantTransactionId = merchantTransactionId;
   data.PaymentTokenFull = paymentToken;
   data.SignatureMerchant = sigData.signature;
+  data.Metadata = metadata;
 
   auto options = getRequestOptions(path, RequestMethod::POST);
   options.body = tokenPaymentReqToJSON(data);
@@ -105,7 +142,7 @@ Promise<EasyPayResult> EasyPayBackend::Impl::makePayment(
       promise.reject(make_exception_ptr(HttpErrors::APIError()));
     }
     return promise;
-  });  
+  });
 }
 
 Promise<EasyPayResult> EasyPayBackend::Impl::getPaymentStatus(string merchantTransactionId, uint32_t amountInCoins, uint32_t deviceId) {
@@ -147,14 +184,16 @@ Promise<EasyPayResult> EasyPayBackend::Impl::getPaymentStatus(string merchantTra
   });
 }
 
-Promise<EasyPayResult> EasyPayBackend::Impl::makeRefund(long pspTransactionId, uint32_t amountInCoins, uint32_t deviceId) {
-  const string path = "/api/Payment/Refund";
+Promise<EasyPayResult> EasyPayBackend::Impl::makeRefund(TransactionIdWrap& pspTransactionId, uint32_t amountInCoins, uint32_t deviceId) {
+  const string path = pspTransactionId.endpointType == TransactionEndpointType::SIMPLE ? "/api/Payment/Refund" :
+                                                                                         "/api/PartialAmounts/Refund";
   TokenRefundRequest data;
   auto sigData = makeMerchantSignature(deviceId);
 
   data.AmountInCoin = amountInCoins;
   data.DateRequest = sigData.date;
-  data.TransactionId = pspTransactionId;
+  data.TransactionId = pspTransactionId.TransactionId;
+  data.PaymentRequestUid = pspTransactionId.PaymentRequestUid;
   data.SignatureMerchant = sigData.signature;
   data.DeviceId = deviceId;
 
@@ -185,16 +224,15 @@ Promise<EasyPayResult> EasyPayBackend::Impl::makeRefund(long pspTransactionId, u
 
 RequestSignature EasyPayBackend::Impl::makeMerchantSignature(uint32_t deviceId) {
   RequestSignature sigFields;
-  
-  //current time
+
+  // current time
   std::time_t now = std::time(NULL);
   std::tm* p_now = std::gmtime(&now);
   stringstream isoNowStream;
-  isoNowStream << std::put_time(p_now, "%Y-%m-%dT%H:%M:%SZ"); //dont use %F %T due to issues with some compilers (mingw)
+  isoNowStream << std::put_time(p_now, "%Y-%m-%dT%H:%M:%SZ"); // dont use %F %T due to issues with some compilers (mingw)
   sigFields.date = isoNowStream.str();
 
-
-  //easyPay point in time 1988-06-27T22:15:00Z
+  // easyPay point in time 1988-06-27T22:15:00Z
   struct tm m_time;
 
   m_time.tm_sec = 0;
@@ -207,13 +245,13 @@ RequestSignature EasyPayBackend::Impl::makeMerchantSignature(uint32_t deviceId) 
   m_time.tm_yday = 178;
   m_time.tm_isdst = -1;
 #ifdef PLATFORM_WIN
-  std::time_t t_now2 =  _mkgmtime(p_now);    
-  std::time_t t_then2 = _mkgmtime(&m_time);  
+  std::time_t t_now2 = _mkgmtime(p_now);
+  std::time_t t_then2 = _mkgmtime(&m_time);
 #else
   m_time.tm_gmtoff = 0;
   m_time.tm_zone = (char*)"GMT";
-  std::time_t t_now2 =  timegm(p_now);    
-  std::time_t t_then2 = timegm(&m_time);  
+  std::time_t t_now2 = timegm(p_now);
+  std::time_t t_then2 = timegm(&m_time);
 #endif
 
   int secondsDiff = (int)difftime(t_now2, t_then2);

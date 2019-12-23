@@ -11,6 +11,11 @@ using namespace std;
 
 #define MERCHANT_SECRET_KEY "F09612A780C041D3939EE8C9CE8DC560"
 
+//#define PARTIAL_PAYMENTS
+
+#define PARTIAL_PAYEE_1 "111111111111"
+#define PARTIAL_PAYEE_2 "111111111112"
+
 Logger l("main");
 
 void onStateChange(AutoDeviceState state, std::exception_ptr error) {
@@ -75,8 +80,14 @@ int main() {
 
   auto backend = EasyPayBackend(EasyPayHostEnv::Production, MERCHANT_SECRET_KEY);
   const string merchantTransactionId = random_string();
-  const int amountInCoins = 1;
-  const PaymentMetadata metadata; // empty
+  const int amountInCoins = 2;
+  PaymentMetadata metadata;
+
+#ifdef PARTIAL_PAYMENTS
+  static_assert(amountInCoins - 1 > 0);
+  metadata[string(PARTIAL_PAYEE_1)] = std::to_string(1);
+  metadata[string(PARTIAL_PAYEE_2)] = std::to_string(amountInCoins - 1);
+#endif
 
   cout << "Device connected?\n";
   getline(cin, input);
@@ -116,27 +127,32 @@ int main() {
     if (result.Status == PaymentStatus::Accepted) {
       l.i() << "PAYMENT SUCCESS CONFIRMED!: " << (int)result.Status << Logger::endl;
     }
-    backend.makeRefund(result.TransactionId, amountInCoins, DEVICE_ID).then(onRefundResult).catchError(onRequestErrors);
+    if (metadata.empty()) {
+      backend.makeRefund(result.TransactionId, amountInCoins, DEVICE_ID).then(onRefundResult).catchError(onRequestErrors);
+    } else {
+      backend.makeRefundPartials(result.PaymentRequestUid, amountInCoins, DEVICE_ID).then(onRefundResult).catchError(onRequestErrors);
+    }
   };
 
-  auto onPaymentSuccess = [&](EasyPayResult result) {
-    l.i() << "PAYMENT SUCCESS" << Logger::endl;
-
-    backend.getPaymentStatus(merchantTransactionId, amountInCoins, DEVICE_ID).then(onPaymentStatusGet).catchError(onRequestErrors);
+  auto onPaymentResult = [&](EasyPayResult result) {
+    l.i() << "Request result: " << result._rawResponse << Logger::endl;
+    if (result.Status == EasyPayAPI::PaymentStatus::Accepted) {
+      l.i() << "PAYMENT SUCCESS" << Logger::endl;
+      backend.getPaymentStatus(merchantTransactionId, amountInCoins, DEVICE_ID).then(onPaymentStatusGet).catchError(onRequestErrors);
+    } else {
+      l.i() << "PAYMENT status:" << (int)result.Status << Logger::endl;
+    }
   };
 
   device.createPaymentToken(amountInCoins, merchantTransactionId, CASHIER_ID, metadata).then([&](string fullToken) {
     l.i() << "Payment token: " << fullToken << Logger::endl;
-    backend.makePayment(merchantTransactionId, fullToken, amountInCoins, DEVICE_ID, CASHIER_ID)
-      .then([=](EasyPayResult result) {
-        l.i() << "Request result: " << result._rawResponse << Logger::endl;
-        if (result.Status == EasyPayAPI::PaymentStatus::Accepted) {
-          return onPaymentSuccess(result);
-        } else {
-          l.i() << "PAYMENT status:" << (int)result.Status << Logger::endl;
-        }
-      })
-      .catchError(onRequestErrors);
+    if (metadata.empty()) {
+      backend.makePayment(merchantTransactionId, fullToken, amountInCoins, DEVICE_ID, CASHIER_ID).then(onPaymentResult).catchError(onRequestErrors);
+    } else {
+      backend.makePaymentPartials(merchantTransactionId, fullToken, amountInCoins, DEVICE_ID, metadata, CASHIER_ID)
+        .then(onPaymentResult)
+        .catchError(onRequestErrors);
+    }
   });
 
   while (true) {

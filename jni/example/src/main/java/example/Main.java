@@ -119,6 +119,7 @@ class Main {
             handler.amountInCoins = amount;
             handler.transactionId = transactionId;
             handler.cashierId = cashierId;
+            handler.metadata = metadata;
           } catch (Exception e) {
             e.printStackTrace();
           }          
@@ -138,8 +139,15 @@ class Main {
           }
           
           try {
-            long easyPayTransactionId = Long.parseLong(splitted[1]);
-            handler.backend.makeRefund(easyPayTransactionId, handler.amountInCoins, handler.deviceId());
+            if (splitted[1].trim().length() == 36) {
+              //assume it is PaymentRequestUid
+              handler.backend.makeRefundPartials(splitted[1].trim(), handler.amountInCoins, handler.deviceId());
+            } else {
+              //assume it is TransactionId
+              long easyPayTransactionId = Long.parseLong(splitted[1]);
+              handler.backend.makeRefund(easyPayTransactionId, handler.amountInCoins, handler.deviceId());
+            }
+            
           } catch (Exception e) {
             e.printStackTrace();
           }
