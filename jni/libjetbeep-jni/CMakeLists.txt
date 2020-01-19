@@ -54,9 +54,10 @@ add_dependencies(jetbeep-jni GenerateJavaHeaders)
 
 target_include_directories(jetbeep-jni PUBLIC ${JNI_INCLUDE_DIRS})
 
+# IMPORTANT: $<0:> means that no additional Debug\Release folder be created
 set_target_properties(jetbeep-jni PROPERTIES
-  RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-  LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}$<0:>"
+  LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}$<0:>"
   )
 
 if (APPLE) 

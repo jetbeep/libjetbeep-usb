@@ -3,7 +3,7 @@ subprojects {
 }
 
 val cmake = tasks.register<Exec>("cmake") {
-    commandLine = listOf("cmake", "--build", ".", "--target", "jetbeep-jni", "--", "-j", "10")
+    commandLine = listOf("cmake", "--build", ".", "--target", "jetbeep-jni", "--")
     workingDir = file("../build")
 }
 

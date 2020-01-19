@@ -2,6 +2,8 @@
 *.so
 *.so.*
 *.dll
+*.ilk
+*.pdb
 
 com_jetbeep_AutoDevice.h
 com_jetbeep_Logger.h
