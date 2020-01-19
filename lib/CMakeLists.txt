@@ -25,7 +25,7 @@ elseif(UNIX AND NOT APPLE) #linux
     target_include_directories(jetbeep_obj PUBLIC ${CURL_INCLUDE_DIRS})
     target_link_libraries(jetbeep "-lpthread" "-ludev" ${CURL_LIBRARIES})
 elseif(WIN32)
-    target_link_libraries(jetbeep "-lwsock32" "-lws2_32" "-lwinhttp")
+    target_link_libraries(jetbeep "wsock32" "ws2_32" "winhttp")
 endif()
 
 target_include_directories(jetbeep PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

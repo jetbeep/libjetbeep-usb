@@ -1,3 +1,4 @@
+#include "../utils/platform.hpp"
 #include "iocontext_impl.hpp"
 
 using namespace JetBeep;

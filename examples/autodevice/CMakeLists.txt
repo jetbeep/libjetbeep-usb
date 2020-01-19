@@ -15,5 +15,5 @@ elseif(UNIX AND NOT APPLE) #linux
     target_include_directories(autodevice PUBLIC ${CURL_INCLUDE_DIRS})
     target_link_libraries(autodevice "-lpthread" "-ludev" ${CURL_LIBRARIES})
 elseif(WIN32)
-    target_link_libraries(autodevice "-lwsock32" "-lws2_32" "-lwinhttp")
+    target_link_libraries(autodevice "wsock32" "ws2_32" "winhttp")
 endif()

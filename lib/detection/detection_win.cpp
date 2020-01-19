@@ -416,13 +416,13 @@ VidPid DeviceDetection::Impl::extractVidPid(HDEVINFO hDevInfo, SP_DEVINFO_DATA* 
     if (vidStr != NULL) {
       temp = (char*)(vidStr + strlen(VID_TAG));
       temp[4] = '\0';
-      vidPid.vid = strtol(temp, NULL, 16);
+      vidPid.vid = (uint16_t)strtol(temp, NULL, 16);
     }
 
     if (pidStr != NULL) {
       temp = (char*)(pidStr + strlen(PID_TAG));
       temp[4] = '\0';
-      vidPid.pid = strtol(temp, NULL, 16);
+      vidPid.pid = (uint16_t)strtol(temp, NULL, 16);
     }
     delete string;
   }

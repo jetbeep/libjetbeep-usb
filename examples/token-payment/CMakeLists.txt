@@ -16,5 +16,5 @@ elseif(UNIX AND NOT APPLE) #linux
     target_include_directories(token_payment_example PUBLIC ${CURL_INCLUDE_DIRS})
     target_link_libraries(token_payment_example "-lpthread" "-ludev" ${CURL_LIBRARIES})
 elseif(WIN32)
-    target_link_libraries(token_payment_example "-lwsock32" "-lws2_32" "-lwinhttp")
+    target_link_libraries(token_payment_example "wsock32" "ws2_32" "winhttp")
 endif()
