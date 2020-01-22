@@ -6,7 +6,7 @@
 
 # Building from sources
 
-#### Required 3rd-party libraries
+#### Required 3rd-party libraries (Linux and OS X only)
 
 * `libopenssl` - in order to make HTTPS requests to EasyPay backend
 * `libcurl4-openssl`
@@ -14,10 +14,18 @@
 #### Required tools
 
 * cmake
-* Mingw-w64 (Windows only)
 * C++17 compiler support
 
-#### Building for Windows
+#### Building for Windows (Microsoft Visual C++)
+```bash
+mkdir ../build
+cd ../build
+
+cmake ..
+cmake --build .
+```
+
+#### Building for Windows (Mingw-w64s)
 ```bash
 mkdir ../build
 cd ../build

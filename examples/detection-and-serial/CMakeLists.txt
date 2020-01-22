@@ -15,5 +15,5 @@ elseif(UNIX AND NOT APPLE) #linux
     target_include_directories(detection_and_serial PUBLIC ${CURL_INCLUDE_DIRS})
     target_link_libraries(detection_and_serial "-lpthread" "-ludev" ${CURL_LIBRARIES})
 elseif(WIN32)
-    target_link_libraries(detection_and_serial "-lwsock32" "-lws2_32" "-lwinhttp")
+    target_link_libraries(detection_and_serial "wsock32" "ws2_32" "winhttp")
 endif()

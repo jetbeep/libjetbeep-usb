@@ -1,3 +1,4 @@
+#include "../utils/platform.hpp"
 #include "serial_device.hpp"
 #include "device_utils.hpp"
 #include "serial_device_impl.hpp"

@@ -2,8 +2,12 @@
 *.so
 *.so.*
 *.dll
+*.ilk
+*.pdb
 
 com_jetbeep_AutoDevice.h
 com_jetbeep_Logger.h
 com_jetbeep_EasyPayBackend.h
 com_jetbeep_Library.h
+
+Debug

@@ -3,6 +3,7 @@
 
 #ifdef _WIN32
 #define PLATFORM_WIN
+#define _WIN32_WINNT 0x0502 // Windows XP SP 2 or later
 #elif __APPLE__
 #include "TargetConditionals.h"
 #if TARGET_OS_MAC

@@ -1,14 +1,18 @@
+#include "platform.hpp"
 #include "utils.hpp"
 #include <algorithm>
+#include <regex>
 #include "stdio.h"
 #include "string.h"
 
 using namespace std;
 using namespace JetBeep;
 
+Logger Utils::m_log = Logger("utils");
+
 std::vector<std::string> Utils::splitString(const std::string& str, const std::string& delimiter) {
   vector<string> return_value;
-  auto start = 0U;
+  size_t start = 0;
   auto end = str.find(delimiter);
 
   while (end != string::npos) {
@@ -36,18 +40,34 @@ uint32_t Utils::deviceFWVerToNumber(const std::string& fwStr) {
   uint32_t res;
   int parse_results = 0;
   uint8_t major = 0, minor = 0, patch = 0, tag_number = 0;
-  char tag[6];
+  string tag;
 
-  parse_results = sscanf(fwStr.c_str(), "%2hhu.%2hhu.%2hhu-%s", &major, &minor, &patch, tag);
+  try {
+    regex re("^(\\d{1,3}).(\\d{1,3}).(\\d{1,3})(?:[-]{1}(.{1,6})){0,1}$");
+    smatch match;
 
-  if (parse_results == EOF || parse_results < 3)
+    if (!regex_search(fwStr, match, re)) {
+      m_log.e() << "unable to match regular expression" << Logger::endl;
+      return 0;
+    }
+    if (match.size() != 5) {
+      m_log.e() << "invalid size of matched items: " << match.size() << Logger::endl;
+      return 0;
+    }
+    major = (uint8_t)stoi(match[1].str());
+    minor = (uint8_t)stoi(match[2].str());
+    patch = (uint8_t)stoi(match[3].str());
+    tag = match[4].str();
+  } catch (...) {
+    m_log.e() << "unhandled exception" << Logger::endl;
     return 0;
+  }
 
-  if (strncasecmp(tag, "alpha", 5) == 0) {
+  if (Utils::caseInsensetiveEqual(tag, "alpha")) {
     tag_number = 0;
-  } else if (strncasecmp(tag, "beta", 4) == 0) {
+  } else if (Utils::caseInsensetiveEqual(tag, "beta")) {
     tag_number = 2;
-  } else if (strncasecmp(tag, "rc", 2) == 0) {
+  } else if (Utils::caseInsensetiveEqual(tag, "rc")) {
     tag_number = 4;
   } else {
     tag_number = 9;
@@ -56,4 +76,11 @@ uint32_t Utils::deviceFWVerToNumber(const std::string& fwStr) {
   res = major * 1000 + minor * 100 + patch * 10 + tag_number;
 
   return res;
+}
+
+bool Utils::caseInsensetiveEqual(const std::string& str1, const std::string& str2) {
+  if (str1.size() != str2.size()) {
+    return false;
+  }
+  return Utils::toLowerCase(str1) == Utils::toLowerCase(str2);
 }

@@ -1,3 +1,4 @@
+#include "../utils/platform.hpp"
 #include "auto_device.hpp"
 #include "auto_device_impl.hpp"
 
