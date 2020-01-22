@@ -1,11 +1,14 @@
 #include "platform.hpp"
 #include "utils.hpp"
 #include <algorithm>
+#include <regex>
 #include "stdio.h"
 #include "string.h"
 
 using namespace std;
 using namespace JetBeep;
+
+Logger Utils::m_log = Logger("utils");
 
 std::vector<std::string> Utils::splitString(const std::string& str, const std::string& delimiter) {
   vector<string> return_value;
@@ -37,16 +40,28 @@ uint32_t Utils::deviceFWVerToNumber(const std::string& fwStr) {
   uint32_t res;
   int parse_results = 0;
   uint8_t major = 0, minor = 0, patch = 0, tag_number = 0;
-  const int maxTagSize = 6;
-  char cTag[maxTagSize];
   string tag;
 
-  parse_results = sscanf_s(fwStr.c_str(), "%2hhu.%2hhu.%2hhu-%s", &major, &minor, &patch, cTag, maxTagSize);
+  try {
+    regex re("^(\\d{1,3}).(\\d{1,3}).(\\d{1,3})(?:[-]{1}(.{1,6})){0,1}$");
+    smatch match;
 
-  if (parse_results == EOF || parse_results < 3) {
+    if (!regex_search(fwStr, match, re)) {
+      m_log.e() << "unable to match regular expression" << Logger::endl;
+      return 0;
+    }
+    if (match.size() != 5) {
+      m_log.e() << "invalid size of matched items: " << match.size() << Logger::endl;
+      return 0;
+    }
+    major = (uint8_t)stoi(match[1].str());
+    minor = (uint8_t)stoi(match[2].str());
+    patch = (uint8_t)stoi(match[3].str());
+    tag = match[4].str();
+  } catch (...) {
+    m_log.e() << "unhandled exception" << Logger::endl;
     return 0;
   }
-  tag.assign(cTag, strlen(cTag));
 
   if (Utils::caseInsensetiveEqual(tag, "alpha")) {
     tag_number = 0;
