@@ -111,7 +111,8 @@
 			"xtree": "cpp",
 			"xutility": "cpp",
 			"unordered_set": "cpp",
-			"cfenv": "cpp"
+			"cfenv": "cpp",
+			"regex": "cpp"
 		},
 		"C_Cpp.clang_format_fallbackStyle": "Chromium"
 	}
