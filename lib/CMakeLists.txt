@@ -26,6 +26,10 @@ elseif(UNIX AND NOT APPLE) #linux
     target_link_libraries(jetbeep "-lpthread" "-ludev" ${CURL_LIBRARIES})
 elseif(WIN32)
     target_link_libraries(jetbeep "wsock32" "ws2_32" "winhttp")
+
+    add_custom_command(TARGET jetbeep POST_BUILD 
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:jetbeep> "${CMAKE_CURRENT_SOURCE_DIR}/../delphi/$<TARGET_FILE_NAME:jetbeep>"
+    COMMENT "Copying dll to delphi folder")
 endif()
 
 target_include_directories(jetbeep PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

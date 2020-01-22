@@ -1,0 +1,8 @@
+*.dylib
+*.so
+*.so.*
+*.dll
+
+__history
+__recovery
+Win64

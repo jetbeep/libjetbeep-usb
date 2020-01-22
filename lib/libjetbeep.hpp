@@ -1,5 +1,5 @@
-#ifndef JETBEEP_USB_DRIVER__H
-#define JETBEEP_USB_DRIVER__H
+#ifndef LIBJETBEEP_HPP
+#define LIBJETBEEP_HPP
 
 #include "detection/detection.hpp"
 #include "utils/logger.hpp"
