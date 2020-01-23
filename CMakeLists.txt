@@ -13,3 +13,5 @@ add_subdirectory(examples/detection-and-serial)
 add_subdirectory(examples/autodevice)
 add_subdirectory(examples/token-payment)
 add_subdirectory(jni/libjetbeep-jni)
+
+add_subdirectory(dfu-module)
