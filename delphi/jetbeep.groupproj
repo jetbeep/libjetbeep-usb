@@ -2,11 +2,6 @@
     <PropertyGroup>
         <ProjectGuid>{03DB4FC1-46A0-43D4-B0E2-E1393F5CE123}</ProjectGuid>
     </PropertyGroup>
-    <ItemGroup>
-        <Projects Include="libjetbeep.dproj">
-            <Dependencies/>
-        </Projects>
-    </ItemGroup>
     <ProjectExtensions>
         <Borland.Personality>Default.Personality.12</Borland.Personality>
         <Borland.ProjectType/>
@@ -14,23 +9,14 @@
             <Default.Personality/>
         </BorlandProject>
     </ProjectExtensions>
-    <Target Name="libjetbeep">
-        <MSBuild Projects="libjetbeep.dproj"/>
-    </Target>
-    <Target Name="libjetbeep:Clean">
-        <MSBuild Projects="libjetbeep.dproj" Targets="Clean"/>
-    </Target>
-    <Target Name="libjetbeep:Make">
-        <MSBuild Projects="libjetbeep.dproj" Targets="Make"/>
-    </Target>
     <Target Name="Build">
-        <CallTarget Targets="libjetbeep"/>
+        <CallTarget/>
     </Target>
     <Target Name="Clean">
-        <CallTarget Targets="libjetbeep:Clean"/>
+        <CallTarget/>
     </Target>
     <Target Name="Make">
-        <CallTarget Targets="libjetbeep:Make"/>
+        <CallTarget/>
     </Target>
     <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 </Project>

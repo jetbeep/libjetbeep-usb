@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<BorlandProject>
+  <Transactions>
+    <Transaction>2020.01.22 21:44:13.445,C:\Users\easypay\oleh\usb-driver\delphi\jetbeep_example.dproj=C:\Users\easypay\Documents\Embarcadero\Studio\Projects\Project1.dproj</Transaction>
+    <Transaction>2020.01.22 21:48:22.387,=C:\Users\easypay\oleh\usb-driver\delphi\Unit1.pas</Transaction>
+    <Transaction>2020.01.22 21:50:44.121,C:\Users\easypay\oleh\usb-driver\delphi\headers\AutoDeviceImport.pas=C:\Users\easypay\oleh\usb-driver\delphi\Unit1.pas</Transaction>
+    <Transaction>2020.01.22 22:11:44.393,=C:\Users\easypay\oleh\usb-driver\delphi\jetbeep.dll</Transaction>
+    <Transaction>2020.01.22 22:11:57.945,C:\Users\easypay\oleh\usb-driver\delphi\jetbeep.dll=</Transaction>
+  </Transactions>
+</BorlandProject>
