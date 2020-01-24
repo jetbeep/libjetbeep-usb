@@ -2,6 +2,7 @@
 *.so
 *.so.*
 *.dll
+*.local
 
 __history
 __recovery
