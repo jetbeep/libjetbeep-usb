@@ -12,7 +12,7 @@
 
 namespace JetBeep {
   enum class AutoDeviceState {
-    invalid,
+    invalid = 0, // if you change here, don't forget to change it in ALL bindings: C, Java, Delphi, etc
     firmwareVersionNotSupported,
 
     sessionOpened,
