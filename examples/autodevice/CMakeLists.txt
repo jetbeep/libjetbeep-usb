@@ -4,9 +4,7 @@ target_include_directories(autodevice PUBLIC ${BOOST_SOURCE_DIR})
 target_link_libraries(autodevice $<TARGET_OBJECTS:jetbeep_obj>)
 
 if (APPLE) 
-    find_package(OpenSSL REQUIRED)
-    target_include_directories(autodevice PUBLIC ${OPENSSL_INCLUDE_DIR})
-	target_link_libraries(autodevice "-framework IOKit" "-framework CoreFoundation" ${OPENSSL_CRYPTO_LIBRARY} ${OPENSSL_SSL_LIBRARY})
+	target_link_libraries(autodevice "-framework IOKit" "-framework CoreFoundation" "-framework Foundation")
 elseif(UNIX AND NOT APPLE) #linux
     find_package(OpenSSL REQUIRED)
     find_package(CURL REQUIRED)
