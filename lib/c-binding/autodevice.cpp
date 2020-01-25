@@ -1,6 +1,6 @@
 #define JETBEEP_API_EXPORTS
-#include "libjetbeep.h"
-#include "libjetbeep.hpp"
+#include "../libjetbeep.h"
+#include "../libjetbeep.hpp"
 
 using namespace JetBeep;
 
