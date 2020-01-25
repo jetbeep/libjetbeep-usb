@@ -7,7 +7,7 @@
 using namespace JetBeep;
 using namespace std;
 
-HttpsClient::HttpsClient() : m_log("https_client") {
+HttpsClient::HttpsClient() : m_log("https_client"), m_task(nullptr) {
   m_isCanceled.store(false);
   m_isPending.store(false);
 };
@@ -15,6 +15,12 @@ HttpsClient::HttpsClient() : m_log("https_client") {
 HttpsClient::~HttpsClient() {
   m_isCanceled.store(true);
   m_isPending.store(false);
+
+  NSURLSessionDataTask* oldTask = (NSURLSessionDataTask*)m_task;
+  if (oldTask != nullptr) {
+    [oldTask cancel];
+    [oldTask release];
+  }
 }
 
 Promise<Response> HttpsClient::request(RequestOptions& options) {
@@ -23,6 +29,11 @@ Promise<Response> HttpsClient::request(RequestOptions& options) {
   }
   m_pendingRequest = Promise<Response>();
   m_options = options;
+  NSURLSessionDataTask* oldTask = (NSURLSessionDataTask*)m_task;
+  if (oldTask != nullptr) {
+    [oldTask release];
+    m_task = nullptr;
+  }  
 
   @autoreleasepool {
     NSURLComponents *components = [[[NSURLComponents alloc] init] autorelease];    
@@ -75,6 +86,9 @@ Promise<Response> HttpsClient::request(RequestOptions& options) {
 
     NSURLSession* session = [NSURLSession sharedSession];    
     NSURLSessionDataTask* task = [session dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+      if (m_isCanceled.load() == true) {
+        return;
+      }
       @autoreleasepool {
         if (error) {
           const char* errorString = [[error localizedDescription] UTF8String];
@@ -93,6 +107,7 @@ Promise<Response> HttpsClient::request(RequestOptions& options) {
         this->resolve(response);
       }
     }];
+    m_task = [task retain];
 
     [task resume];
   }
