@@ -6,7 +6,7 @@
 #ifdef PLATFORM_WIN
   #define HTTP_CLIENT_WINHTTP
 #elif defined(PLATFORM_OSX)
-  #define HTTP_CLIENT_BOOST_BEAST
+  #define HTTP_CLIENT_NSURLSESSION
 #elif defined(PLATFORM_LINUX)
   #define HTTP_CLIENT_LIBCURL
 #else
@@ -79,6 +79,13 @@ namespace JetBeep {
 
     #ifdef HTTP_CLIENT_LIBCURL
     CURL* m_curl = nullptr;
+    #endif
+
+    #ifdef HTTP_CLIENT_NSURLSESSION
+    void *m_task;
+    RequestOptions m_options;
+    void reject(std::exception_ptr exception);
+    void resolve(Response response);
     #endif
   };
 

@@ -5,9 +5,7 @@ target_include_directories(token_payment_example PUBLIC ${CMAKE_CURRENT_SOURCE_D
 target_link_libraries(token_payment_example $<TARGET_OBJECTS:jetbeep_obj>)
 
 if (APPLE) 
-    find_package(OpenSSL REQUIRED)
-    target_include_directories(token_payment_example PUBLIC ${OPENSSL_INCLUDE_DIR})
-	target_link_libraries(token_payment_example "-framework IOKit" "-framework CoreFoundation" ${OPENSSL_CRYPTO_LIBRARY} ${OPENSSL_SSL_LIBRARY})
+	target_link_libraries(token_payment_example "-framework IOKit" "-framework CoreFoundation" "-framework Foundation")
 elseif(UNIX AND NOT APPLE) #linux
     find_package(OpenSSL REQUIRED)
     find_package(CURL REQUIRED)
