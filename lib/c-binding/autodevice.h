@@ -9,7 +9,19 @@ extern "C" {
 
 typedef void* jetbeep_autodevice_handle_t;
 typedef int jetbeep_error_t;
-typedef int jetbeep_state_t;
+typedef enum {
+    JETBEEP_STATE_INVALID = 0, 
+    JETBEEP_STATE_FIRMWARE_VERSION_NOT_SUPPORTED,
+
+    JETBEEP_STATE_SESSION_OPENED,
+    JETBEEP_STATE_SESSION_CLOSED,
+    JETBEEP_STATE_WAITING_FOR_BARCODES,
+
+    JETBEEP_STATE_WAITING_FOR_PAYMENT_RESULT,
+    JETBEEP_STATE_WAITING_FOR_CONFIRMATION,
+
+    JETBEEP_STATE_WAITING_FOR_PAYMENT_TOKEN
+} jetbeep_state_t;
 
 typedef struct {
   const char* barcode;
