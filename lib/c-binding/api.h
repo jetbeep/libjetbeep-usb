@@ -5,6 +5,15 @@
 extern "C" {
 #endif
 
+#include <stdint.h>
+#include <stdbool.h>
+#include <stddef.h>
+
+typedef struct {
+  const char* key;
+  const char* value;
+} jetbeep_payment_metadata_t;
+
 #ifdef _WIN32
 #ifdef JETBEEP_API_EXPORTS
 #define JETBEEP_API __declspec(dllexport)
