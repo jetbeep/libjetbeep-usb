@@ -7,6 +7,7 @@ extern "C" {
 
 #include "c-binding/autodevice.h"
 #include "c-binding/easypay_backend.h"
+#include "c-binding/logger.h"
 
 #define JETBEEP_NO_ERROR 0
 #define JETBEEP_ERROR_INVALID_STATE 1

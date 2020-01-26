@@ -1,5 +1,5 @@
-#ifndef JETBEEP_AUTODEVICE_H
-#define JETBEEP_AUTODEVICE_H
+#ifndef JETBEEP_C_AUTODEVICE_H
+#define JETBEEP_C_AUTODEVICE_H
 
 #ifdef __cplusplus
 extern "C" {

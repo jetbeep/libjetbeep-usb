@@ -1,5 +1,5 @@
-#ifndef JETBEEP_EASYPAY_BACKEND_H
-#define JETBEEP_EASYPAY_BACKEND_H
+#ifndef JETBEEP_C_EASYPAY_BACKEND_H
+#define JETBEEP_C_EASYPAY_BACKEND_H
 
 #ifdef __cplusplus
 extern "C" {
