@@ -19,6 +19,7 @@ var
 begin
   AutoDevice:= TAutoDevice.Create;
   DeviceHandler:= TDeviceHandler.Create;
+  AutoDevice.SetMobileConnectedHandler(DeviceHandler.MobileConnected);
   Metadata := nil; // metadata is used only for partial payments as a key\value of parameters
   repeat
      ReadLn(Input);
@@ -43,6 +44,8 @@ begin
           'YourCashierIdOrEmptyString',
           Metadata,
           DeviceHandler.TokenReceived)
+      else if Input = 'mobileconnected' then
+        Writeln('Mobile connected: ', AutoDevice.IsMobileConnected)
       else if Input = 'cancelpayment' then
         AutoDevice.CancelPayment
       else

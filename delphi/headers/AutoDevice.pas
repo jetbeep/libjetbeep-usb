@@ -17,6 +17,7 @@ type
 
     TBarcodesHandler = reference to procedure (barcodes: array of TBarcode);
     TPaymentTokenHandler = reference to procedure (token: string);
+    TMobileConnectedHandler = reference to procedure (isConnected: Boolean);
 
     TAutoDevice = class(TObject)
     private
@@ -24,6 +25,7 @@ type
     public
         barcodesHandler: TBarcodesHandler;
         tokenHandler: TPaymentTokenHandler;
+        mobileConnectedHandler: TMobileConnectedHandler;
 
         constructor Create;
         destructor Destroy; override;
@@ -36,10 +38,13 @@ type
         procedure CancelBarcodes;
         procedure CreatePaymentToken(amountInCoins: Cardinal; transactionId: String; cashierId: String; metadata: array of TMetadata; handler: TPaymentTokenHandler);
         procedure CancelPayment;
+        function IsMobileConnected: Boolean;
+        procedure SetMobileConnectedHandler(handler: TMobileConnectedHandler);
 end;
 
   procedure CBarcodesHandler(error: TJetBeepError; barcodes: PJetBeepBarcode; barcodesSize: Integer; data: THandle); cdecl;
   procedure CTokenHandler(error: TJetBeepError; token: PAnsiChar; data: THandle); cdecl;
+  procedure CMobileConnectedHandler(isConnected: Boolean; data: THandle); cdecl;
 implementation
 
 constructor TAutoDevice.Create;
@@ -48,6 +53,7 @@ begin
     handle := jetbeep_autodevice_new;
     barcodesHandler := nil;
     tokenHandler:= nil;
+    mobileConnectedHandler:= nil;
 end;
 
 destructor TAutoDevice.Destroy;
@@ -219,6 +225,26 @@ begin
       JETBEEP_ERROR_INVALID_STATE: raise EJetBeepInvalidState.Create('Invalid device state');
       else raise EJetBeepIO.Create('System input-output exception');
     end;
+end;
+
+function TAutoDevice.IsMobileConnected: Boolean;
+begin
+   Result:= jetbeep_autodevice_is_mobile_connected(handle);
+end;
+
+procedure CMobileConnectedHandler(isConnected: Boolean; data: THandle);
+var
+  autoDevice: TAutoDevice;
+begin
+  autoDevice:= TAutoDevice(data);
+
+  autoDevice.mobileConnectedHandler(isConnected);
+end;
+
+procedure TAutoDevice.SetMobileConnectedHandler(handler: TMobileConnectedHandler);
+begin
+  jetbeep_autodevice_set_mobile_connected_callback(handle, CMobileConnectedHandler, THandle(Self));
+  mobileConnectedHandler := handler;
 end;
 
 end.

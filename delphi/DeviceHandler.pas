@@ -9,6 +9,7 @@ type
   public
     procedure BarcodesReceived(barcodes: array of TBarcode);
     procedure TokenReceived(token: String);
+    procedure MobileConnected(isConnected: Boolean);
   end;
 
 implementation
@@ -28,6 +29,11 @@ end;
 procedure TDeviceHandler.TokenReceived(token: String);
 begin
   Writeln('Token: ', token);
+end;
+
+procedure TDeviceHandler.MobileConnected(isConnected: Boolean);
+begin
+  Writeln('Mobile connected: ', isConnected);
 end;
 
 end.
