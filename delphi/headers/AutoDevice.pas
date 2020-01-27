@@ -36,21 +36,18 @@ type
         procedure Stop;
         procedure OpenSession;
         procedure CloseSession;
-        procedure RequestBarcodes(handler: TBarcodesHandler);
+        procedure RequestBarcodes;
         procedure CancelBarcodes;
-        procedure CreatePaymentToken(amountInCoins: Cardinal; transactionId: String; cashierId: String; metadata: array of TMetadata; handler: TPaymentTokenHandler);
+        procedure CreatePaymentToken(amountInCoins: Cardinal; transactionId: String; cashierId: String; metadata: array of TMetadata);
         procedure CancelPayment;
         function IsMobileConnected: Boolean;
         function Version: String;
         function DeviceId: Cardinal;
         function State: TJetBeepDeviceState;
-
-        procedure SetMobileConnectedHandler(handler: TMobileConnectedHandler);
-        procedure SetStateHandler(handler: TStateHandler);
 end;
 
-  procedure CBarcodesHandler(error: TJetBeepError; barcodes: PJetBeepBarcode; barcodesSize: Integer; data: THandle); cdecl;
-  procedure CTokenHandler(error: TJetBeepError; token: PAnsiChar; data: THandle); cdecl;
+  procedure CBarcodesHandler(error: TCJetBeepError; barcodes: PJetBeepBarcode; barcodesSize: Integer; data: THandle); cdecl;
+  procedure CTokenHandler(error: TCJetBeepError; token: PAnsiChar; data: THandle); cdecl;
   procedure CMobileConnectedHandler(isConnected: Boolean; data: THandle); cdecl;
   procedure CStateHandler(state: TJetBeepDeviceState; data: THandle); cdecl;
 implementation
@@ -63,6 +60,9 @@ begin
     tokenHandler:= nil;
     mobileConnectedHandler:= nil;
     stateHandler:= nil;
+
+    jetbeep_autodevice_set_state_callback(handle, CStateHandler, THandle(Self));
+    jetbeep_autodevice_set_mobile_connected_callback(handle, CMobileConnectedHandler, THandle(Self));
 end;
 
 destructor TAutoDevice.Destroy;
@@ -73,7 +73,7 @@ end;
 
 procedure TAutoDevice.Start;
 var
-    error: TJetBeepError;
+    error: TCJetBeepError;
 begin
     error:= jetbeep_autodevice_start(handle);
     case error of
@@ -85,7 +85,7 @@ end;
 
 procedure TAutoDevice.Stop;
 var
-    error: TJetBeepError;
+    error: TCJetBeepError;
 begin
     error:= jetbeep_autodevice_stop(handle);
     case error of
@@ -97,7 +97,7 @@ end;
 
 procedure TAutoDevice.OpenSession;
 var
-    error: TJetBeepError;
+    error: TCJetBeepError;
 begin
     error:= jetbeep_autodevice_open_session(handle);
     case error of
@@ -109,7 +109,7 @@ end;
 
 procedure TAutoDevice.CloseSession;
 var
-    error: TJetBeepError;
+    error: TCJetBeepError;
 begin
     error:= jetbeep_autodevice_close_session(handle);
     case error of
@@ -119,7 +119,7 @@ begin
     end;
 end;
 
-procedure CBarcodesHandler(error: TJetBeepError; barcodes: PJetBeepBarcode; barcodesSize: Integer; data: THandle);
+procedure CBarcodesHandler(error: TCJetBeepError; barcodes: PJetBeepBarcode; barcodesSize: Integer; data: THandle);
 var
   autoDevice: TAutoDevice;
   convertedBarcodes: array of TBarcode;
@@ -146,18 +146,22 @@ begin
     Inc(pbarcode);
   end;
 
+  if autoDevice.barcodesHandler = nil then
+  begin
+    Exit;
+  end;
+
   autoDevice.barcodesHandler(convertedBarcodes);
 end;
 
-procedure TAutoDevice.RequestBarcodes(handler: TBarcodesHandler);
+procedure TAutoDevice.RequestBarcodes;
 var
-    error: TJetBeepError;
+    error: TCJetBeepError;
 begin
     error:= jetbeep_autodevice_request_barcodes(handle, CBarcodesHandler, THandle(Self));
     case error of
       JETBEEP_NO_ERROR:
       begin
-        barcodesHandler := handler;
         Exit;
       end;
       JETBEEP_ERROR_INVALID_STATE: raise EJetBeepInvalidState.Create('Invalid device state');
@@ -167,7 +171,7 @@ end;
 
 procedure TAutoDevice.CancelBarcodes;
 var
-    error: TJetBeepError;
+    error: TCJetBeepError;
 begin
     error:= jetbeep_autodevice_cancel_barcodes(handle);
     case error of
@@ -177,7 +181,7 @@ begin
     end;
 end;
 
-procedure CTokenHandler(error: TJetBeepError; token: PAnsiChar; data: THandle);
+procedure CTokenHandler(error: TCJetBeepError; token: PAnsiChar; data: THandle);
 var
   autoDevice: TAutoDevice;
   convertedToken: string;
@@ -194,16 +198,20 @@ begin
 
   autoDevice:= TAutoDevice(data);
   convertedToken := String(token);
+  if autoDevice.tokenHandler = nil then
+  begin
+    Exit;
+  end;
+
   autoDevice.tokenHandler(convertedToken);
 end;
 
 procedure TAutoDevice.CreatePaymentToken(amountInCoins: Cardinal;
   transactionId: String;
   cashierId: String;
-  metadata: array of TMetadata;
-  handler: TPaymentTokenHandler);
+  metadata: array of TMetadata);
 var
-  error: TJetBeepError;
+  error: TCJetBeepError;
 begin
   error:= jetbeep_autodevice_create_payment_token(handle,
     amountInCoins,
@@ -215,7 +223,6 @@ begin
   case error of
       JETBEEP_NO_ERROR:
       begin
-        tokenHandler:= handler;
         Exit;
       end;
       JETBEEP_ERROR_INVALID_STATE: raise EJetBeepInvalidState.Create('Invalid device state');
@@ -226,7 +233,7 @@ end;
 
 procedure TAutoDevice.CancelPayment;
 var
-    error: TJetBeepError;
+    error: TCJetBeepError;
 begin
     error:= jetbeep_autodevice_cancel_payment(handle);
     case error of
@@ -247,13 +254,12 @@ var
 begin
   autoDevice:= TAutoDevice(data);
 
-  autoDevice.mobileConnectedHandler(isConnected);
-end;
+  if autoDevice.mobileConnectedHandler = nil then
+  begin
+    Exit;
+  end;
 
-procedure TAutoDevice.SetMobileConnectedHandler(handler: TMobileConnectedHandler);
-begin
-  jetbeep_autodevice_set_mobile_connected_callback(handle, CMobileConnectedHandler, THandle(Self));
-  mobileConnectedHandler := handler;
+  autoDevice.mobileConnectedHandler(isConnected);
 end;
 
 function TAutoDevice.Version: String;
@@ -276,14 +282,12 @@ var
   autoDevice: TAutoDevice;
 begin
   autoDevice:= TAutoDevice(data);
+  if autoDevice.stateHandler = nil then
+  begin
+    Exit;
+  end;
 
   autoDevice.stateHandler(state);
-end;
-
-procedure TAutoDevice.SetStateHandler(handler: TStateHandler);
-begin
-  jetbeep_autodevice_set_state_callback(handle, CStateHandler, THandle(Self));
-  stateHandler:= handler;
 end;
 
 end.

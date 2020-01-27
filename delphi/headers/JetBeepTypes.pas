@@ -5,7 +5,7 @@ uses SysUtils;
 
 type
 
-TJetBeepError = (
+TCJetBeepError = (
   JETBEEP_NO_ERROR = 0,
   JETBEEP_ERROR_INVALID_STATE = 1,
   JETBEEP_ERROR_IO = 2
@@ -33,36 +33,36 @@ TEasyPayEnvironment = (
   EASYPAY_BACKEND_PRODUCTION = 1
 );
 
-TJetBeepBarcode = record
+TCJetBeepBarcode = record
   barcode: PAnsiChar;
   barcodeType: Integer;
 end;
 
-PJetBeepBarcode = ^TJetBeepBarcode;
+PJetBeepBarcode = ^TCJetBeepBarcode;
 
-TJetBeepMetadata = record
+TCJetBeepMetadata = record
   key: PAnsiChar;
   value: PAnsiChar
 end;
 
-PJetBeepMetadata = ^TJetBeepMetadata;
+PJetBeepMetadata = ^TCJetBeepMetadata;
 
-TEasyPayPaymentResult = record
+TCEasyPayPaymentResult = record
   errorString: PAnsiChar;
   easyPayTransactionId: Integer;
   easyPayPaymentRequestUid: PAnsiChar;
 end;
 
-TEasyPayRefundResult = record
+TCEasyPayRefundResult = record
   errorString: PAnsiChar;
 end;
 
-TJetBeepBarcodesCallback = procedure(error: TJetBeepError; barcodes: PJetBeepBarcode; barcodesSize: Integer; data: THandle); cdecl;
-TJetBeepPaymentTokenCallback = procedure(error: TJetBeepError; token: PAnsiChar; data: THandle); cdecl;
-TJetBeepDeviceStateCallback = procedure(state: TJetBeepDeviceState; data: THandle); cdecl;
-TJetBeepMobileConnectedCallback = procedure(connected: Boolean; data: THandle); cdecl;
-TEasyPayPaymentResultCallback = procedure(result: TEasyPayPaymentResult); cdecl;
-TEasyPayRefundResultCallback = procedure(result: TEasyPayRefundResult); cdecl;
+TCJetBeepBarcodesCallback = procedure(error: TCJetBeepError; barcodes: PJetBeepBarcode; barcodesSize: Integer; data: THandle); cdecl;
+TCJetBeepPaymentTokenCallback = procedure(error: TCJetBeepError; token: PAnsiChar; data: THandle); cdecl;
+TCJetBeepDeviceStateCallback = procedure(state: TJetBeepDeviceState; data: THandle); cdecl;
+TCJetBeepMobileConnectedCallback = procedure(connected: Boolean; data: THandle); cdecl;
+TEasyPayPaymentResultCallback = procedure(result: TCEasyPayPaymentResult); cdecl;
+TEasyPayRefundResultCallback = procedure(result: TCEasyPayRefundResult); cdecl;
 
 
 implementation

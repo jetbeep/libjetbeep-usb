@@ -20,8 +20,10 @@ var
 begin
   AutoDevice:= TAutoDevice.Create;
   DeviceHandler:= TDeviceHandler.Create;
-  AutoDevice.SetMobileConnectedHandler(DeviceHandler.MobileConnected);
-  AutoDevice.SetStateHandler(DeviceHandler.DeviceStateChanged);
+  AutoDevice.barcodesHandler:= DeviceHandler.BarcodesReceived;
+  AutoDevice.tokenHandler:= DeviceHandler.TokenReceived;
+  AutoDevice.mobileConnectedHandler:= DeviceHandler.MobileConnected;
+  AutoDevice.stateHandler:= DeviceHandler.DeviceStateChanged;
   Metadata := nil; // metadata is used only for partial payments as a key\value of parameters
   repeat
      ReadLn(Input);
@@ -38,14 +40,13 @@ begin
       else if Input = 'closesession' then
         AutoDevice.CloseSession
       else if Input = 'requestbarcodes' then
-        AutoDevice.RequestBarcodes(DeviceHandler.BarcodesReceived)
+        AutoDevice.RequestBarcodes
       else if Input = 'cancelbarcodes' then
         AutoDevice.CancelBarcodes
       else if Input = 'createpaymenttoken' then
         AutoDevice.CreatePaymentToken(100, 'YourTransactionId',
           'YourCashierIdOrEmptyString',
-          Metadata,
-          DeviceHandler.TokenReceived)
+          Metadata)
       else if Input = 'mobileconnected' then
         Writeln('Mobile connected: ', AutoDevice.IsMobileConnected)
       else if Input = 'cancelpayment' then
@@ -55,7 +56,7 @@ begin
       else if Input = 'deviceid' then
         Writeln('Device id: ', AutoDevice.DeviceId)
       else if Input = 'state' then
-        Writeln('State: ', DeviceHandler.StateToString(AutoDevice.State))
+        Writeln(DeviceHandler.StateToString(AutoDevice.State))
       else
         Writeln('Invalid command')
      except
