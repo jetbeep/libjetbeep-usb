@@ -8,6 +8,7 @@ type
   TDeviceHandler = class(TObject)
   public
     procedure BarcodesReceived(barcodes: array of TBarcode);
+    procedure TokenReceived(token: String);
   end;
 
 implementation
@@ -22,6 +23,11 @@ begin
     Writeln('Value: ', barcode.Barcode)
   end;
 
+end;
+
+procedure TDeviceHandler.TokenReceived(token: String);
+begin
+  Writeln('Token: ', token);
 end;
 
 end.

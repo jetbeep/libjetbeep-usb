@@ -35,9 +35,19 @@ end;
 
 PJetBeepBarcode = ^JetBeepBarcode;
 
+JetBeepMetadata = record
+  key: PAnsiChar;
+  value: PAnsiChar
+end;
+
+PJetBeepMetadata = ^JetBeepMetadata;
+
 TJetBeepBarcodesCallback = procedure(error: TJetBeepError; barcodes: PJetBeepBarcode; barcodesSize: Integer; data: THandle); cdecl;
+TJetBeepPaymentTokenCallback = procedure(error: TJetBeepError; token: PAnsiChar; data: THandle); cdecl;
 TJetBeepDeviceStateCallback = procedure(state: TJetBeepDeviceState; data: THandle); cdecl;
 TJetBeepMobileConnectedCallback = procedure(connected: Boolean; data: THandle); cdecl;
+
+
 
 implementation
 

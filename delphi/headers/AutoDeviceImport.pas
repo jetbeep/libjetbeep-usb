@@ -15,7 +15,7 @@ function jetbeep_autodevice_open_session(handle: TAutoDeviceHandle): TJetBeepErr
 function jetbeep_autodevice_close_session(handle: TAutoDeviceHandle): TJetBeepError; cdecl;
 function jetbeep_autodevice_request_barcodes(handle: TAutoDeviceHandle; callback: TJetBeepBarcodesCallback; data: THandle): TJetBeepError; cdecl;
 function jetbeep_autodevice_cancel_barcodes(handle: TAutoDeviceHandle): TJetBeepError; cdecl;
-function jetbeep_autodevice_create_payment_token(handle: TAutoDeviceHandle; data: THandle): TJetBeepError; cdecl;
+function jetbeep_autodevice_create_payment_token(handle: TAutoDeviceHandle; amountInCoins: Cardinal; tranasctionId: PAnsiChar; callback: TJetBeepPaymentTokenCallback; data: THandle; cashierId: PAnsiChar; metadata: PJetBeepMetadata; metadataSize: Integer): TJetBeepError; cdecl;
 function jetbeep_autodevice_cancel_payment(handle: TAutoDeviceHandle): TJetBeepError; cdecl;
 function jetbeep_autodevice_is_mobile_connected(handle: TAutoDeviceHandle): Boolean; cdecl;
 function jetbeep_autodevice_version(handle: TAutoDeviceHandle): PAnsiChar; cdecl;
