@@ -18,6 +18,7 @@ type
     TBarcodesHandler = reference to procedure (barcodes: array of TBarcode);
     TPaymentTokenHandler = reference to procedure (token: string);
     TMobileConnectedHandler = reference to procedure (isConnected: Boolean);
+    TStateHandler = reference to procedure (state: TJetBeepDeviceState);
 
     TAutoDevice = class(TObject)
     private
@@ -26,6 +27,7 @@ type
         barcodesHandler: TBarcodesHandler;
         tokenHandler: TPaymentTokenHandler;
         mobileConnectedHandler: TMobileConnectedHandler;
+        stateHandler: TStateHandler;
 
         constructor Create;
         destructor Destroy; override;
@@ -39,14 +41,18 @@ type
         procedure CreatePaymentToken(amountInCoins: Cardinal; transactionId: String; cashierId: String; metadata: array of TMetadata; handler: TPaymentTokenHandler);
         procedure CancelPayment;
         function IsMobileConnected: Boolean;
-        procedure SetMobileConnectedHandler(handler: TMobileConnectedHandler);
         function Version: String;
         function DeviceId: Cardinal;
+        function State: TJetBeepDeviceState;
+
+        procedure SetMobileConnectedHandler(handler: TMobileConnectedHandler);
+        procedure SetStateHandler(handler: TStateHandler);
 end;
 
   procedure CBarcodesHandler(error: TJetBeepError; barcodes: PJetBeepBarcode; barcodesSize: Integer; data: THandle); cdecl;
   procedure CTokenHandler(error: TJetBeepError; token: PAnsiChar; data: THandle); cdecl;
   procedure CMobileConnectedHandler(isConnected: Boolean; data: THandle); cdecl;
+  procedure CStateHandler(state: TJetBeepDeviceState; data: THandle); cdecl;
 implementation
 
 constructor TAutoDevice.Create;
@@ -56,6 +62,7 @@ begin
     barcodesHandler := nil;
     tokenHandler:= nil;
     mobileConnectedHandler:= nil;
+    stateHandler:= nil;
 end;
 
 destructor TAutoDevice.Destroy;
@@ -257,6 +264,26 @@ end;
 function TAutoDevice.DeviceId: Cardinal;
 begin
   Result := jetbeep_autodevice_device_id(handle);
+end;
+
+function TAutoDevice.State: TJetBeepDeviceState;
+begin
+  Result := jetbeep_autodevice_state(handle);
+end;
+
+procedure CStateHandler(state: TJetBeepDeviceState; data: THandle); cdecl;
+var
+  autoDevice: TAutoDevice;
+begin
+  autoDevice:= TAutoDevice(data);
+
+  autoDevice.stateHandler(state);
+end;
+
+procedure TAutoDevice.SetStateHandler(handler: TStateHandler);
+begin
+  jetbeep_autodevice_set_state_callback(handle, CStateHandler, THandle(Self));
+  stateHandler:= handler;
 end;
 
 end.

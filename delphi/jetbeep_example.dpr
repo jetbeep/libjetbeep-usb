@@ -20,6 +20,7 @@ begin
   AutoDevice:= TAutoDevice.Create;
   DeviceHandler:= TDeviceHandler.Create;
   AutoDevice.SetMobileConnectedHandler(DeviceHandler.MobileConnected);
+  AutoDevice.SetStateHandler(DeviceHandler.DeviceStateChanged);
   Metadata := nil; // metadata is used only for partial payments as a key\value of parameters
   repeat
      ReadLn(Input);
@@ -52,6 +53,8 @@ begin
         Writeln('Device version: ', AutoDevice.Version)
       else if Input = 'deviceid' then
         Writeln('Device id: ', AutoDevice.DeviceId)
+      else if Input = 'state' then
+        Writeln('State: ', DeviceHandler.StateToString(AutoDevice.State))
       else
         Writeln('Invalid command')
      except
