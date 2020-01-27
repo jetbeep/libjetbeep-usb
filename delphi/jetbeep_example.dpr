@@ -9,7 +9,8 @@ uses
   AutoDeviceImport in 'headers\AutoDeviceImport.pas',
   JetbeepTypes in 'headers\JetbeepTypes.pas',
   AutoDevice in 'headers\AutoDevice.pas',
-  DeviceHandler in 'DeviceHandler.pas';
+  DeviceHandler in 'DeviceHandler.pas',
+  EasyPayBackendImport in 'headers\EasyPayBackendImport.pas';
 
 var
   AutoDevice: TAutoDevice;

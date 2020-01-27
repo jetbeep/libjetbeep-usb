@@ -135,6 +135,7 @@ $(PostBuildEvent)]]></PostBuildEvent>
         <DCCReference Include="headers\JetbeepTypes.pas"/>
         <DCCReference Include="headers\AutoDevice.pas"/>
         <DCCReference Include="DeviceHandler.pas"/>
+        <DCCReference Include="headers\EasyPayBackendImport.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
@@ -1024,7 +1025,7 @@ $(PostBuildEvent)]]></PostBuildEvent>
         <PreBuildEventIgnoreExitCode>False</PreBuildEventIgnoreExitCode>
         <PreLinkEvent/>
         <PreLinkEventIgnoreExitCode>False</PreLinkEventIgnoreExitCode>
-        <PostBuildEvent>copy $(PROJECTDIR)\jetbeep_i386.dll $(OUTPUTDIR)\jetbeep_i386.dll</PostBuildEvent>
+        <PostBuildEvent>copy $(PROJECTDIR)\jetbeep_i386.dll $(OUTPUTDIR)\jetbeep_i386.dll</PostBuildEvent>
         <PostBuildEventIgnoreExitCode>False</PostBuildEventIgnoreExitCode>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Config)'=='Debug' And '$(Platform)'=='Win64'">
@@ -1032,7 +1033,7 @@ $(PostBuildEvent)]]></PostBuildEvent>
         <PreBuildEventIgnoreExitCode>False</PreBuildEventIgnoreExitCode>
         <PreLinkEvent/>
         <PreLinkEventIgnoreExitCode>False</PreLinkEventIgnoreExitCode>
-        <PostBuildEvent>copy $(PROJECTDIR)\jetbeep_x86_64.dll $(OUTPUTDIR)\jetbeep_x86_64.dll</PostBuildEvent>
+        <PostBuildEvent>copy $(PROJECTDIR)\jetbeep_x86_64.dll $(OUTPUTDIR)\jetbeep_x86_64.dll</PostBuildEvent>
         <PostBuildEventIgnoreExitCode>False</PostBuildEventIgnoreExitCode>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Config)'=='Release' And '$(Platform)'=='Win32'">
@@ -1040,7 +1041,7 @@ $(PostBuildEvent)]]></PostBuildEvent>
         <PreBuildEventIgnoreExitCode>False</PreBuildEventIgnoreExitCode>
         <PreLinkEvent/>
         <PreLinkEventIgnoreExitCode>False</PreLinkEventIgnoreExitCode>
-        <PostBuildEvent>copy $(PROJECTDIR)\jetbeep_i386.dll $(OUTPUTDIR)\jetbeep_i386.dll</PostBuildEvent>
+        <PostBuildEvent>copy $(PROJECTDIR)\jetbeep_i386.dll $(OUTPUTDIR)\jetbeep_i386.dll</PostBuildEvent>
         <PostBuildEventIgnoreExitCode>False</PostBuildEventIgnoreExitCode>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Config)'=='Release' And '$(Platform)'=='Win64'">
@@ -1048,7 +1049,7 @@ $(PostBuildEvent)]]></PostBuildEvent>
         <PreBuildEventIgnoreExitCode>False</PreBuildEventIgnoreExitCode>
         <PreLinkEvent/>
         <PreLinkEventIgnoreExitCode>False</PreLinkEventIgnoreExitCode>
-        <PostBuildEvent>copy $(PROJECTDIR)\jetbeep_x86_64.dll $(OUTPUTDIR)\jetbeep_x86_64.dll</PostBuildEvent>
+        <PostBuildEvent>copy $(PROJECTDIR)\jetbeep_x86_64.dll $(OUTPUTDIR)\jetbeep_x86_64.dll</PostBuildEvent>
         <PostBuildEventIgnoreExitCode>False</PostBuildEventIgnoreExitCode>
     </PropertyGroup>
 </Project>

@@ -28,25 +28,41 @@ TJetBeepDeviceState = (
   JETBEEP_STATE_WAITING_FOR_PAYMENT_TOKEN
 );
 
-JetBeepBarcode = record
+TEasyPayEnvironment = (
+  EASYPAY_BACKEND_DEVELOPMENT = 0,
+  EASYPAY_BACKEND_PRODUCTION = 1
+);
+
+TJetBeepBarcode = record
   barcode: PAnsiChar;
   barcodeType: Integer;
 end;
 
-PJetBeepBarcode = ^JetBeepBarcode;
+PJetBeepBarcode = ^TJetBeepBarcode;
 
-JetBeepMetadata = record
+TJetBeepMetadata = record
   key: PAnsiChar;
   value: PAnsiChar
 end;
 
-PJetBeepMetadata = ^JetBeepMetadata;
+PJetBeepMetadata = ^TJetBeepMetadata;
+
+TEasyPayPaymentResult = record
+  errorString: PAnsiChar;
+  easyPayTransactionId: Integer;
+  easyPayPaymentRequestUid: PAnsiChar;
+end;
+
+TEasyPayRefundResult = record
+  errorString: PAnsiChar;
+end;
 
 TJetBeepBarcodesCallback = procedure(error: TJetBeepError; barcodes: PJetBeepBarcode; barcodesSize: Integer; data: THandle); cdecl;
 TJetBeepPaymentTokenCallback = procedure(error: TJetBeepError; token: PAnsiChar; data: THandle); cdecl;
 TJetBeepDeviceStateCallback = procedure(state: TJetBeepDeviceState; data: THandle); cdecl;
 TJetBeepMobileConnectedCallback = procedure(connected: Boolean; data: THandle); cdecl;
-
+TEasyPayPaymentResultCallback = procedure(result: TEasyPayPaymentResult); cdecl;
+TEasyPayRefundResultCallback = procedure(result: TEasyPayRefundResult); cdecl;
 
 
 implementation
