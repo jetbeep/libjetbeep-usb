@@ -48,6 +48,10 @@ begin
         Writeln('Mobile connected: ', AutoDevice.IsMobileConnected)
       else if Input = 'cancelpayment' then
         AutoDevice.CancelPayment
+      else if Input = 'version' then
+        Writeln('Device version: ', AutoDevice.Version)
+      else if Input = 'deviceid' then
+        Writeln('Device id: ', AutoDevice.DeviceId)
       else
         Writeln('Invalid command')
      except

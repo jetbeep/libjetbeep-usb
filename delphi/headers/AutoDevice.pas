@@ -40,6 +40,8 @@ type
         procedure CancelPayment;
         function IsMobileConnected: Boolean;
         procedure SetMobileConnectedHandler(handler: TMobileConnectedHandler);
+        function Version: String;
+        function DeviceId: Cardinal;
 end;
 
   procedure CBarcodesHandler(error: TJetBeepError; barcodes: PJetBeepBarcode; barcodesSize: Integer; data: THandle); cdecl;
@@ -245,6 +247,16 @@ procedure TAutoDevice.SetMobileConnectedHandler(handler: TMobileConnectedHandler
 begin
   jetbeep_autodevice_set_mobile_connected_callback(handle, CMobileConnectedHandler, THandle(Self));
   mobileConnectedHandler := handler;
+end;
+
+function TAutoDevice.Version: String;
+begin
+  Result := String(jetbeep_autodevice_version(handle));
+end;
+
+function TAutoDevice.DeviceId: Cardinal;
+begin
+  Result := jetbeep_autodevice_device_id(handle);
 end;
 
 end.
