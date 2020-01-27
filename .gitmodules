@@ -1,3 +1,0 @@
-[submodule "dfu-module/nrfdfu"]
-	path = dfu-module/nrfdfu
-	url = https://github.com/Yevhenii-Nesterov/nrfdfu
