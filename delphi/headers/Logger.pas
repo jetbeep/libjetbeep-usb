@@ -1,3 +1,4 @@
+{ Libjetbeep internal logger system }
 unit Logger;
 
 interface
@@ -6,6 +7,7 @@ uses classes, System.SysUtils, LoggerImport, JetBeepTypes, VersionChecker;
 
 type
 
+  { Libjetbeep logger controller }
   TLogger = class(TObject)
   private
     class function GetLogLevel: TJetBeepLogLevel; static;
@@ -15,9 +17,17 @@ type
     class function GetCerrEnabled: Boolean; static;
     class procedure SetCerrEnabled(const Value: Boolean); static;
   public
+    { Sets\Gets logging level of the library. Default is: JETBEEP_LOGGER_SILENT
+      @raises EJetBeepInvalidVersion Raised if jetbeep-*.dll version is not equal to *.pas version. IMPORTANT: Do not try to catch this exception as it means you're doing something wrong }
     class property level: TJetBeepLogLevel Read GetLogLevel Write SetLogLevel;
+
+    { Sets\ Gets if logs should be redirected to stdout
+      @raises EJetBeepInvalidVersion Raised if jetbeep-*.dll version is not equal to *.pas version. IMPORTANT: Do not try to catch this exception as it means you're doing something wrong }
     class property coutEnabled: Boolean Read GetCoutEnabled
       Write SetCoutEnabled;
+
+    { Sets\ Gets if logs should be redirected to stderr
+      @raises EJetBeepInvalidVersion Raised if jetbeep-*.dll version is not equal to *.pas version. IMPORTANT: Do not try to catch this exception as it means you're doing something wrong }
     class property cerrEnabled: Boolean Read GetCerrEnabled
       Write SetCerrEnabled;
   end;

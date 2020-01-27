@@ -1,3 +1,4 @@
+{ JetBeep device detection and communication }
 unit AutoDevice;
 
 interface
@@ -5,51 +6,139 @@ interface
 uses classes, System.SysUtils, AutoDeviceImport, JetBeepTypes, VersionChecker;
 
 type
+  { Barcode }
   TBarcode = record
+    { Barcode value or mobile phone number }
     Barcode: string;
+    { Barcode type, could\should be ignored }
     BarcodeType: Integer;
   end;
 
+  { This handler is called during waitingForBarcodes state once the user taps JetBeep device }
   TBarcodesHandler = reference to procedure(barcodes: array of TBarcode);
+
+  { This handler is called during waitingForPaymentToken state once the user taps JetBeep devices and confirm the payment in mobile application
+    @param token payment token from the user that must be transferred to payment backend to continue the payment process. }
   TPaymentTokenHandler = reference to procedure(token: string);
+
+  { This handler is called once mobile connection state is changed }
   TMobileConnectedHandler = reference to procedure(isConnected: Boolean);
+
+  { This handler is called once state of a JetBeep device is changed }
   TStateHandler = reference to procedure(state: TJetBeepDeviceState);
 
+  { Automatically detects JetBeep device plugged into USB and performs communication with it }
   TAutoDevice = class(TObject)
   private
     handle: TAutoDeviceHandle;
   public
+    { This handler is called during waitingForBarcodes state once the user taps JetBeep device }
     barcodesHandler: TBarcodesHandler;
+
+    { This handler is called during waitingForPaymentToken state once the user taps JetBeep devices and confirm the payment in mobile application
+      @param token payment token from the user that must be transferred to payment backend to continue the payment process. }
     tokenHandler: TPaymentTokenHandler;
+
+    { This handler is called once mobile connection state is changed }
     mobileConnectedHandler: TMobileConnectedHandler;
+
+    { This handler is called once state of a JetBeep device is changed }
     stateHandler: TStateHandler;
 
+    { @raises EJetBeepInvalidVersion Raised if jetbeep-*.dll version is not equal to *.pas version. IMPORTANT: Do not try to catch this exception as it means you're doing something wrong }
     constructor Create;
+
     destructor Destroy; override;
 
+    { Starts detecting JetBeep devices in the system.
+
+      Once the device will be found the state will be changed to firmwareVersionNotSupported or sessionClosed
+      @raises EJetBeepInvalidState device is already started
+      @raises EJetBeepIO system error }
     procedure Start;
+
+    { Stops detecting JetBeep devices in the system.
+
+      The state will be changed to invalid.
+      @raises EJetBeepInvalidState device is already stopped
+      @raises EJetBeepIO system error }
     procedure Stop;
+
+    { Opens session. It means that the device is waiting for incoming Bluetooth connection
+
+      The state will be changed to sessionOpened
+      @raises EJetBeepInvalidState current state is not sessionClosed
+      @raises EJetBeepIO system error }
     procedure OpenSession;
+
+    { Closes session. Bluetooth connection (if exists) will be terminated. The device is no longer accepting new connections.
+
+      The state will be changed to sessionClosed
+      @raises EJetBeepInvalidState current state is not sessionOpened
+      @raises EJetBeepIO system error }
     procedure CloseSession;
+
+    { Requests barcodes. The device will be waiting for barcodes from the mobile phone.
+
+      The state will be changed to waitingForBarcodes
+
+      Once the barcodes will be received the stae will automatically change to: sessionOpened
+      @raises EJetBeepInvalidState current state is not sessionOpened
+      @raises EJetBeepIO system error }
     procedure RequestBarcodes;
+
+    { Cancels requesting barcodes. The device will no longer be waiting for barcodes from the mobile phone.
+
+      The state will be changed to sessionOpened
+      @raises EJetBeepInvalidState current state is not waitingForBarcodes
+      @raises EJetBeepIO system error }
     procedure CancelBarcodes;
+
+    { Requests payment token from the mobile device.
+
+      The state will be changed to waitingForPaymentToken
+
+      Once the token will be received the state will be changed to sessionOpened
+
+      @param amountInCoins amount in coins. E.g. for $1.05 it should be 105
+      @param transactionId unique transaction id provided by the merchant
+      @param cashierId unique cashier id. Use this field if transaction id could not be unique across different POS
+      @param metadata additional information attached to the payment
+      @raises EJetBeepInvalidState current state is not sessionOpened
+      @raises EJetBeepIO system error }
     procedure CreatePaymentToken(amountInCoins: Cardinal; transactionId: String;
       cashierId: String; metadata: array of TMetadata);
+
+    { Cancels pending payment token request
+      The state will be changed to sessionOpened
+      @raises EJetBeepInvalidState current state is not waitingForPaymentToken
+      @raises EJetBeepIO system error
+    }
     procedure CancelPayment;
+
+    { Returns True if there is currently active bluetooth connection }
     function IsMobileConnected: Boolean;
+
+    { Returns version of the firmware }
     function Version: String;
+
+    { Returns device id }
     function DeviceId: Cardinal;
+
+    { Returns current device state }
     function state: TJetBeepDeviceState;
   end;
 
-procedure CBarcodesHandler(error: TCJetBeepError; barcodes: PJetBeepBarcode;
-  barcodesSize: Integer; data: THandle); cdecl;
-procedure CTokenHandler(error: TCJetBeepError; token: PAnsiChar;
-  data: THandle); cdecl;
-procedure CMobileConnectedHandler(isConnected: Boolean; data: THandle); cdecl;
-procedure CStateHandler(state: TJetBeepDeviceState; data: THandle); cdecl;
-
 implementation
+
+procedure CBarcodesHandler(error: TCJetBeepError; barcodes: PJetBeepBarcode;
+  barcodesSize: Integer; data: THandle); cdecl; forward;
+procedure CTokenHandler(error: TCJetBeepError; token: PAnsiChar; data: THandle);
+  cdecl; forward;
+procedure CMobileConnectedHandler(isConnected: Boolean; data: THandle);
+  cdecl; forward;
+procedure CStateHandler(state: TJetBeepDeviceState; data: THandle);
+  cdecl; forward;
 
 constructor TAutoDevice.Create;
 begin

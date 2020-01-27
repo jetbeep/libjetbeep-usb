@@ -1,3 +1,4 @@
+{ Types declaration }
 unit JetBeepTypes;
 
 interface
