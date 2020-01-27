@@ -157,6 +157,9 @@ int main() {
 
   while (true) {
     getline(cin, input);
+    if (input == "exit") {
+      break;
+    }
   }
   return 0;
 }

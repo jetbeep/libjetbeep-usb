@@ -1,6 +1,11 @@
 
 include(GNUInstallDirs)
-file(GLOB_RECURSE JETBEEP_SOURCES *.cpp *.c)
+if (APPLE)
+    file(GLOB_RECURSE JETBEEP_SOURCES *.cpp *.c *.mm)
+else()
+    file(GLOB_RECURSE JETBEEP_SOURCES *.cpp *.c)
+endif()
+
 file(GLOB_RECURSE JETBEEP_INCLUDES *.h *.hpp)
 list(FILTER JETBEEP_SOURCES EXCLUDE REGEX "boost")
 
@@ -14,9 +19,7 @@ target_include_directories(jetbeep_obj PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${BOOS
 add_library(jetbeep SHARED ${JETBEEP_INCLUDES} $<TARGET_OBJECTS:jetbeep_obj>)
 
 if (APPLE) 
-    find_package(OpenSSL REQUIRED)
-    target_include_directories(jetbeep_obj PUBLIC ${OPENSSL_INCLUDE_DIR})
-	target_link_libraries(jetbeep "-framework IOKit" "-framework CoreFoundation" ${OPENSSL_CRYPTO_LIBRARY} ${OPENSSL_SSL_LIBRARY})
+	target_link_libraries(jetbeep "-framework IOKit" "-framework CoreFoundation" "-framework Foundation")
 elseif(UNIX AND NOT APPLE) #linux
     find_package(OpenSSL REQUIRED)
     find_package(CURL REQUIRED)
