@@ -1,7 +1,13 @@
 
 include(GNUInstallDirs)
 include("TargetArch.cmake")
-file(GLOB_RECURSE JETBEEP_SOURCES *.cpp *.c *.mm)
+
+if (APPLE)
+    file(GLOB_RECURSE JETBEEP_SOURCES *.cpp *.c *.mm)
+else()
+    file(GLOB_RECURSE JETBEEP_SOURCES *.cpp *.c)
+endif()
+
 file(GLOB_RECURSE JETBEEP_INCLUDES *.h *.hpp)
 list(FILTER JETBEEP_SOURCES EXCLUDE REGEX "boost")
 
