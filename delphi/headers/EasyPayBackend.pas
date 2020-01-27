@@ -87,6 +87,7 @@ implementation
     var
       error: TCJetBeepError;
     begin
+      Writeln(THandle(Self));
       error:= jetbeep_easypay_make_payment(handle, PAnsiChar(AnsiString(merchantTransactionId)), PAnsiChar(AnsiString(paymentToken)), amountInCoins, deviceId, CPaymentResultHandler, THandle(Self), PAnsiChar(AnsiString(cashierId)));
 
       case error of

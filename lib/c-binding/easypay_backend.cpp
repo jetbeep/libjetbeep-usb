@@ -28,7 +28,6 @@ JETBEEP_API jetbeep_error_t jetbeep_easypay_make_payment(jetbeep_easypay_handle_
     auto merchantTransactionId = string(merchant_transaction_id);
     auto paymentToken = string(payment_token);
     auto cashierId = string(cashier_id);
-
     backend->makePayment(merchantTransactionId, paymentToken, amount_in_coins, device_id, cashierId)
       .then([callback, data](EasyPayResult result) {
         jetbeep_easypay_payment_result_t payment_result;

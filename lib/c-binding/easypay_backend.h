@@ -24,8 +24,8 @@ typedef struct {
   const char* error_string;
 } jetbeep_easypay_refund_result_t;
 
-typedef void (*jetbeep_easypay_payment_result_cb)(const jetbeep_easypay_payment_result_t& result, void* data);
-typedef void (*jetbeep_easypay_refund_result_cb)(const jetbeep_easypay_refund_result_t& result, void* data);
+typedef void (*jetbeep_easypay_payment_result_cb)(jetbeep_easypay_payment_result_t result, void* data);
+typedef void (*jetbeep_easypay_refund_result_cb)(jetbeep_easypay_refund_result_t result, void* data);
 
 JETBEEP_API jetbeep_easypay_handle_t jetbeep_easypay_new(jetbeep_easypay_environment_t environment, const char* merchant_secret_key);
 JETBEEP_API void jetbeep_easypay_free(jetbeep_easypay_handle_t handle);

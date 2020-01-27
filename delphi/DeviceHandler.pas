@@ -2,16 +2,21 @@ unit DeviceHandler;
 
 interface
 
-uses System.SysUtils, AutoDevice, JetBeepTypes;
+uses System.SysUtils, AutoDevice, EasyPayBackend, JetBeepTypes;
 
 type
   TDeviceHandler = class(TObject)
   public
+    token: String;
+    easyPayTransactionId: Integer;
+
     procedure BarcodesReceived(barcodes: array of TBarcode);
     procedure TokenReceived(token: String);
     procedure MobileConnected(isConnected: Boolean);
     function StateToString(state: TJetBeepDeviceState): String;
     procedure DeviceStateChanged(state: TJetBeepDeviceState);
+    procedure PaymentResultReceived(result: TEasyPayPaymentResult);
+    procedure RefundResultReceived(result: TEasyPayRefundResult);
   end;
 
 implementation
@@ -31,6 +36,7 @@ end;
 procedure TDeviceHandler.TokenReceived(token: String);
 begin
   Writeln('Token: ', token);
+  Self.token := token;
 end;
 
 procedure TDeviceHandler.MobileConnected(isConnected: Boolean);
@@ -65,6 +71,31 @@ end;
 procedure TDeviceHandler.DeviceStateChanged(state: TJetBeepDeviceState);
 begin
   Writeln('State changed to: ', StateToString(state));
+end;
+
+procedure TDeviceHandler.PaymentResultReceived(result: TEasyPayPaymentResult);
+begin
+  if Length(result.errorString) = 0 then
+  begin
+    Writeln('Payment successful!');
+    easyPayTransactionId := result.easyPayTransactionId;
+  end
+  else
+  begin
+    Writeln('Payment error: ', result.errorString)
+  end;
+end;
+
+procedure TDeviceHandler.RefundResultReceived(result: TEasyPayRefundResult);
+begin
+  if Length(result.errorString) = 0 then
+  begin
+    Writeln('Refund successful!');
+  end
+  else
+  begin
+    Writeln('Refund error: ', result.errorString)
+  end;
 end;
 
 end.
