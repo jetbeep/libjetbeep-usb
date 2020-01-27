@@ -132,11 +132,13 @@ $(PostBuildEvent)]]></PostBuildEvent>
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
         <DCCReference Include="headers\AutoDeviceImport.pas"/>
-        <DCCReference Include="headers\JetbeepTypes.pas"/>
+        <DCCReference Include="headers\JetBeepTypes.pas"/>
         <DCCReference Include="headers\AutoDevice.pas"/>
         <DCCReference Include="DeviceHandler.pas"/>
         <DCCReference Include="headers\EasyPayBackendImport.pas"/>
         <DCCReference Include="headers\EasyPayBackend.pas"/>
+        <DCCReference Include="headers\LoggerImport.pas"/>
+        <DCCReference Include="headers\Logger.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
