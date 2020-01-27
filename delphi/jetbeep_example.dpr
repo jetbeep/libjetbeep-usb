@@ -7,19 +7,29 @@ program jetbeep_example;
 uses
   System.SysUtils,
   AutoDeviceImport in 'headers\AutoDeviceImport.pas',
-  JetbeepTypes in 'headers\JetbeepTypes.pas';
+  JetbeepTypes in 'headers\JetbeepTypes.pas',
+  AutoDevice in 'headers\AutoDevice.pas',
+  DeviceHandler in 'DeviceHandler.pas';
 
 var
-  AutoDevice: TAutoDeviceHandle;
+  AutoDevice: TAutoDevice;
+  DeviceHandler: TDeviceHandler;
 begin
+  AutoDevice:= TAutoDevice.Create;
+  DeviceHandler:= TDeviceHandler.Create;
   try
-    AutoDevice := jetbeep_autodevice_new();
-    jetbeep_autodevice_start(AutoDevice);
+    AutoDevice.Start;
     ReadLn;
-    jetbeep_autodevice_open_session(AutoDevice);
+    AutoDevice.OpenSession;
     ReadLn;
+    AutoDevice.RequestBarcodes(DeviceHandler.BarcodesReceived);
+    ReadLn;
+    AutoDevice.CloseSession;
   except
     on E: Exception do
       Writeln(E.ClassName, ': ', E.Message);
   end;
+  DeviceHandler.Free;
+  AutoDevice.Free;
+  ReadLn;
 end.

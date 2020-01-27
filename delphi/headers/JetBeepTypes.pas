@@ -1,6 +1,7 @@
 unit JetBeepTypes;
 
 interface
+uses SysUtils;
 
 type
 
@@ -9,6 +10,9 @@ TJetBeepError = (
   JETBEEP_ERROR_INVALID_STATE = 1,
   JETBEEP_ERROR_IO = 2
 );
+
+EJetBeepInvalidState = class(Exception);
+EJetBeepIO = class(Exception);
 
 TJetBeepDeviceState = (
   JETBEEP_STATE_INVALID = 0, 
@@ -25,14 +29,15 @@ TJetBeepDeviceState = (
 );
 
 JetBeepBarcode = record
-  barcode: PChar;
+  barcode: PAnsiChar;
   barcodeType: Integer;
 end;
 
-PJetBeepBarcodes = JetBeepBarcode;
+PJetBeepBarcode = ^JetBeepBarcode;
 
-TJetBeepBarcodesCallback = procedure(error: TJetBeepError; barcodes: PJetBeepBarcodes; barcodesSize: Integer); cdecl;
-TJetBeepDeviceStateCallback = procedure(state: TJetBeepDeviceState); cdecl;
+TJetBeepBarcodesCallback = procedure(error: TJetBeepError; barcodes: PJetBeepBarcode; barcodesSize: Integer; data: THandle); cdecl;
+TJetBeepDeviceStateCallback = procedure(state: TJetBeepDeviceState; data: THandle); cdecl;
+TJetBeepMobileConnectedCallback = procedure(connected: Boolean; data: THandle); cdecl;
 
 implementation
 

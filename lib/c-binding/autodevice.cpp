@@ -62,11 +62,12 @@ JETBEEP_API jetbeep_error_t jetbeep_autodevice_close_session(jetbeep_autodevice_
 }
 
 JETBEEP_API jetbeep_error_t jetbeep_autodevice_request_barcodes(jetbeep_autodevice_handle_t handle,
-                                                                jetbeep_autodevice_barcode_result_cb callback) {
+                                                                jetbeep_autodevice_barcode_result_cb callback,
+                                                                void* data) {
   auto autodevice = (AutoDevice*)handle;
   try {
     autodevice->requestBarcodes()
-      .then([callback](vector<Barcode> barcodes) {
+      .then([callback, data](vector<Barcode> barcodes) {
         jetbeep_barcode_t* barcodesT = (jetbeep_barcode_t*)malloc(sizeof(jetbeep_barcode_t) * barcodes.size());
         size_t i = 0;
         for (auto it = barcodes.begin(); it != barcodes.end(); ++it) {
@@ -74,10 +75,10 @@ JETBEEP_API jetbeep_error_t jetbeep_autodevice_request_barcodes(jetbeep_autodevi
           barcodesT[i].type = (int)(*it).type;
           ++i;
         }
-        callback(JETBEEP_NO_ERROR, barcodesT, barcodes.size());
+        callback(JETBEEP_NO_ERROR, barcodesT, barcodes.size(), data);
         free(barcodesT);
       })
-      .catchError([callback](exception_ptr error) { callback(JETBEEP_ERROR_IO, nullptr, 0); });
+      .catchError([callback, data](exception_ptr error) { callback(JETBEEP_ERROR_IO, nullptr, 0, data); });
   } catch (const Errors::InvalidState&) {
     return JETBEEP_ERROR_INVALID_STATE;
   } catch (...) {
@@ -102,6 +103,7 @@ JETBEEP_API jetbeep_error_t jetbeep_autodevice_create_payment(jetbeep_autodevice
                                                               uint32_t amount,
                                                               const char* transaction_id,
                                                               jetbeep_autodevice_payment_result_cb callback,
+                                                              void* data,
                                                               const char* cashier_id,
                                                               const jetbeep_payment_metadata_t* metadata,
                                                               size_t metadata_size) {
@@ -119,8 +121,8 @@ JETBEEP_API jetbeep_error_t jetbeep_autodevice_create_payment(jetbeep_autodevice
     }
 
     autodevice->createPayment(amount, transactionId, cashierId, metaData)
-      .then([callback] { callback(JETBEEP_NO_ERROR); })
-      .catchError([callback](exception_ptr) { callback(JETBEEP_ERROR_IO); });
+      .then([callback, data] { callback(JETBEEP_NO_ERROR, data); })
+      .catchError([callback, data](exception_ptr) { callback(JETBEEP_ERROR_IO, data); });
   } catch (const Errors::InvalidState&) {
     return JETBEEP_ERROR_INVALID_STATE;
   } catch (...) {
@@ -145,6 +147,7 @@ JETBEEP_API jetbeep_error_t jetbeep_autodevice_create_payment_token(jetbeep_auto
                                                                     uint32_t amount,
                                                                     const char* transaction_id,
                                                                     jetbeep_autodevice_payment_token_result_cb callback,
+                                                                    void* data,
                                                                     const char* cashier_id,
                                                                     const jetbeep_payment_metadata_t* metadata,
                                                                     size_t metadata_size) {
@@ -162,8 +165,8 @@ JETBEEP_API jetbeep_error_t jetbeep_autodevice_create_payment_token(jetbeep_auto
     }
 
     autodevice->createPaymentToken(amount, transactionId, cashierId, metaData)
-      .then([callback](string token) { callback(JETBEEP_NO_ERROR, token.c_str()); })
-      .catchError([callback](exception_ptr) { callback(JETBEEP_ERROR_IO, NULL); });
+      .then([callback, data](string token) { callback(JETBEEP_NO_ERROR, token.c_str(), data); })
+      .catchError([callback, data](exception_ptr) { callback(JETBEEP_ERROR_IO, NULL, data); });
   } catch (const Errors::InvalidState&) {
     return JETBEEP_ERROR_INVALID_STATE;
   } catch (...) {
@@ -220,9 +223,10 @@ JETBEEP_API jetbeep_state_t jetbeep_autodevice_state(jetbeep_autodevice_handle_t
 }
 
 JETBEEP_API void jetbeep_autodevice_set_payment_error_callback(jetbeep_autodevice_handle_t handle,
-                                                               jetbeep_autodevice_payment_error_cb callback) {
+                                                               jetbeep_autodevice_payment_error_cb callback,
+                                                               void* data) {
   auto autodevice = (AutoDevice*)handle;
-  autodevice->paymentErrorCallback = [callback](const PaymentError& error) {
+  autodevice->paymentErrorCallback = [callback, data](const PaymentError& error) {
     jetbeep_error_t error_code;
     switch (error) {
     case PaymentError::discarded:
@@ -253,26 +257,31 @@ JETBEEP_API void jetbeep_autodevice_set_payment_error_callback(jetbeep_autodevic
       error_code = JETBEEP_ERROR_PAYMENT_UNKNOWN;
       break;
     }
-    callback(error_code);
+    callback(error_code, data);
   };
 }
 
-JETBEEP_API void jetbeep_autodevice_set_state_callback(jetbeep_autodevice_handle_t handle, jetbeep_autodevice_state_cb callback) {
+JETBEEP_API void jetbeep_autodevice_set_state_callback(jetbeep_autodevice_handle_t handle,
+                                                       jetbeep_autodevice_state_cb callback,
+                                                       void* data) {
   auto autodevice = (AutoDevice*)handle;
-  autodevice->stateCallback = [callback](AutoDeviceState state, exception_ptr) { callback((jetbeep_state_t)state); };
+  autodevice->stateCallback = [callback, data](AutoDeviceState state, exception_ptr) {
+    callback((jetbeep_state_t)state, data);
+  };
 }
 
 JETBEEP_API void jetbeep_autodevice_set_mobile_connected_callback(jetbeep_autodevice_handle_t handle,
-                                                                  jetbeep_autodevice_mobile_connected_cb callback) {
+                                                                  jetbeep_autodevice_mobile_connected_cb callback,
+                                                                  void* data) {
   auto autodevice = (AutoDevice*)handle;
-  autodevice->mobileCallback = [callback](const SerialMobileEvent& event) {
-      switch (event) {
-          case SerialMobileEvent::connected:
-            callback(true);
-          break;
-          case SerialMobileEvent::disconnected:
-            callback(false);
-          break;
-      }
+  autodevice->mobileCallback = [callback, data](const SerialMobileEvent& event) {
+    switch (event) {
+    case SerialMobileEvent::connected:
+      callback(true, data);
+      break;
+    case SerialMobileEvent::disconnected:
+      callback(false, data);
+      break;
+    }
   };
 }
