@@ -1,13 +1,8 @@
-add_executable(dfu_module dfu_main.cpp nrfdfu/log.c nrfdfu/serialtty.c nrfdfu/dfu.c nrfdfu/dfuserial.c nrfdfu/slip.c)
+add_executable(dfu_module dfu_main.cpp crc32.c delay_connect.c dfu.c dfu_serial.c slip_enc.c uart_drv.c uart_slip.c zip.c)
 
-target_include_directories(dfu_module PUBLIC ${BOOST_SOURCE_DIR} nrfdfu/)
+target_include_directories(dfu_module PUBLIC ${BOOST_SOURCE_DIR})
 
-find_package(PkgConfig REQUIRED)
-pkg_search_module(LIBZIP REQUIRED libzip)
-pkg_search_module(JSONC REQUIRED json-c)
-find_package(ZLIB)
-
-target_link_libraries(dfu_module $<TARGET_OBJECTS:jetbeep_obj> ${ZLIB_LIBRARIES} ${LIBZIP_LIBRARIES} ${JSONC_LIBRARIES})
+target_link_libraries(dfu_module $<TARGET_OBJECTS:jetbeep_obj>)
 
 if (APPLE) 
     find_package(OpenSSL REQUIRED)
