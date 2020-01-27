@@ -2,7 +2,7 @@ unit AutoDevice;
 
 interface
 
-uses classes, System.SysUtils, AutoDeviceImport, JetBeepTypes;
+uses classes, System.SysUtils, AutoDeviceImport, JetBeepTypes, VersionChecker;
 
 type
   TBarcode = record
@@ -53,6 +53,7 @@ implementation
 
 constructor TAutoDevice.Create;
 begin
+  TVersionChecker.check;
   inherited;
   handle := jetbeep_autodevice_new;
   barcodesHandler := nil;

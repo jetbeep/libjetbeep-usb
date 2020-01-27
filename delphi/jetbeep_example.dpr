@@ -12,7 +12,8 @@ uses
   EasyPayBackendImport in 'headers\EasyPayBackendImport.pas',
   EasyPayBackend in 'headers\EasyPayBackend.pas',
   LoggerImport in 'headers\LoggerImport.pas',
-  Logger in 'headers\Logger.pas';
+  Logger in 'headers\Logger.pas',
+  VersionChecker in 'headers\VersionChecker.pas';
 
 var
   AutoDevice: TAutoDevice;

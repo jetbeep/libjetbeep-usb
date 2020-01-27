@@ -2,7 +2,8 @@ unit EasyPayBackend;
 
 interface
 
-uses classes, System.SysUtils, EasyPayBackendImport, JetBeepTypes;
+uses classes, System.SysUtils, EasyPayBackendImport, JetBeepTypes,
+  VersionChecker;
 
 type
   TEasyPayPaymentResult = record
@@ -86,6 +87,7 @@ end;
 constructor TEasyPayBackend.Create(environment: TEasyPayEnvironment;
   merchantKey: String);
 begin
+  TVersionChecker.check;
   inherited Create;
   handle := jetbeep_easypay_new(environment,
     PAnsiChar(AnsiString(merchantKey)));
@@ -103,7 +105,6 @@ procedure TEasyPayBackend.MakePayment(merchantTransactionId: String;
 var
   error: TCJetBeepError;
 begin
-  Writeln(THandle(Self));
   error := jetbeep_easypay_make_payment(handle,
     PAnsiChar(AnsiString(merchantTransactionId)),
     PAnsiChar(AnsiString(paymentToken)), amountInCoins, deviceId,

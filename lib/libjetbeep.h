@@ -5,6 +5,7 @@
 extern "C" {
 #endif
 
+#include "c-binding/version.h"
 #include "c-binding/autodevice.h"
 #include "c-binding/easypay_backend.h"
 #include "c-binding/logger.h"

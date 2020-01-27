@@ -11,6 +11,7 @@ type
 
   EJetBeepInvalidState = class(Exception);
   EJetBeepIO = class(Exception);
+  EJetBeepInvalidVersion = class(Exception);
 
   TJetBeepDeviceState = (JETBEEP_STATE_INVALID = 0,
     JETBEEP_STATE_FIRMWARE_VERSION_NOT_SUPPORTED,
