@@ -10,7 +10,8 @@ uses
   JetbeepTypes in 'headers\JetbeepTypes.pas',
   AutoDevice in 'headers\AutoDevice.pas',
   DeviceHandler in 'DeviceHandler.pas',
-  EasyPayBackendImport in 'headers\EasyPayBackendImport.pas';
+  EasyPayBackendImport in 'headers\EasyPayBackendImport.pas',
+  EasyPayBackend in 'headers\EasyPayBackend.pas';
 
 var
   AutoDevice: TAutoDevice;

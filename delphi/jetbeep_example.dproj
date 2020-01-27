@@ -136,6 +136,7 @@ $(PostBuildEvent)]]></PostBuildEvent>
         <DCCReference Include="headers\AutoDevice.pas"/>
         <DCCReference Include="DeviceHandler.pas"/>
         <DCCReference Include="headers\EasyPayBackendImport.pas"/>
+        <DCCReference Include="headers\EasyPayBackend.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>

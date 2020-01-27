@@ -10,11 +10,6 @@ type
       BarcodeType: Integer;
     end;
 
-    TMetadata = record
-      Key: string;
-      Value: string;
-    end;
-
     TBarcodesHandler = reference to procedure (barcodes: array of TBarcode);
     TPaymentTokenHandler = reference to procedure (token: string);
     TMobileConnectedHandler = reference to procedure (isConnected: Boolean);

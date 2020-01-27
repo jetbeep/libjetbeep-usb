@@ -21,6 +21,7 @@ JETBEEP_API jetbeep_error_t jetbeep_easypay_make_payment(jetbeep_easypay_handle_
                                                          uint32_t amount_in_coins,
                                                          uint32_t device_id,
                                                          jetbeep_easypay_payment_result_cb callback,
+                                                         void* data,
                                                          const char* cashier_id) {
   auto backend = (EasyPayBackend*)handle;
   try {
@@ -29,7 +30,7 @@ JETBEEP_API jetbeep_error_t jetbeep_easypay_make_payment(jetbeep_easypay_handle_
     auto cashierId = string(cashier_id);
 
     backend->makePayment(merchantTransactionId, paymentToken, amount_in_coins, device_id, cashierId)
-      .then([callback](EasyPayResult result) {
+      .then([callback, data](EasyPayResult result) {
         jetbeep_easypay_payment_result_t payment_result;
         if (result.isError()) {
           memset(&payment_result, 0, sizeof(payment_result));
@@ -39,13 +40,13 @@ JETBEEP_API jetbeep_error_t jetbeep_easypay_make_payment(jetbeep_easypay_handle_
           payment_result.easypay_transaction_id = result.TransactionId;
           payment_result.error_string = nullptr;
         }
-        callback(payment_result);
+        callback(payment_result, data);
       })
-      .catchError([callback](const exception_ptr&) {
+      .catchError([callback, data](const exception_ptr&) {
         jetbeep_easypay_payment_result_t payment_result;
         memset(&payment_result, 0, sizeof(payment_result));
         payment_result.error_string = "Network error";
-        callback(payment_result);
+        callback(payment_result, data);
       });
   } catch (...) {
     return JETBEEP_ERROR_IO;
@@ -61,6 +62,7 @@ JETBEEP_API jetbeep_error_t jetbeep_easypay_make_payment_partials(jetbeep_easypa
                                                                   jetbeep_payment_metadata_t* metadata,
                                                                   size_t metadata_size,
                                                                   jetbeep_easypay_payment_result_cb callback,
+                                                                  void* data,
                                                                   const char* cashier_id) {
   auto backend = (EasyPayBackend*)handle;
   try {
@@ -76,7 +78,7 @@ JETBEEP_API jetbeep_error_t jetbeep_easypay_make_payment_partials(jetbeep_easypa
     }
 
     backend->makePaymentPartials(merchantTransactionId, paymentToken, amount_in_coins, device_id, metaData, cashierId)
-      .then([callback](EasyPayResult result) {
+      .then([callback, data](EasyPayResult result) {
         jetbeep_easypay_payment_result_t payment_result;
         if (result.isError()) {
           memset(&payment_result, 0, sizeof(payment_result));
@@ -86,13 +88,13 @@ JETBEEP_API jetbeep_error_t jetbeep_easypay_make_payment_partials(jetbeep_easypa
           payment_result.easypay_transaction_id = result.TransactionId;
           payment_result.error_string = nullptr;
         }
-        callback(payment_result);
+        callback(payment_result, data);
       })
-      .catchError([callback](const exception_ptr&) {
+      .catchError([callback, data](const exception_ptr&) {
         jetbeep_easypay_payment_result_t payment_result;
         memset(&payment_result, 0, sizeof(payment_result));
         payment_result.error_string = "Network error";
-        callback(payment_result);
+        callback(payment_result, data);
       });
   } catch (...) {
     return JETBEEP_ERROR_IO;
@@ -104,11 +106,12 @@ JETBEEP_API jetbeep_error_t jetbeep_easypay_make_refund(jetbeep_easypay_handle_t
                                                         long easypay_transaction_id,
                                                         uint32_t amount_in_coins,
                                                         uint32_t device_id,
-                                                        jetbeep_easypay_refund_result_cb callback) {
+                                                        jetbeep_easypay_refund_result_cb callback,
+                                                        void* data) {
   auto backend = (EasyPayBackend*)handle;
   try {
     backend->makeRefund(easypay_transaction_id, amount_in_coins, device_id)
-      .then([callback](EasyPayResult result) {
+      .then([callback, data](EasyPayResult result) {
         jetbeep_easypay_refund_result_t refund_result;
 
         if (result.isError()) {
@@ -116,13 +119,13 @@ JETBEEP_API jetbeep_error_t jetbeep_easypay_make_refund(jetbeep_easypay_handle_t
         } else {
           refund_result.error_string = nullptr;
         }
-        callback(refund_result);
+        callback(refund_result, data);
       })
-      .catchError([callback](exception_ptr) {
+      .catchError([callback, data](exception_ptr) {
         jetbeep_easypay_refund_result_t refund_result;
 
         refund_result.error_string = "Network error";
-        callback(refund_result);
+        callback(refund_result, data);
       });
   } catch (...) {
     return JETBEEP_ERROR_IO;
@@ -134,12 +137,13 @@ JETBEEP_API jetbeep_error_t jetbeep_easypay_make_refund_partials(jetbeep_easypay
                                                                  const char* payment_request_uid,
                                                                  uint32_t amount_in_coins,
                                                                  uint32_t device_id,
-                                                                 jetbeep_easypay_refund_result_cb callback) {
+                                                                 jetbeep_easypay_refund_result_cb callback,
+                                                                 void* data) {
   auto backend = (EasyPayBackend*)handle;
   try {
     auto paymentRequestId = string(payment_request_uid);
     backend->makeRefundPartials(payment_request_uid, amount_in_coins, device_id)
-      .then([callback](EasyPayResult result) {
+      .then([callback, data](EasyPayResult result) {
         jetbeep_easypay_refund_result_t refund_result;
 
         if (result.isError()) {
@@ -147,13 +151,13 @@ JETBEEP_API jetbeep_error_t jetbeep_easypay_make_refund_partials(jetbeep_easypay
         } else {
           refund_result.error_string = nullptr;
         }
-        callback(refund_result);
+        callback(refund_result, data);
       })
-      .catchError([callback](exception_ptr) {
+      .catchError([callback, data](exception_ptr) {
         jetbeep_easypay_refund_result_t refund_result;
 
         refund_result.error_string = "Network error";
-        callback(refund_result);
+        callback(refund_result, data);
       });
   } catch (...) {
     return JETBEEP_ERROR_IO;

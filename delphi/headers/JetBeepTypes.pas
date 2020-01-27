@@ -61,9 +61,13 @@ TCJetBeepBarcodesCallback = procedure(error: TCJetBeepError; barcodes: PJetBeepB
 TCJetBeepPaymentTokenCallback = procedure(error: TCJetBeepError; token: PAnsiChar; data: THandle); cdecl;
 TCJetBeepDeviceStateCallback = procedure(state: TJetBeepDeviceState; data: THandle); cdecl;
 TCJetBeepMobileConnectedCallback = procedure(connected: Boolean; data: THandle); cdecl;
-TEasyPayPaymentResultCallback = procedure(result: TCEasyPayPaymentResult); cdecl;
-TEasyPayRefundResultCallback = procedure(result: TCEasyPayRefundResult); cdecl;
+TEasyPayPaymentResultCallback = procedure(result: TCEasyPayPaymentResult; data: THandle); cdecl;
+TEasyPayRefundResultCallback = procedure(result: TCEasyPayRefundResult; data: THandle); cdecl;
 
+TMetadata = record
+  Key: string;
+  Value: string;
+end;
 
 implementation
 
