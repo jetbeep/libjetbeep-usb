@@ -6,7 +6,7 @@
 
 # Building from sources
 
-#### Required 3rd-party libraries
+#### Required 3rd-party libraries (Linux only)
 
 * `libopenssl` - in order to make HTTPS requests to EasyPay backend
 * `libcurl4-openssl` - optional, will fall-back to native implementation if not found
@@ -14,7 +14,6 @@
 #### Required tools
 
 * cmake
-* Mingw-w64 (Windows only)
 * C++17 compiler support
 * Java Runtime
 * mdpdf - for generating documentation (could be easily installed as: `npm i -g mdpdf`)
