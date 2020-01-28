@@ -7,6 +7,8 @@ add_definitions("-DJETBEEP_VERSION=\"${JETBEEP_VERSION}\""
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(BOOST_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/boost_1_71_0)
+
 add_subdirectory(lib)
 
 add_subdirectory(examples/detection-and-serial)
