@@ -47,16 +47,6 @@
 
 static uint8_t uart_slip_buff[UART_SLIP_BUFF_SIZE];
 
-int uart_slip_open(uart_drv_t *p_uart)
-{
-	return uart_drv_open(p_uart);
-}
-
-int uart_slip_close(uart_drv_t *p_uart)
-{
-	return uart_drv_close(p_uart);
-}
-
 int uart_slip_send(uart_drv_t *p_uart, const uint8_t *pData, uint32_t nSize)
 {
 	int err_code = 0;

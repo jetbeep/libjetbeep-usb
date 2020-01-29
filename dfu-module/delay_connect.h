@@ -49,6 +49,7 @@ extern "C" {
 #endif  /* __cplusplus */
 
 int delay_connect(void);
+void delay_boot(void);
 
 #ifdef __cplusplus
 }   /* ... extern "C" */

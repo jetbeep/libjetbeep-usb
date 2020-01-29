@@ -9,7 +9,7 @@ using namespace boost::asio;
 #define ENDING_LEN 2
 
 DFU::SerialDevice::SerialDevice()
-  : m_port(m_io_service), m_log("serial_device"), m_state(SerialDeviceState::idle), m_timer(m_io_service) {
+  : m_port(m_io_service), m_log("serial_device") {
 }
 
 DFU::SerialDevice::~SerialDevice() {
@@ -19,12 +19,25 @@ DFU::SerialDevice::~SerialDevice() {
   }
 }
 
-string DFU::SerialDevice::getResponseStr() {
-  read_until(m_port, m_readBuffer, "\r\n");
-  asio::streambuf::const_buffers_type bufs = m_readBuffer.data();
-  string response(asio::buffers_begin(bufs), asio::buffers_end(bufs));
-  m_readBuffer.consume(m_readBuffer.size());
-  return response.substr(0, response.size() - ENDING_LEN);;
+size_t DFU::SerialDevice::readBytes(void * p_buff, size_t read_size = 1) {
+  if (!m_port.is_open()) {
+    throw runtime_error("readBytes: port closed");
+  }
+  size_t resSize = asio::read(m_port, asio::buffer(p_buff, read_size));
+  m_log.d() << "RX: " << resSize << "bytes" <<  Logger::endl;
+  return resSize;
+}
+
+void DFU::SerialDevice::writeBytes(void * p_data, size_t size) {
+  if (!m_port.is_open()) {
+    throw runtime_error("writeBytes: port closed");
+  }
+  size_t resSize = asio::write(m_port, asio::buffer(p_data, size));
+  m_log.d() << "TX: " << resSize << "bytes" <<  Logger::endl;
+  if (resSize != size) {
+    m_log.e() << "write less bytes than expected" << Logger::endl;
+    throw runtime_error("write less bytes than expected");
+  }
 }
 
 void DFU::SerialDevice::open(const string& path) {
@@ -38,23 +51,39 @@ void DFU::SerialDevice::close() {
 }
 
 uint32_t DFU::SerialDevice::getDeviceId() {
-  string getCmd = "GET deviceId" ENDING;
-  write(m_port, asio::buffer(getCmd));
-  string response = getResponseStr();
-  auto responseParts = Utils::splitString(response);
-  if (responseParts.size() != 3) {
-    throw runtime_error("Invalid response for deviceId");
-  }
-  return std::stoul(responseParts.at(2), NULL, 16);
+  return std::stoul(getCmd("deviceId"), NULL, 16);
 }
 
 string DFU::SerialDevice::getFirmwareVer() {
-  string getCmd = "GET version" ENDING;
-  write(m_port, asio::buffer(getCmd));
+  return getCmd("version");
+}
+
+string DFU::SerialDevice::getPublicKey() {
+  return getCmd("pubKey");
+}
+
+void DFU::SerialDevice::enderDFUMode() {
+  string cmd = "ENTER_DFU_MODE" ENDING;
+  write(m_port, asio::buffer(cmd));
+  m_log.d() << "TX: " <<  cmd;
+}
+
+string DFU::SerialDevice::getResponseStr() {
+  read_until(m_port, m_readBuffer, ENDING);
+  asio::streambuf::const_buffers_type bufs = m_readBuffer.data();
+  string response(asio::buffers_begin(bufs), asio::buffers_end(bufs));
+  m_readBuffer.consume(m_readBuffer.size());
+  return response.substr(0, response.size() - ENDING_LEN);;
+}
+
+string DFU::SerialDevice::getCmd(string prop) {
+  string cmd = "GET " + prop + ENDING;
+  write(m_port, asio::buffer(cmd));
+  m_log.d() << "TX: " <<  cmd;
   string response = getResponseStr();
   auto responseParts = Utils::splitString(response);
   if (responseParts.size() != 3) {
-    throw runtime_error("Invalid response for firmwareVer");
+    throw runtime_error("Invalid response for " + prop);
   }
   return responseParts.at(2);
 }

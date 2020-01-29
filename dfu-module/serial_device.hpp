@@ -16,7 +16,6 @@ using namespace std;
 
 namespace DFU {
 
-  enum class SerialDeviceState { idle, executeInProgress };
 
   class SerialDevice {
   public:
@@ -28,17 +27,20 @@ namespace DFU {
 
     uint32_t getDeviceId();
     string getFirmwareVer();
+    string getPublicKey();
+  
+    void enderDFUMode();
 
+    size_t readBytes(void * p_data, size_t size);
+    void writeBytes(void * p_data, size_t size);
   private:
     string getResponseStr();
+    string getCmd(string prop);
 
-    SerialDeviceState m_state;
-    std::recursive_mutex m_mutex;
     boost::asio::streambuf m_readBuffer;
     JetBeep::Logger m_log;
     boost::asio::io_service m_io_service;
     boost::asio::serial_port m_port;
-    boost::asio::deadline_timer m_timer;
   };
 } // namespace JetBeep
 

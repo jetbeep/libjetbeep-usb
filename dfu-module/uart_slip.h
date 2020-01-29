@@ -47,26 +47,11 @@
 #include "uart_drv.h"
 
 
-#ifdef __cplusplus
-extern "C" {
-#endif  /* __cplusplus */
-
-
 #define UART_SLIP_SIZE_MAX		128
-
-
-int uart_slip_open(uart_drv_t *p_uart);
-
-int uart_slip_close(uart_drv_t *p_uart);
 
 int uart_slip_send(uart_drv_t *p_uart, const uint8_t *pData, uint32_t nSize);
 
 int uart_slip_receive(uart_drv_t *p_uart, uint8_t *pData, uint32_t nSize, uint32_t *pSize);
-
-
-#ifdef __cplusplus
-}   /* ... extern "C" */
-#endif  /* __cplusplus */
 
 
 #endif // _INC_UART_SLIP

@@ -54,19 +54,8 @@ extern "C" {
 
 
 typedef struct {
-	const char *p_PortName;
-
-#ifdef WIN32
-	HANDLE portHandle;
-#else
-	int tty_fd;
-#endif
+    void * p_serial_device;
 } uart_drv_t;
-
-
-int uart_drv_open(uart_drv_t *p_uart);
-
-int uart_drv_close(uart_drv_t *p_uart);
 
 int uart_drv_send(uart_drv_t *p_uart, const uint8_t *pData, uint32_t nSize);
 

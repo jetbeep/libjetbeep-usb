@@ -1,4 +1,6 @@
-add_executable(dfu_module dfu_main.cpp crc32.c delay_connect.c dfu.c dfu_serial.c slip_enc.c uart_drv.c uart_slip.c zip.c logging.c jsmn.c serial_device.cpp)
+add_executable(dfu_module dfu_main.cpp crc32.c delay_connect.c dfu.c dfu_serial.c slip_enc.c uart_drv.cpp uart_slip.c zip.c logging.c jsmn.c serial_device.cpp)
+
+#set_source_files_properties( uart_drv.cpp dfu.c uart_slip.c dfu_serial.c PROPERTIES LANGUAGE CXX )
 
 target_include_directories(dfu_module PUBLIC ${BOOST_SOURCE_DIR})
 
