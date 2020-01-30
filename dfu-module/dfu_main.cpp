@@ -8,6 +8,7 @@
 #include <future>
 #include "../lib/libjetbeep.hpp"
 #include "./serial_device.hpp"
+#include "./packages_search.hpp"
 
 using namespace std;
 using namespace JetBeep;
@@ -35,44 +36,50 @@ static DeviceCandidate findJetBeepDeviceCandidate() {
   return candidate;
 }
 
+static void prepareDevice(DFU::SerialDevice& serialDevice) {
+  if (serialDevice.isBootloaderMode()) {
+    return;
+  }
+  auto deviceId = serialDevice.getDeviceId();
+  auto fwVer = serialDevice.getFirmwareVer();
+  l.d() << "DeviceID: " << deviceId << " Firmware: " << fwVer << Logger::endl;
+  serialDevice.enterDFUMode();
+  delay_boot();
+}
+
+
+
 int main(int argc, char* argv[]) {
   Logger::coutEnabled = true;
   Logger::level = LoggerLevel::verbose;
   int err_code = 0;
   string devicePath;
   DFU::SerialDevice serialDevice = DFU::SerialDevice();
+  vector<string> zipPackages;
 
   try {
+    zipPackages = findZipPackages();
     devicePath = findJetBeepDeviceCandidate().path;
     serialDevice.open(devicePath);
     l.d() << "Port opened" << Logger::endl;
-    try {
-      //hack to clear receive buffer on device
-      (void) serialDevice.getDeviceId();
-    } catch (...) { }
-    auto deviceId = serialDevice.getDeviceId();
-    auto fwVer = serialDevice.getFirmwareVer();
-    l.d() << "DeviceID: " <<  deviceId << " Firmware: " << fwVer << Logger::endl;
-    serialDevice.enderDFUMode();
-    delay_boot();
+    prepareDevice(serialDevice);
   } catch (const exception& e) {
     l.e() << e.what() << Logger::endl;
+    serialDevice.close();
     return -1;
   }
 
-  // TODO implement zip and search
-  string zipPath = "/home/yevhenii/jetbeep/DFU tests/latest/v15_3/1.1.2-beta/serial-dfu-52832/1.1.2.b_serial_dfu_52832_app_update_part_2.zip";
+  string zipPath = zipPackages.at(0);
 
   logger_set_info_level(LOGGER_INFO_LVL_0);
-
 
   uart_drv_t uart_drv = {&serialDevice};
   if (!err_code) {
     dfu_param_t dfu_param;
 
     dfu_param.p_uart = &uart_drv;
-    dfu_param.p_pkg_file = (char *) zipPath.c_str();
-    err_code = dfu_send_package(&dfu_param);
+    dfu_param.p_pkg_file = (char*)zipPath.c_str();
+    //err_code = dfu_send_package(&dfu_param);
   }
 
   serialDevice.close();

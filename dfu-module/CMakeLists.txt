@@ -1,8 +1,24 @@
-add_executable(dfu_module dfu_main.cpp crc32.c delay_connect.c dfu.c dfu_serial.c slip_enc.c uart_drv.cpp uart_slip.c zip.c logging.c jsmn.c serial_device.cpp)
+aux_source_directory(${BOOST_SOURCE_DIR}/libs/filesystem/src BOOST_FILESYSTEM_SOURCES) 
+
+add_executable(dfu_module ${BOOST_FILESYSTEM_SOURCES} 
+            dfu_main.cpp 
+            serial_device.cpp
+            packages_search.cpp
+            crc32.c 
+            delay_connect.c
+            dfu.c 
+            dfu_serial.c 
+            slip_enc.c 
+            uart_drv.cpp 
+            uart_slip.c 
+            zip.c 
+            logging.c 
+            jsmn.c 
+)
 
 #set_source_files_properties( uart_drv.cpp dfu.c uart_slip.c dfu_serial.c PROPERTIES LANGUAGE CXX )
 
-target_include_directories(dfu_module PUBLIC ${BOOST_SOURCE_DIR})
+target_include_directories(dfu_module PUBLIC ${BOOST_SOURCE_DIR} ${BOOST_SOURCE_DIR}/lib/filesystem/)
 
 target_link_libraries(dfu_module $<TARGET_OBJECTS:jetbeep_obj>)
 

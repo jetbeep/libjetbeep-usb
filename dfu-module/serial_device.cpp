@@ -1,4 +1,6 @@
 #include "serial_device.hpp"
+#include <future>
+#include <chrono>
 
 using namespace std;
 using namespace JetBeep;
@@ -62,10 +64,18 @@ string DFU::SerialDevice::getPublicKey() {
   return getCmd("pubKey");
 }
 
-void DFU::SerialDevice::enderDFUMode() {
+void DFU::SerialDevice::enterDFUMode() {
   string cmd = "ENTER_DFU_MODE" ENDING;
   write(m_port, asio::buffer(cmd));
   m_log.d() << "TX: " <<  cmd;
+}
+
+bool DFU::SerialDevice::isBootloaderMode() {
+  //TODO reimplement
+  auto handle = std::async(std::launch::async, [this]{ (void) getDeviceId(); });
+  std::future_status status = handle.wait_for(std::chrono::milliseconds(300));
+  //asume that device is in bootloader mode if it does't respond
+  return status == std::future_status::timeout;
 }
 
 string DFU::SerialDevice::getResponseStr() {

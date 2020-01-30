@@ -1,5 +1,5 @@
-#ifndef SERIAL_DEVICE_IMP__H
-#define SERIAL_DEVICE_IMP__H
+#ifndef DFU_SERIAL_DEVICE__HPP
+#define DFU_SERIAL_DEVICE__HPP
 
 #include "../lib/libjetbeep.hpp"
 #include "serial_device.hpp"
@@ -29,10 +29,12 @@ namespace DFU {
     string getFirmwareVer();
     string getPublicKey();
   
-    void enderDFUMode();
+    void enterDFUMode();
 
     size_t readBytes(void * p_data, size_t size);
     void writeBytes(void * p_data, size_t size);
+
+    bool isBootloaderMode();
   private:
     string getResponseStr();
     string getCmd(string prop);
