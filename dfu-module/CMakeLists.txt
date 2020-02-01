@@ -1,5 +1,7 @@
 aux_source_directory(${BOOST_SOURCE_DIR}/libs/filesystem/src BOOST_FILESYSTEM_SOURCES) 
 
+add_definitions(-DWIN32_LEAN_AND_MEAN )
+
 add_executable(dfu_module ${BOOST_FILESYSTEM_SOURCES} 
             dfu_main.cpp 
             serial_device.cpp

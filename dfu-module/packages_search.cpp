@@ -24,8 +24,9 @@ vector<string> findZipPackages() {
       if (!is_regular_file(x)) { continue; }
       smatch match;
       auto path = x.path();
+      const string fileName = path.filename().string();
       
-      if (regex_match(path.filename().string(), match, pkgNameRe) &&  match.size() == 3) {
+      if (std::regex_match(fileName, match, pkgNameRe) &&  match.size() == 3) {
           if (match[2] == "1") {
               part1Path = path.string();
           } else if (match[2] == "2") {

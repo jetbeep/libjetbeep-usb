@@ -59,6 +59,9 @@ int main(int argc, char* argv[]) {
 
   try {
     zipPackages = findZipPackages();
+    for (auto p : zipPackages) {
+      l.i() << "Package found: " << p << Logger::endl;
+    }
     devicePath = findJetBeepDeviceCandidate().path;
     serialDevice.open(devicePath);
     l.d() << "Port opened" << Logger::endl;
