@@ -47,8 +47,6 @@ static void prepareDevice(DFU::SerialDevice& serialDevice) {
   delay_boot();
 }
 
-
-
 int main(int argc, char* argv[]) {
   Logger::coutEnabled = true;
   Logger::level = LoggerLevel::verbose;
@@ -72,17 +70,29 @@ int main(int argc, char* argv[]) {
     return -1;
   }
 
-  string zipPath = zipPackages.at(0);
+  if (zipPackages.size() == 0) {
+    string tmp;
+    l.w() << "No firmware update packages were found!" << Logger::endl;
+    cin >> tmp;
+  } else {
+    Logger dfuLogger("dfu");
+    for (string zipPath : zipPackages) {
+      logger_set_backend(&dfuLogger);
 
-  logger_set_info_level(LOGGER_INFO_LVL_0);
+      uart_drv_t uart_drv = {&serialDevice};
+      if (!err_code) {
+        dfu_param_t dfu_param;
 
-  uart_drv_t uart_drv = {&serialDevice};
-  if (!err_code) {
-    dfu_param_t dfu_param;
-
-    dfu_param.p_uart = &uart_drv;
-    dfu_param.p_pkg_file = (char*)zipPath.c_str();
-    //err_code = dfu_send_package(&dfu_param);
+        dfu_param.p_uart = &uart_drv;
+        dfu_param.p_pkg_file = (char*)zipPath.c_str();
+        err_code = dfu_send_package(&dfu_param);
+      }
+    }
+  }
+  
+  {
+    l.i() << "Processing device configuration" << Logger::endl;
+    //TODO
   }
 
   serialDevice.close();

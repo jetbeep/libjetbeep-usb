@@ -14,7 +14,7 @@ add_executable(dfu_module ${BOOST_FILESYSTEM_SOURCES}
             uart_drv.cpp 
             uart_slip.c 
             zip.c 
-            logging.c 
+            logging.cpp 
             jsmn.c 
 )
 
