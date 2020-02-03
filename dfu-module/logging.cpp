@@ -66,3 +66,25 @@ void logger_set_backend(void* logger) {
 int logger_get_info_level() {
 	return LOGGER_INFO_LVL_3; //allways return max, due to unnecessary checks in related code
 }
+
+static uint32_t progress_obj_size = 0;
+static uint32_t progress_obj_pos = 0;
+
+void logger_progress_start(void * p_object, uint32_t total_size) {
+  logger_info_1("---------------------");
+  logger_info_1("Image upload started");
+  logger_info_1("upload progress: 0\%");
+  progress_obj_pos = 0;
+  progress_obj_size = total_size;
+}
+void logger_progress_log(uint32_t size, uint32_t pos) {
+  progress_obj_pos += pos;
+  int progress = (int) progress_obj_pos / progress_obj_size;
+  logger_info_1("upload progress: %3i\%", progress);
+}
+void logger_progress_end(int error_code) {
+  if (error_code != 0) {
+    return;
+  }
+  logger_info_1("Image upload completed");
+}

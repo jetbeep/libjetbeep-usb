@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <iostream>
 #include "uart_drv.h"
 #include "delay_connect.h"
 #include "uart_slip.h"
@@ -31,6 +32,7 @@ static DeviceCandidate findJetBeepDeviceCandidate() {
   auto detectionReady = detectionPromise.get_future();
   deviceDetection.start();
   detectionReady.wait();
+  deviceDetection.stop();
   const DeviceCandidate& candidate = detectionReady.get();
   l.i() << "Found JetBeep device:" << candidate.path << " vid: " << candidate.vid << " pid: " << candidate.pid << Logger::endl;
   return candidate;
@@ -47,14 +49,43 @@ static void prepareDevice(DFU::SerialDevice& serialDevice) {
   delay_boot();
 }
 
+static void updateFirmwareProcedure(DFU::SerialDevice& serialDevice, vector<string>& zipPackages) {
+  int err_code = 0;
+  Logger dfuLogger("dfu");
+  logger_set_backend(&dfuLogger);
+
+  for (string zipPath : zipPackages) {
+
+    uart_drv_t uart_drv = {&serialDevice};
+    if (!err_code) {
+      dfu_param_t dfu_param;
+
+      dfu_param.p_uart = &uart_drv;
+      dfu_param.p_pkg_file = (char*)zipPath.c_str();
+      err_code = dfu_send_package(&dfu_param);
+    }
+  }
+  if (err_code != 0) {
+    throw runtime_error("Unable to complete firmware update procedure.");
+  }
+}
+
 int main(int argc, char* argv[]) {
   Logger::coutEnabled = true;
   Logger::level = LoggerLevel::verbose;
+  bool updateFwDone = false;
+  bool updateConfigDone = false;
   int err_code = 0;
   string devicePath;
   DFU::SerialDevice serialDevice = DFU::SerialDevice();
+
   vector<string> zipPackages;
 
+  auto onError = [&](const exception& e) -> int{
+      l.e() << e.what() << Logger::endl;
+      serialDevice.close();
+      return -1;
+  };
   try {
     zipPackages = findZipPackages();
     for (auto p : zipPackages) {
@@ -65,38 +96,33 @@ int main(int argc, char* argv[]) {
     l.d() << "Port opened" << Logger::endl;
     prepareDevice(serialDevice);
   } catch (const exception& e) {
-    l.e() << e.what() << Logger::endl;
-    serialDevice.close();
-    return -1;
+    return onError(e);
   }
 
   if (zipPackages.size() == 0) {
-    string tmp;
     l.w() << "No firmware update packages were found!" << Logger::endl;
-    cin >> tmp;
   } else {
-    Logger dfuLogger("dfu");
-    for (string zipPath : zipPackages) {
-      logger_set_backend(&dfuLogger);
-
-      uart_drv_t uart_drv = {&serialDevice};
-      if (!err_code) {
-        dfu_param_t dfu_param;
-
-        dfu_param.p_uart = &uart_drv;
-        dfu_param.p_pkg_file = (char*)zipPath.c_str();
-        err_code = dfu_send_package(&dfu_param);
-      }
+    try {
+      updateFirmwareProcedure(serialDevice, zipPackages);
+      updateFwDone = true;
+    } catch (const exception& e) {
+      return onError(e);
     }
   }
-  
+
   {
     l.i() << "Processing device configuration" << Logger::endl;
-    //TODO
+    // TODO
   }
 
   serialDevice.close();
 
-  l.i() << "exit" << Logger::endl;
-  return err_code;
+
+  l.i() << "-----------------------------------------------" << Logger::endl;
+  l.i() << "Status: Firmware updated " <<(updateFwDone ? "YES" : "NO") 
+        << ", Config updated " << (updateConfigDone ? "YES" : "NO") << Logger::endl;
+  l.i() << "Press Enter to exit "<< Logger::endl;
+  (void) cin.get();
+
+  return 0;
 }
