@@ -9,6 +9,8 @@ using namespace std;
 #define DEVICE_ID 44
 #define CASHIER_ID "12"
 
+#define MAKE_REFUND false
+
 #define MERCHANT_SECRET_KEY "F09612A780C041D3939EE8C9CE8DC560"
 
 //#define PARTIAL_PAYMENTS
@@ -126,6 +128,9 @@ int main() {
     l.i() << "payment get status result: " << (int)result.Status << Logger::endl;
     if (result.Status == PaymentStatus::Accepted) {
       l.i() << "PAYMENT SUCCESS CONFIRMED!: " << (int)result.Status << Logger::endl;
+    }
+    if (!MAKE_REFUND) {
+      return;
     }
     if (metadata.empty()) {
       backend.makeRefund(result.TransactionId, amountInCoins, DEVICE_ID).then(onRefundResult).catchError(onRequestErrors);

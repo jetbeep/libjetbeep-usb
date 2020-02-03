@@ -1,4 +1,9 @@
 cmake_minimum_required (VERSION 3.10.2)
+
+#uncomment to force 32bit build under gcc\g++. Also install libcurl4-openssl-dev:i386 libudev-dev:i386 on 64bit systems after dpkg --add-architecture i386
+#set(CMAKE_C_FLAGS -m32)
+#set(CMAKE_CXX_FLAGS -m32)
+
 file (READ "${CMAKE_CURRENT_SOURCE_DIR}/VERSION" JETBEEP_VERSION)
 project (libjetbeep VERSION ${JETBEEP_VERSION})
 
