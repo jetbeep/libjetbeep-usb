@@ -374,7 +374,7 @@ static int dfu_send_object(uart_drv_t *p_uart, dfu_json_object_t *p_dfu_obj, str
 		dfu_img.n_dat_size = buf_dat_size;
 		dfu_img.p_img_bin = buf_bin;
 		dfu_img.n_bin_size = buf_bin_size;
-		logger_progress_start(&dfu_img, buf_dat_size + buf_bin_size);
+		logger_progress_start();
 		err_code = dfu_send_image(&dfu_img);
 		logger_progress_end(err_code);
 	}

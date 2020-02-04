@@ -2,7 +2,6 @@
 #define DFU_SERIAL_DEVICE__HPP
 
 #include "../lib/libjetbeep.hpp"
-#include "serial_device.hpp"
 #include <iterator>
 #include <mutex>
 #include <thread>
@@ -17,10 +16,10 @@ using namespace std;
 namespace DFU {
 
 
-  class SerialDevice {
+  class SyncSerialDevice {
   public:
-    SerialDevice();
-    virtual ~SerialDevice();
+    SyncSerialDevice();
+    virtual ~SyncSerialDevice();
 
     void open(const std::string& path);
     void close();

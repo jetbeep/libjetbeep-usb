@@ -4,7 +4,7 @@ add_definitions(-DWIN32_LEAN_AND_MEAN )
 
 add_executable(dfu_module ${BOOST_FILESYSTEM_SOURCES} 
             dfu_main.cpp 
-            serial_device.cpp
+            sync_serial_device.cpp
             packages_search.cpp
             crc32.c 
             delay_connect.c

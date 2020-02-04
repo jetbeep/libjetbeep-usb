@@ -8,7 +8,7 @@
 #include "logging.h"
 #include <future>
 #include "../lib/libjetbeep.hpp"
-#include "./serial_device.hpp"
+#include "./sync_serial_device.hpp"
 #include "./packages_search.hpp"
 
 using namespace std;
@@ -38,25 +38,27 @@ static DeviceCandidate findJetBeepDeviceCandidate() {
   return candidate;
 }
 
-static void prepareDevice(DFU::SerialDevice& serialDevice) {
-  if (serialDevice.isBootloaderMode()) {
+static void prepareDevice(DFU::SyncSerialDevice& SyncSerialDevice) {
+  /*
+  if (SyncSerialDevice.isBootloaderMode()) {
     return;
   }
-  auto deviceId = serialDevice.getDeviceId();
-  auto fwVer = serialDevice.getFirmwareVer();
+  auto deviceId = SyncSerialDevice.getDeviceId();
+  auto fwVer = SyncSerialDevice.getFirmwareVer();
   l.d() << "DeviceID: " << deviceId << " Firmware: " << fwVer << Logger::endl;
-  serialDevice.enterDFUMode();
+  */
+  SyncSerialDevice.enterDFUMode();
   delay_boot();
 }
 
-static void updateFirmwareProcedure(DFU::SerialDevice& serialDevice, vector<string>& zipPackages) {
+static void updateFirmwareProcedure(DFU::SyncSerialDevice& SyncSerialDevice, vector<string>& zipPackages) {
   int err_code = 0;
   Logger dfuLogger("dfu");
   logger_set_backend(&dfuLogger);
 
   for (string zipPath : zipPackages) {
 
-    uart_drv_t uart_drv = {&serialDevice};
+    uart_drv_t uart_drv = {&SyncSerialDevice};
     if (!err_code) {
       dfu_param_t dfu_param;
 
@@ -77,13 +79,13 @@ int main(int argc, char* argv[]) {
   bool updateConfigDone = false;
   int err_code = 0;
   string devicePath;
-  DFU::SerialDevice serialDevice = DFU::SerialDevice();
+  DFU::SyncSerialDevice SyncSerialDevice = DFU::SyncSerialDevice();
 
   vector<string> zipPackages;
 
   auto onError = [&](const exception& e) -> int{
       l.e() << e.what() << Logger::endl;
-      serialDevice.close();
+      SyncSerialDevice.close();
       return -1;
   };
   try {
@@ -92,9 +94,9 @@ int main(int argc, char* argv[]) {
       l.i() << "Package found: " << p << Logger::endl;
     }
     devicePath = findJetBeepDeviceCandidate().path;
-    serialDevice.open(devicePath);
+    SyncSerialDevice.open(devicePath);
     l.d() << "Port opened" << Logger::endl;
-    prepareDevice(serialDevice);
+    prepareDevice(SyncSerialDevice);
   } catch (const exception& e) {
     return onError(e);
   }
@@ -103,7 +105,7 @@ int main(int argc, char* argv[]) {
     l.w() << "No firmware update packages were found!" << Logger::endl;
   } else {
     try {
-      updateFirmwareProcedure(serialDevice, zipPackages);
+      updateFirmwareProcedure(SyncSerialDevice, zipPackages);
       updateFwDone = true;
     } catch (const exception& e) {
       return onError(e);
@@ -115,7 +117,7 @@ int main(int argc, char* argv[]) {
     // TODO
   }
 
-  serialDevice.close();
+  SyncSerialDevice.close();
 
 
   l.i() << "-----------------------------------------------" << Logger::endl;
