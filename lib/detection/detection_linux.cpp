@@ -247,7 +247,6 @@ void DeviceDetection::Impl::detectConnected() {
     udev_device_unref(dev);
   }
   udev_enumerate_unref(enumerate);
-  udev_unref(udev);
 }
 
 // DeviceDetection
