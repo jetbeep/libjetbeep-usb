@@ -43,6 +43,7 @@
 #include "dfu_serial.h"
 #include "crc32.h"
 #include "logging.h"
+#include "ext_error.h"
 
 // SLIP data log buffer size
 #define MAX_BUFF_SIZE           1024
@@ -220,6 +221,10 @@ static int dfu_serial_get_rsp(uart_drv_t *p_uart, nrf_dfu_op_t oper, uint32_t *p
 			{
 				uint16_t rsp_error = receive_data[2];
 
+				if (receive_data[2] == NRF_DFU_RES_CODE_EXT_ERROR) {
+					set_ext_error_code(receive_data[3]);
+				}
+
 				// get 2-byte error code, if applicable
 				if (*p_data_cnt >= 4)
 					rsp_error = (rsp_error << 8) + receive_data[3];
@@ -240,7 +245,7 @@ static int dfu_serial_get_rsp(uart_drv_t *p_uart, nrf_dfu_op_t oper, uint32_t *p
 	return err_code;
 }
 
-static int dfu_serial_ping(uart_drv_t *p_uart, uint8_t id)
+int dfu_serial_ping(uart_drv_t *p_uart, uint8_t id)
 {
 	int err_code;
 	uint8_t send_data[2] = { NRF_DFU_OP_PING };

@@ -1,7 +1,7 @@
-#include "./packages_search.hpp"
+#include "packages_search.hpp"
 #include <regex>
 #include <boost/filesystem.hpp>
-#include "../lib/libjetbeep.hpp"
+#include "libjetbeep.hpp"
 
 using namespace boost::filesystem;
 using namespace std;

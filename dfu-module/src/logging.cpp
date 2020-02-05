@@ -2,7 +2,7 @@
 #include <stdarg.h>
 #include <cstring>
 #include "logging.h"
-#include "../lib/libjetbeep.hpp"
+#include "libjetbeep.hpp"
 
 #define MAX_BUF_LEN 512
 

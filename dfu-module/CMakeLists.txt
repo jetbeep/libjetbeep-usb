@@ -3,24 +3,25 @@ aux_source_directory(${BOOST_SOURCE_DIR}/libs/filesystem/src BOOST_FILESYSTEM_SO
 add_definitions(-DWIN32_LEAN_AND_MEAN )
 
 add_executable(dfu_module ${BOOST_FILESYSTEM_SOURCES} 
-            dfu_main.cpp 
-            sync_serial_device.cpp
-            packages_search.cpp
-            crc32.c 
-            delay_connect.c
-            dfu.c 
-            dfu_serial.c 
-            slip_enc.c 
-            uart_drv.cpp 
-            uart_slip.c 
-            zip.c 
-            logging.cpp 
-            jsmn.c 
+            src/dfu_main.cpp 
+            src/sync_serial_device.cpp
+            src/packages_search.cpp
+            src/crc32.c 
+            src/delay_connect.c
+            src/dfu.c 
+            src/dfu_serial.c 
+            src/slip_enc.c 
+            src/uart_drv.cpp 
+            src/uart_slip.c 
+            src/zip.c 
+            src/logging.cpp 
+            src/jsmn.c 
+            src/ext_error.cpp 
 )
 
 #set_source_files_properties( uart_drv.cpp dfu.c uart_slip.c dfu_serial.c PROPERTIES LANGUAGE CXX )
 
-target_include_directories(dfu_module PUBLIC ${BOOST_SOURCE_DIR} ${BOOST_SOURCE_DIR}/lib/filesystem/)
+target_include_directories(dfu_module PRIVATE ./include PUBLIC ${JETBEEP_LIB_SOURCE_DIR} ${BOOST_SOURCE_DIR} ${BOOST_SOURCE_DIR}/lib/filesystem/)
 
 target_link_libraries(dfu_module $<TARGET_OBJECTS:jetbeep_obj>)
 

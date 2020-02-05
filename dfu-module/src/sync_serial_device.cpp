@@ -16,6 +16,7 @@ DFU::SyncSerialDevice::SyncSerialDevice()
 
 DFU::SyncSerialDevice::~SyncSerialDevice() {
   try {
+    m_log.d() << "Closing port" << Logger::endl;
     m_port.close();
   } catch (...) {
   }
@@ -51,11 +52,12 @@ void DFU::SyncSerialDevice::writeBytes(void * p_data, size_t size) {
 void DFU::SyncSerialDevice::open(const string& path) {
   m_port.open(path);
   m_port.set_option(serial_port_base::baud_rate(9600));
-  
+  m_log.d() << "Port opened: " << path << Logger::endl;
 }
 
 void DFU::SyncSerialDevice::close() {
   m_port.close();
+  m_log.d() << "Port closed" << Logger::endl;
 }
 
 uint32_t DFU::SyncSerialDevice::getDeviceId() {

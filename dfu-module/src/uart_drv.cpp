@@ -1,8 +1,8 @@
 #include "uart_drv.h"
 #include "logging.h"
 
-#include "../lib/libjetbeep.hpp"
-#include "./sync_serial_device.hpp"
+#include "libjetbeep.hpp"
+#include "sync_serial_device.hpp"
 
 static JetBeep::Logger l("uart_drv");
 

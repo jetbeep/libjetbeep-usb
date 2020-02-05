@@ -59,6 +59,8 @@ int dfu_serial_send_init_packet(uart_drv_t *p_uart, const uint8_t *p_data, uint3
 
 int dfu_serial_send_firmware(uart_drv_t *p_uart, const uint8_t *p_data, uint32_t data_size);
 
+int dfu_serial_ping(uart_drv_t *p_uart, uint8_t id);
+
 #ifdef __cplusplus
 }   /* ... extern "C" */
 #endif  /* __cplusplus */
