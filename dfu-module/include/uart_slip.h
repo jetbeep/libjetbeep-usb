@@ -47,7 +47,7 @@
 #include "uart_drv.h"
 
 
-#define UART_SLIP_SIZE_MAX		128
+#define UART_SLIP_SIZE_MAX		4096
 
 int uart_slip_send(uart_drv_t *p_uart, const uint8_t *pData, uint32_t nSize);
 

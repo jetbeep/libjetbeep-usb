@@ -80,8 +80,9 @@ static DeviceInfo getDeviceInfo() {
 
   infoReady.wait();
   try {
-
-    deviceInfo.bootState = DeviceBootState::APP;
+    if (infoReady.get()) {
+      deviceInfo.bootState = DeviceBootState::APP;
+    }
   } catch (const exception &ex) {
     l.w() << ex.what() << Logger::endl;
     deviceInfo.bootState = DeviceBootState::UNKNOWN;
@@ -101,10 +102,16 @@ static void updateFirmwareProcedure(DeviceInfo& deviceInfo, vector<PackageInfo>&
 
   if (deviceInfo.bootState == DeviceBootState::APP) {
     syncSerialDevice.enterDFUMode();
+    syncSerialDevice.close();
     delay_boot();
+    syncSerialDevice.open(deviceInfo.systemPath);
   }
 
   l.i() << "Starting firmware update procedure." << Logger::endl;
+
+  auto onError = []() {
+    throw runtime_error("Unable to complete firmware update procedure.");
+  };
 
   for (PackageInfo pkg : zipPackages) {
     // test that device in bootloader mode
@@ -112,7 +119,7 @@ static void updateFirmwareProcedure(DeviceInfo& deviceInfo, vector<PackageInfo>&
     if (err_code == 0) {
       deviceInfo.bootState = DeviceBootState::BOOTLOADER;
     } else {
-      break;
+      onError();
     }
     
     l.d() << "Processing firmware package: " << pkg.name << Logger::endl;
@@ -131,17 +138,16 @@ static void updateFirmwareProcedure(DeviceInfo& deviceInfo, vector<PackageInfo>&
           l.i() << "Bootloader and SD are up to date" << Logger::endl;
       } else if (extErrorCode != (int) NRF_DFU_EXT_ERROR::NO_ERROR){
         throw DFU::ExtendedError(extErrorCode);
+      } else {
+        onError();
       }
     }
-  }
-  if (err_code != 0) {
-    throw runtime_error("Unable to complete firmware update procedure.");
   }
 }
 
 int main(int argc, char* argv[]) {
   Logger::coutEnabled = true;
-  Logger::level = LoggerLevel::debug;
+  Logger::level = argc > 1 ? LoggerLevel::verbose : LoggerLevel::info;
   bool updateFwDone = false;
   bool updateConfigDone = false;
   int err_code = 0;

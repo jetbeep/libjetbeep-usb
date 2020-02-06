@@ -18,7 +18,7 @@ int uart_drv_send(uart_drv_t* p_uart, const uint8_t* pData, uint32_t nSize) {
     SyncSerialDevice * p_sd = (SyncSerialDevice *) p_uart->p_serial_device;
     p_sd->writeBytes((void *) pData, nSize);
   } catch (std::exception &e) {
-    l.w() << e.what() << JetBeep::Logger::endl;
+    l.e() << e.what() << JetBeep::Logger::endl;
     return -1;
   }
   return 0;
@@ -32,7 +32,7 @@ int uart_drv_receive(uart_drv_t* p_uart, uint8_t* pData, uint32_t nSize, uint32_
     SyncSerialDevice * p_sd = (SyncSerialDevice *) p_uart->p_serial_device;
     *pSize = p_sd->readBytes((void *) pData, READ_CHUNK_SIZE);
   } catch (std::exception &e) {
-    l.w() << e.what() << JetBeep::Logger::endl;
+    l.e() << e.what() << JetBeep::Logger::endl;
     return -1;
   }
   return 0;
