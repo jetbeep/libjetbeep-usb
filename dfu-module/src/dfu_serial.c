@@ -414,7 +414,7 @@ static int dfu_serial_stream_data(uart_drv_t *p_uart, const uint8_t *p_data, uin
 		stp = MIN((data_size - pos), stp_max);
 		memcpy(send_data + 1, p_data + pos, stp);
 		err_code = dfu_serial_send(p_uart, send_data, stp + 1);
-		logger_progress_log(data_size, pos);
+		//(data_size, pos);
 	}
 
 	return err_code;
@@ -712,7 +712,7 @@ int dfu_serial_send_firmware(uart_drv_t *p_uart, const uint8_t *p_data, uint32_t
 	nrf_dfu_response_select_t rsp_recover;
 	uint32_t pos_start;
 
-	logger_info_1("Sending firmware file...");
+	logger_info_1("Sending firmware file... size: %u", data_size);
 
 	if (p_data == NULL || !data_size)
 	{

@@ -3,6 +3,7 @@
 #include <cstring>
 #include "logging.h"
 #include "libjetbeep.hpp"
+#include <cmath>
 
 #define MAX_BUF_LEN 512
 
@@ -67,18 +68,19 @@ int logger_get_info_level() {
 	return LOGGER_INFO_LVL_3; //allways return max, due to unnecessary checks in related code
 }
 
-static uint32_t progress_obj_pos = 0;
 
 void logger_progress_start() {
   logger_info_1("---------------------");
   logger_info_1("Image upload started");
   logger_info_1("upload progress: 0%%");
-  progress_obj_pos = 0;
 }
 void logger_progress_log(uint32_t size, uint32_t pos) {
-  progress_obj_pos += pos;
-  int progress = (int) progress_obj_pos / size;
-  logger_info_1("upload progress: %3i%%", progress);
+  static int prevProgress = -1;
+  int progress = (int) (pos * 100 / size);
+  if (prevProgress != progress) {
+    prevProgress = progress;
+    logger_info_1("upload progress: %3i%%", progress);
+  }
 }
 void logger_progress_end(int error_code) {
   if (error_code != 0) {

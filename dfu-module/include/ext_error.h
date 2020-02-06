@@ -8,7 +8,9 @@ extern "C" {
 #endif  /* __cplusplus */
 
 
-void set_ext_error_code(uint8_t code);
+void set_ext_error_code(int code);
+
+int get_ext_error_code();
 
 #ifdef __cplusplus
 }   /* ... extern "C" */

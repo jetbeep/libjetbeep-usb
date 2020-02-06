@@ -13,6 +13,7 @@
 #include "sync_serial_device.hpp"
 #include "packages_search.hpp"
 #include "ext_error_string.hpp"
+#include "ext_error.h"
 
 using namespace std;
 using namespace JetBeep;
@@ -38,15 +39,57 @@ static DeviceCandidate findJetBeepDeviceCandidate() {
   return candidate;
 }
 
+static void resolveMcp2200Issue(JetBeep::SerialDevice &serial) {
+  std::promise<void> issuePromise;
+  auto readyFuture = issuePromise.get_future();
+
+  serial.get(DeviceParameter::deviceId)
+  .then([&issuePromise](string _deviceId) {
+    issuePromise.set_value();
+  })
+  .catchError([&issuePromise](const exception_ptr& ex) {
+    l.v() << "resolveMcp2200Issue exception" << Logger::endl;
+    issuePromise.set_value();
+  });
+
+  readyFuture.wait();
+}
+
 static DeviceInfo getDeviceInfo() {
   DeviceInfo deviceInfo;
   deviceInfo.systemPath = findJetBeepDeviceCandidate().path;
+  JetBeep::SerialDevice serial;
+  serial.open(deviceInfo.systemPath);
+  resolveMcp2200Issue(serial);
+  std::promise<bool> infoReadPromise;
+  auto infoReady = infoReadPromise.get_future();
 
-  // TODO
+  serial.get(DeviceParameter::deviceId)
+  .then([&infoReadPromise, &deviceInfo](string _deviceId) {
+    try {
+      uint32_t deviceId = stoul(_deviceId, nullptr, 16);
+      infoReadPromise.set_value(true);
+      deviceInfo.deviceId = deviceId;
+    } catch (...) {
+      infoReadPromise.set_exception(make_exception_ptr(runtime_error("Unable to read deviceId")));
+    }
+  })
+  .catchError([&infoReadPromise](const exception_ptr& ex) {
+    infoReadPromise.set_exception(ex);
+  });
+
+  infoReady.wait();
+  try {
+
+    deviceInfo.bootState = DeviceBootState::APP;
+  } catch (const exception &ex) {
+    l.w() << ex.what() << Logger::endl;
+    deviceInfo.bootState = DeviceBootState::UNKNOWN;
+  }
   return deviceInfo;
 }
 
-static void updateFirmwareProcedure(DeviceInfo& deviceInfo, vector<string>& zipPackages) {
+static void updateFirmwareProcedure(DeviceInfo& deviceInfo, vector<PackageInfo>& zipPackages) {
   int err_code = 0;
   Logger dfuLogger("dfu");
   logger_set_backend(&dfuLogger);
@@ -62,21 +105,34 @@ static void updateFirmwareProcedure(DeviceInfo& deviceInfo, vector<string>& zipP
   }
 
   l.i() << "Starting firmware update procedure." << Logger::endl;
-  for (string zipPath : zipPackages) {
+
+  for (PackageInfo pkg : zipPackages) {
     // test that device in bootloader mode
-    err_code = dfu_serial_ping(&uart_drv, 0x04);
+    err_code = dfu_serial_ping(&uart_drv, 0x04 /* any value */);
     if (err_code == 0) {
       deviceInfo.bootState = DeviceBootState::BOOTLOADER;
     } else {
       break;
     }
     
-    l.d() << "Processing firmware package: " << zipPath << Logger::endl;
+    l.d() << "Processing firmware package: " << pkg.name << Logger::endl;
 
     dfu_param_t dfu_param;
     dfu_param.p_uart = &uart_drv;
-    dfu_param.p_pkg_file = (char*)zipPath.c_str();
+    dfu_param.p_pkg_file = (char*)pkg.path.c_str();
     err_code = dfu_send_package(&dfu_param);
+
+    if (err_code != 0) {
+      int extErrorCode = get_ext_error_code();
+      if (pkg.type == PackageType::BOOTLOADER_SD_FW 
+        && zipPackages.size() != 1
+        && extErrorCode == (int) NRF_DFU_EXT_ERROR::FW_VERSION_FAILURE) {
+          err_code = 0; //continue to app update assuming that bootloader and soft device are up to date already
+          l.i() << "Bootloader and SD are up to date" << Logger::endl;
+      } else if (extErrorCode != (int) NRF_DFU_EXT_ERROR::NO_ERROR){
+        throw DFU::ExtendedError(extErrorCode);
+      }
+    }
   }
   if (err_code != 0) {
     throw runtime_error("Unable to complete firmware update procedure.");
@@ -85,12 +141,12 @@ static void updateFirmwareProcedure(DeviceInfo& deviceInfo, vector<string>& zipP
 
 int main(int argc, char* argv[]) {
   Logger::coutEnabled = true;
-  Logger::level = LoggerLevel::verbose;
+  Logger::level = LoggerLevel::debug;
   bool updateFwDone = false;
   bool updateConfigDone = false;
   int err_code = 0;
   DeviceInfo deviceInfo;
-  vector<string> zipPackages;
+  vector<PackageInfo> zipPackages;
 
   auto onError = [&](const exception& e) -> int {
     l.e() << e.what() << Logger::endl;
@@ -100,7 +156,7 @@ int main(int argc, char* argv[]) {
     deviceInfo = getDeviceInfo();
     zipPackages = findZipPackages();
     for (auto p : zipPackages) {
-      l.i() << "Firmware package found: " << p << Logger::endl;
+      l.i() << "Firmware package found: " << p.path << Logger::endl;
     }
   } catch (const exception& e) {
     return onError(e);
@@ -112,8 +168,9 @@ int main(int argc, char* argv[]) {
     try {
       updateFirmwareProcedure(deviceInfo, zipPackages);
       updateFwDone = true;
+    } catch (const DFU::ExtendedError& e) {
+      return onError(e);
     } catch (const exception& e) {
-      l.e() << getExtendedErrorMsg() << Logger::endl;
       return onError(e);
     }
   }
