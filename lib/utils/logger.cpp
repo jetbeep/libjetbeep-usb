@@ -24,6 +24,9 @@ LoggerLevel Logger::level = LoggerLevel::silent;
 thread_local LoggerLevel Logger::m_threadLevel = LoggerLevel::silent;
 
 Logger& Logger::endl(Logger& a) {
+  if (Logger::m_threadLevel < Logger::level) {
+       return a;
+  }
   if (Logger::coutEnabled) {
     cout << std::endl;
     cout.flush();
