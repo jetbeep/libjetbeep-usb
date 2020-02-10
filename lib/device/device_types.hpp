@@ -32,6 +32,11 @@ namespace JetBeep {
   typedef std::function<void(const SerialMobileEvent&)> SerialMobileCallback;
 
   typedef std::unordered_map<std::string, std::string> PaymentMetadata;
+
+  enum class DeviceOperationMode { scanner, driver };
+
+  enum class DeviceConnectionRole { master, slave };
+
 } // namespace JetBeep
 
 #endif
