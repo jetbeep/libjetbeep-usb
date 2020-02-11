@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include "./https_response.hpp"
 
 using namespace std;
 
@@ -28,7 +29,7 @@ namespace JetBeep::EasyPayAPI {
     string Reason;
   } EasyPayError;
 
-  class EasyPayResult {
+  class EasyPayResult : public HTTPResponseBase {
   public:
     string Uid;
     vector<EasyPayError> Errors;
@@ -40,10 +41,6 @@ namespace JetBeep::EasyPayAPI {
     string TransactionDatePost = "";
     string PaymentRequestUid = "";
     string MerchantTransactionId = "";
-
-    //HTTP data
-    string _rawResponse;
-    int statusCode;
 
     bool isError() {
       return Errors.size() > 0;

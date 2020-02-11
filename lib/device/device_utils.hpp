@@ -2,6 +2,7 @@
 #define JETBEEP_DEVICE_UTILS__H
 
 #include "device_parameter.hpp"
+#include "device_types.hpp"
 #include <string>
 
 namespace JetBeep {
@@ -9,6 +10,12 @@ namespace JetBeep {
   public:
     static std::string parameterToString(const DeviceParameter& parameter);
     static DeviceParameter stringToParameter(const std::string& parameter);
+
+    static std::string operationModeToString(const DeviceOperationMode& value);
+    static DeviceOperationMode stringToOperationMode(const std::string& value);
+
+    static std::string connectionRoleToString(const DeviceConnectionRole& value);
+    static DeviceConnectionRole stringToConnectionRole(const std::string& value);
   };
 } // namespace JetBeep
 
