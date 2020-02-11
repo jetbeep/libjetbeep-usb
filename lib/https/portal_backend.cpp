@@ -2,7 +2,6 @@
 #include "./portal_backend.hpp"
 #include "../utils/logger.hpp"
 #include "./https_client/https_client.hpp"
-#include "../utils/cryptlite/sha256.h"
 #include "../io/iocontext_impl.hpp"
 #include <iostream>
 #include <ctime>
@@ -60,8 +59,8 @@ Promise<DeviceConfigResponse> PortalBackend::Impl::getDeviceConfig(DeviceConfigR
   auto options = getRequestOptions(path, RequestMethod::GET);
 
   return m_httpsClient.request(options).thenPromise<DeviceConfigResponse, Promise>([&](Response res) {
-    auto promise = Promise<DeviceConfig>();
-    if (res.statusCode = 404) {
+    auto promise = Promise<DeviceConfigResponse>();
+    if (res.statusCode == 404) {
       promise.reject(make_exception_ptr(HttpErrors::RequestError("device not found")));
       return promise;
     }

@@ -39,18 +39,16 @@ static DeviceCandidate findJetBeepDeviceCandidate() {
   return candidate;
 }
 
-static void resolveMcp2200Issue(JetBeep::SerialDevice &serial) {
+static void resolveMcp2200Issue(JetBeep::SerialDevice& serial) {
   std::promise<void> issuePromise;
   auto readyFuture = issuePromise.get_future();
 
   serial.get(DeviceParameter::deviceId)
-  .then([&issuePromise](string _deviceId) {
-    issuePromise.set_value();
-  })
-  .catchError([&issuePromise](const exception_ptr& ex) {
-    l.v() << "resolveMcp2200Issue exception" << Logger::endl;
-    issuePromise.set_value();
-  });
+    .then([&issuePromise](string _deviceId) { issuePromise.set_value(); })
+    .catchError([&issuePromise](const exception_ptr& ex) {
+      l.v() << "resolveMcp2200Issue exception" << Logger::endl;
+      issuePromise.set_value();
+    });
 
   readyFuture.wait();
 }
@@ -65,25 +63,27 @@ static DeviceInfo getDeviceInfo() {
   auto infoReady = infoReadPromise.get_future();
 
   serial.get(DeviceParameter::deviceId)
-  .then([&infoReadPromise, &deviceInfo](string _deviceId) {
-    try {
-      uint32_t deviceId = stoul(_deviceId, nullptr, 16);
-      infoReadPromise.set_value(true);
-      deviceInfo.deviceId = deviceId;
-    } catch (...) {
-      infoReadPromise.set_exception(make_exception_ptr(runtime_error("Unable to read deviceId")));
-    }
-  })
-  .catchError([&infoReadPromise](const exception_ptr& ex) {
-    infoReadPromise.set_exception(ex);
-  });
+    .thenPromise<string, Promise>([&infoReadPromise, &deviceInfo, &serial](string _deviceId) {
+      try {
+        uint32_t deviceId = stoul(_deviceId, nullptr, 16);
+        infoReadPromise.set_value(true);
+        deviceInfo.deviceId = deviceId;
+      } catch (...) {
+        infoReadPromise.set_exception(make_exception_ptr(runtime_error("Unable to read deviceId")));
+      }
+      return serial.get(DeviceParameter::chipId); 
+    })
+    .then([&infoReadPromise, &deviceInfo](string chipId) {
+      deviceInfo.chipId = chipId;
+    })
+    .catchError([&infoReadPromise](const exception_ptr& ex) { infoReadPromise.set_exception(ex); });
 
   infoReady.wait();
   try {
     if (infoReady.get()) {
       deviceInfo.bootState = DeviceBootState::APP;
     }
-  } catch (const exception &ex) {
+  } catch (const exception& ex) {
     l.w() << ex.what() << Logger::endl;
     deviceInfo.bootState = DeviceBootState::UNKNOWN;
   }
@@ -109,9 +109,7 @@ static void updateFirmwareProcedure(DeviceInfo& deviceInfo, vector<PackageInfo>&
 
   l.i() << "Starting firmware update procedure." << Logger::endl;
 
-  auto onError = []() {
-    throw runtime_error("Unable to complete firmware update procedure.");
-  };
+  auto onError = []() { throw runtime_error("Unable to complete firmware update procedure."); };
 
   for (PackageInfo pkg : zipPackages) {
     // test that device in bootloader mode
@@ -121,7 +119,7 @@ static void updateFirmwareProcedure(DeviceInfo& deviceInfo, vector<PackageInfo>&
     } else {
       onError();
     }
-    
+
     l.d() << "Processing firmware package: " << pkg.name << Logger::endl;
 
     dfu_param_t dfu_param;
@@ -131,18 +129,40 @@ static void updateFirmwareProcedure(DeviceInfo& deviceInfo, vector<PackageInfo>&
 
     if (err_code != 0) {
       int extErrorCode = get_ext_error_code();
-      if (pkg.type == PackageType::BOOTLOADER_SD_FW 
-        && zipPackages.size() != 1
-        && extErrorCode == (int) NRF_DFU_EXT_ERROR::FW_VERSION_FAILURE) {
-          err_code = 0; //continue to app update assuming that bootloader and soft device are up to date already
-          l.i() << "Bootloader and SD are up to date" << Logger::endl;
-      } else if (extErrorCode != (int) NRF_DFU_EXT_ERROR::NO_ERROR){
+      if (pkg.type == PackageType::BOOTLOADER_SD_FW && zipPackages.size() != 1 &&
+          extErrorCode == (int)NRF_DFU_EXT_ERROR::FW_VERSION_FAILURE) {
+        err_code = 0; // continue to app update assuming that bootloader and soft device are up to date already
+        l.i() << "Bootloader and SD are up to date" << Logger::endl;
+      } else if (extErrorCode != (int)NRF_DFU_EXT_ERROR::NO_ERROR) {
         throw DFU::ExtendedError(extErrorCode);
       } else {
         onError();
       }
     }
   }
+}
+
+static DeviceConfig getDeviceConfig(PortalBackend& backend, string chipId) {
+  std::promise<DeviceConfig> reqPromise;
+  auto reqFuture = reqPromise.get_future();
+  DeviceConfigRequest request = {.chipId = chipId};
+
+  backend.getDeviceConfig(request)
+    .then([&reqPromise](DeviceConfigResponse res) { reqPromise.set_value(res.config); })
+    .catchError([&reqPromise](const exception_ptr& ex) { reqPromise.set_exception(ex); });
+
+  reqFuture.wait();
+  return reqFuture.get();
+}
+
+static void updateDeviceConfig(DeviceInfo& deviceInfo) {
+  PortalBackend backend(PortalHostEnv::Production);
+  auto config = getDeviceConfig(backend, deviceInfo.chipId);
+  Logger dfuLogger("config");
+  JetBeep::SerialDevice serial;
+  serial.open(deviceInfo.systemPath);
+  //TODO apply config
+  //TODO report to backend
 }
 
 int main(int argc, char* argv[]) {
@@ -183,7 +203,7 @@ int main(int argc, char* argv[]) {
 
   {
     l.i() << "Processing device configuration" << Logger::endl;
-    // TODO
+    updateDeviceConfig(deviceInfo);
   }
 
   l.i() << "-----------------------------------------------" << Logger::endl;

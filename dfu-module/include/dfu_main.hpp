@@ -16,6 +16,7 @@ struct DeviceInfo {
   string verion;
   string revision;
   string systemPath;
+  string chipId;
 };
 
 

@@ -64,6 +64,10 @@ DeviceConfig PortalAPI::parseDeviceConfigResult(const string& json) {
     if (node.has_value()) {
       result.tapSensitivity = std::stoi(node.value().data());
     }
+    node = parser.get_child_optional("phoneConFeedback");
+    if (node.has_value()) {
+      result.phoneConFeedback = node.value().data() == "true" ? true : false;
+    }
     node = parser.get_child_optional("devEnv");
     if (node.has_value()) {
       result.devEnv = node.value().data() == "true" ? true : false;
