@@ -15,8 +15,11 @@ namespace JetBeep {
 
   using namespace EasyPayAPI;
 
-  enum class EasyPayHostEnv : int { Development = 0, Production = 1 };
-  
+  enum class EasyPayHostEnv : int {
+    Development = 0,
+    Production = 1
+  }; // if you change this values, don't forget to change it in all bindings: C, Java, Delphi
+
   enum class TransactionEndpointType { SIMPLE, PARTIALS };
 
   class EasyPayBackend {
@@ -31,11 +34,11 @@ namespace JetBeep {
                                        string cashierId = "unspecified");
 
     Promise<EasyPayResult> makePaymentPartials(string merchantTransactionId,
-                                       string paymentToken,
-                                       uint32_t amountInCoins,
-                                       uint32_t deviceId,
-                                       PaymentMetadata metadata,
-                                       string cashierId = "unspecified");                                   
+                                               string paymentToken,
+                                               uint32_t amountInCoins,
+                                               uint32_t deviceId,
+                                               PaymentMetadata metadata,
+                                               string cashierId = "unspecified");
 
     Promise<EasyPayResult> getPaymentStatus(string merchantTransactionId, uint32_t amountInCoins, uint32_t deviceId);
 

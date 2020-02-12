@@ -1,5 +1,7 @@
 
 include(GNUInstallDirs)
+include("TargetArch.cmake")
+
 if (APPLE)
     file(GLOB_RECURSE JETBEEP_SOURCES *.cpp *.c *.mm)
 else()
@@ -29,6 +31,11 @@ elseif(UNIX AND NOT APPLE) #linux
     target_link_libraries(jetbeep "-lpthread" "-ludev" ${CURL_LIBRARIES})
 elseif(WIN32)
     target_link_libraries(jetbeep "wsock32" "ws2_32" "winhttp")
+    target_architecture(ARCH_NAME)
+    set(DELPHI_OUTPUT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../delphi/$<TARGET_FILE_BASE_NAME:jetbeep>_${ARCH_NAME}$<TARGET_FILE_SUFFIX:jetbeep>")
+    add_custom_command(TARGET jetbeep POST_BUILD 
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:jetbeep> ${DELPHI_OUTPUT_PATH}
+    COMMENT "Copying dll to delphi folder")
 endif()
 
 target_include_directories(jetbeep PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

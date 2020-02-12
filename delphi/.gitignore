@@ -1,0 +1,13 @@
+*.dylib
+*.so
+*.so.*
+*.dll
+*.local
+
+doc
+libjetbeep-delphi
+*.zip
+__history
+__recovery
+Win32
+Win64

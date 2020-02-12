@@ -106,7 +106,7 @@ JNIEXPORT void JNICALL Java_com_jetbeep_AutoDevice_start(JNIEnv* env, jobject ob
 
   try {
     device->start();
-  } catch (const Errors::InvalidState& e) {
+  } catch (const Errors::InvalidState& ) {
     JniUtils::throwIllegalStateException(env, "invalid device state");
   } catch (...) {
     JniUtils::throwIOException(env, "system error");
@@ -122,7 +122,7 @@ JNIEXPORT void JNICALL Java_com_jetbeep_AutoDevice_stop(JNIEnv* env, jobject obj
 
   try {
     device->stop();
-  } catch (const Errors::InvalidState& e) {
+  } catch (const Errors::InvalidState& ) {
     JniUtils::throwIllegalStateException(env, "invalid device state");
   } catch (...) {
     JniUtils::throwIOException(env, "system error");
@@ -138,7 +138,7 @@ JNIEXPORT void JNICALL Java_com_jetbeep_AutoDevice_openSession(JNIEnv* env, jobj
 
   try {
     device->openSession();
-  } catch (const Errors::InvalidState& e) {
+  } catch (const Errors::InvalidState& ) {
     JniUtils::throwIllegalStateException(env, "invalid device state");
   } catch (...) {
     JniUtils::throwIOException(env, "system error");
@@ -154,7 +154,7 @@ JNIEXPORT void JNICALL Java_com_jetbeep_AutoDevice_closeSession(JNIEnv* env, job
 
   try {
     device->closeSession();
-  } catch (const Errors::InvalidState& e) {
+  } catch (const Errors::InvalidState& ) {
     JniUtils::throwIllegalStateException(env, "invalid device state");
   } catch (...) {
     JniUtils::throwIOException(env, "system error");
@@ -229,7 +229,7 @@ JNIEXPORT void JNICALL Java_com_jetbeep_AutoDevice_requestBarcodes(JNIEnv* env, 
       .catchError([](exception_ptr ptr) {
         // we don't have to handle this error here, as it will be passed to errorCallback as well
       });
-  } catch (const Errors::InvalidState& e) {
+  } catch (const Errors::InvalidState& ) {
     JniUtils::throwIllegalStateException(env, "invalid device state");
   } catch (...) {
     JniUtils::throwIOException(env, "system error");
@@ -245,7 +245,7 @@ JNIEXPORT void JNICALL Java_com_jetbeep_AutoDevice_cancelBarcodes(JNIEnv* env, j
 
   try {
     device->cancelBarcodes();
-  } catch (const Errors::InvalidState& e) {
+  } catch (const Errors::InvalidState& ) {
     JniUtils::throwIllegalStateException(env, "invalid device state");
   } catch (...) {
     JniUtils::throwIOException(env, "system error");
@@ -315,7 +315,7 @@ JNIEXPORT void JNICALL Java_com_jetbeep_AutoDevice_createPaymentToken(
       .catchError([](exception_ptr ptr) {
         // we don't have to handle this error here, as it will be passed to errorCallback as well
       });
-  } catch (const Errors::InvalidState& e) {
+  } catch (const Errors::InvalidState& ) {
     JniUtils::throwIllegalStateException(env, "invalid device state");
   } catch (...) {
     JniUtils::throwIOException(env, "system error");
@@ -331,7 +331,7 @@ JNIEXPORT void JNICALL Java_com_jetbeep_AutoDevice_cancelPayment(JNIEnv* env, jo
 
   try {
     device->cancelPayment();
-  } catch (const Errors::InvalidState& e) {
+  } catch (const Errors::InvalidState& ) {
     JniUtils::throwIllegalStateException(env, "invalid device state");
   } catch (...) {
     JniUtils::throwIOException(env, "system error");
