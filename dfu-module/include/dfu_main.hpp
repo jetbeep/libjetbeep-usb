@@ -13,7 +13,7 @@ struct DeviceInfo {
   DeviceConfigState configState = DeviceConfigState::UNKNOWN;
   uint32_t deviceId;
   string pubKey;
-  string verion;
+  string version;
   string revision;
   string systemPath;
   string chipId;

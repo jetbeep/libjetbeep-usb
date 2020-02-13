@@ -1,5 +1,9 @@
 #include "device_utils.hpp"
 #include <stdexcept>
+#include "../utils/utils.hpp"
+#include <string>
+#include <sstream>
+#include <boost/range.hpp>
 
 using namespace JetBeep;
 using namespace std;
@@ -145,3 +149,18 @@ DeviceConnectionRole DeviceUtils::stringToConnectionRole(const std::string& valu
     throw runtime_error("invalid input string");
   }
 }
+
+std::string DeviceUtils::mobileAppsUUIDsToString(std::vector<uint32_t> list) {
+  if (list.size() == 0) {
+    return "";
+  }
+  std::stringstream stream;
+
+  stream << Utils::numberToHexString(list.at(0));
+
+  for (auto uid : boost::make_iterator_range(list.begin() + 1, list.end())) {
+    stream << " " << Utils::numberToHexString(list.at(0));
+  }
+
+  return stream.str();
+};

@@ -4,6 +4,7 @@
 #include "device_parameter.hpp"
 #include "device_types.hpp"
 #include <string>
+#include <vector>
 
 namespace JetBeep {
   class DeviceUtils {
@@ -16,6 +17,12 @@ namespace JetBeep {
 
     static std::string connectionRoleToString(const DeviceConnectionRole& value);
     static DeviceConnectionRole stringToConnectionRole(const std::string& value);
+
+    static std::string boolToDeviceBoolStr(bool value) {
+      return value ? "1" : "0";
+    };
+
+    static std::string mobileAppsUUIDsToString(std::vector<uint32_t> list);
   };
 } // namespace JetBeep
 

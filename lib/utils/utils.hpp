@@ -13,6 +13,7 @@ namespace JetBeep {
     static uint32_t deviceFWVerToNumber(const std::string& fwStr);
     static bool caseInsensetiveEqual(const std::string& str1, const std::string& str2);
     static void replaceInTemplate(std::string& text, const std::string& placeholder, const std::string& value);
+    static std::string numberToHexString(uint32_t num);
   private:
     static Logger m_log;
   };

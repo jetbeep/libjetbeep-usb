@@ -90,3 +90,9 @@ bool Utils::caseInsensetiveEqual(const std::string& str1, const std::string& str
 void  Utils::replaceInTemplate(string& text, const string& placeholder, const string& value) {
   boost::replace_all<string>(text, "\"" + placeholder + "\"", value);
 }
+
+std::string  Utils::numberToHexString(uint32_t num) {
+  char buf[11]; //0xFFFFFFFF + \0
+  snprintf(buf, 11, "0x%x", num);
+  return std::string(buf);
+}

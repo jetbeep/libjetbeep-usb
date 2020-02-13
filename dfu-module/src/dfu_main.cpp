@@ -14,6 +14,7 @@
 #include "packages_search.hpp"
 #include "ext_error_string.hpp"
 #include "ext_error.h"
+#include "device/device_utils.hpp"
 
 using namespace std;
 using namespace JetBeep;
@@ -66,14 +67,20 @@ static DeviceInfo getDeviceInfo() {
     .thenPromise<string, Promise>([&infoReadPromise, &deviceInfo, &serial](string _deviceId) {
       try {
         uint32_t deviceId = stoul(_deviceId, nullptr, 16);
-        infoReadPromise.set_value(true);
         deviceInfo.deviceId = deviceId;
       } catch (...) {
         infoReadPromise.set_exception(make_exception_ptr(runtime_error("Unable to read deviceId")));
       }
+      return serial.get(DeviceParameter::version);
+    })
+    .thenPromise<string, Promise>([&infoReadPromise, &deviceInfo, &serial](string version) {
+      deviceInfo.version = version;
       return serial.get(DeviceParameter::chipId);
     })
-    .then([&infoReadPromise, &deviceInfo](string chipId) { deviceInfo.chipId = chipId; })
+    .then([&infoReadPromise, &deviceInfo](string chipId) { 
+      deviceInfo.chipId = chipId; 
+      infoReadPromise.set_value(true);
+    })
     .catchError([&infoReadPromise](const exception_ptr& ex) { infoReadPromise.set_exception(ex); });
 
   infoReady.wait();
@@ -156,7 +163,7 @@ static DeviceConfig getDevicePortalConfig(PortalBackend& backend, DeviceInfo& de
 static void updateDevicePortalConfig(PortalBackend& backend, DeviceInfo& deviceInfo) {
   std::promise<void> reqPromise;
   auto reqFuture = reqPromise.get_future();
-  DeviceConfigUpdateRequest request = {.chipId = deviceInfo.chipId, .fwVersion = deviceInfo.verion};
+  DeviceConfigUpdateRequest request = {.chipId = deviceInfo.chipId, .fwVersion = deviceInfo.version};
 
   backend.updateDeviceConfig(request)
     .then([&reqPromise]() { reqPromise.set_value(); })
@@ -168,22 +175,105 @@ static void updateDevicePortalConfig(PortalBackend& backend, DeviceInfo& deviceI
   return reqFuture.get();
 }
 
+static void writeDeviceConfig(DeviceConfig& config, JetBeep::SerialDevice& serial) {
+  std::promise<void> writePromise;
+  auto writeDone = writePromise.get_future();
+
+  SerialBeginPrivateMode configMode = config.signatureType == "setup" ? SerialBeginPrivateMode::setup : SerialBeginPrivateMode::config;
+
+  serial.beginPrivate(SerialBeginPrivateMode::config)
+    .thenPromise([&]() {
+      return serial.set(DeviceParameter::shopId,  Utils::numberToHexString(config.shopId));
+    })
+    .thenPromise([&]() {
+      return serial.set(DeviceParameter::shopKey, config.shopKey);
+    })
+    .thenPromise([&]() {
+      return serial.set(DeviceParameter::domainShopId,  Utils::numberToHexString(config.domainShopId));
+    })
+    .thenPromise([&]() {
+      return serial.set(DeviceParameter::merchantId,  Utils::numberToHexString(config.merchantId));
+    })
+    .thenPromise([&]() {
+      return serial.set(DeviceParameter::cashierId,  config.cashierId);
+    })
+    .thenPromise([&]() {
+      return serial.set(DeviceParameter::devEnv,  DeviceUtils::boolToDeviceBoolStr(config.devEnv));
+    })
+    .thenPromise([&]() {
+      return serial.set(DeviceParameter::phoneConFeedback,  DeviceUtils::boolToDeviceBoolStr(config.phoneConFeedback));
+    })
+    .thenPromise([&]() {
+      return serial.set(DeviceParameter::logLevel,  Utils::numberToHexString(config.logLevel));
+    })
+    .thenPromise([&]() {
+      return serial.set(DeviceParameter::connectionRole, DeviceUtils::connectionRoleToString(config.connectionRole));
+    })
+    .thenPromise([&]() {
+      return serial.set(DeviceParameter::mode, DeviceUtils::operationModeToString(config.mode));
+    })
+    .thenPromise([&]() {
+      return serial.set(DeviceParameter::mobileAppsUUIDs, DeviceUtils::mobileAppsUUIDsToString(config.mobileAppsUUIDs));
+    })
+    .thenPromise([&]() {
+      return serial.set(DeviceParameter::txPower,  Utils::numberToHexString((uint8_t) config.txPower));
+    })
+    .thenPromise([&]() {
+      return serial.set(DeviceParameter::tapSensitivity,  Utils::numberToHexString((uint8_t) config.tapSensitivity));
+    })
+    .thenPromise([&]() {
+      return serial.commit(config.signature);
+    })
+    .then([&]() { 
+      writePromise.set_value();
+    })
+    .catchError([&writePromise](const exception_ptr& ex) { writePromise.set_exception(ex); });
+
+  writeDone.wait();
+}
+
 static void updateDeviceConfig(DeviceInfo& deviceInfo) {
   PortalBackend backend(PortalHostEnv::Production);
   auto config = getDevicePortalConfig(backend, deviceInfo);
   Logger dfuLogger("config");
   JetBeep::SerialDevice serial;
   serial.open(deviceInfo.systemPath);
-  // TODO apply config
+  writeDeviceConfig(config, serial);
   updateDevicePortalConfig(backend, deviceInfo);
 }
 
 int main(int argc, char* argv[]) {
   Logger::coutEnabled = true;
-  Logger::level = argc > 1 ? LoggerLevel::verbose : LoggerLevel::info;
   bool updateFwDone = false;
   bool updateConfigDone = false;
+  bool doFwUpdate = false;
+  bool doConfiguration = true;
   int err_code = 0;
+  Logger::level = LoggerLevel::info;
+
+  for (int i = 1; i < argc; i++) {
+    string param = string(argv[i]);
+    if (param == "--help") {
+      //TODO list params
+      return 0;
+    } else if (param == "--log=verbose") {
+      Logger::level = LoggerLevel::verbose;
+    } else if (param == "--log=debug") {
+      Logger::level = LoggerLevel::debug;
+    } else if (param == "--version") {
+      //TODO display version
+    } else if (param == "--config-only") {
+      doConfiguration = true;
+       doFwUpdate = false;
+    } else if (param == "--dfu-only") {
+      doFwUpdate = true;
+      doConfiguration = false;
+    } else {
+      cout << "Invalid parameter supplied: [" << param << "]\n";
+      return -1;
+    }
+  }
+
   DeviceInfo deviceInfo;
   vector<PackageInfo> zipPackages;
 
@@ -193,20 +283,27 @@ int main(int argc, char* argv[]) {
   };
   try {
     deviceInfo = getDeviceInfo();
-    zipPackages = findZipPackages();
-    for (auto p : zipPackages) {
-      l.i() << "Firmware package found: " << p.path << Logger::endl;
-    }
   } catch (const exception& e) {
     return onError(e);
   }
 
-  if (zipPackages.size() == 0) {
-    l.w() << "No firmware update packages were found!" << Logger::endl;
-  } else {
+  if (doFwUpdate) {
     try {
-      updateFirmwareProcedure(deviceInfo, zipPackages);
-      updateFwDone = true;
+      zipPackages = findZipPackages();
+      for (auto p : zipPackages) {
+        l.i() << "Firmware package found: " << p.path << Logger::endl;
+      }
+      if (zipPackages.size() == 0) {
+        l.w() << "No firmware update packages were found!" << Logger::endl;
+      } else {
+        string prevFwVersion = deviceInfo.version;
+        updateFirmwareProcedure(deviceInfo, zipPackages);
+        deviceInfo = getDeviceInfo();
+        updateFwDone = prevFwVersion != deviceInfo.version;
+        if (!updateFwDone) {
+          l.i() << "The firmware version was not changed" << Logger::endl;
+        }
+      }
     } catch (const DFU::ExtendedError& e) {
       return onError(e);
     } catch (const exception& e) {
@@ -214,14 +311,16 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  {
+  if (doConfiguration) {
     l.i() << "Processing device configuration" << Logger::endl;
     updateDeviceConfig(deviceInfo);
+    updateConfigDone = true;
   }
 
   l.i() << "-----------------------------------------------" << Logger::endl;
   l.i() << "Status: Firmware updated " << (updateFwDone ? "YES" : "NO") << ", Config updated "
         << (updateConfigDone ? "YES" : "NO") << Logger::endl;
+
   l.i() << "Press Enter to exit " << Logger::endl;
   (void)cin.get();
 
