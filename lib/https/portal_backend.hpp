@@ -23,6 +23,7 @@ namespace JetBeep {
     PortalBackend(PortalHostEnv env, IOContext context = IOContext::context);
 
     Promise<DeviceConfigResponse> getDeviceConfig(DeviceConfigRequest &requestData);
+    Promise<void> updateDeviceConfig(DeviceConfigUpdateRequest &requestData);
 
     void* opaque;
 

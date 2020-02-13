@@ -71,11 +71,9 @@ static DeviceInfo getDeviceInfo() {
       } catch (...) {
         infoReadPromise.set_exception(make_exception_ptr(runtime_error("Unable to read deviceId")));
       }
-      return serial.get(DeviceParameter::chipId); 
+      return serial.get(DeviceParameter::chipId);
     })
-    .then([&infoReadPromise, &deviceInfo](string chipId) {
-      deviceInfo.chipId = chipId;
-    })
+    .then([&infoReadPromise, &deviceInfo](string chipId) { deviceInfo.chipId = chipId; })
     .catchError([&infoReadPromise](const exception_ptr& ex) { infoReadPromise.set_exception(ex); });
 
   infoReady.wait();
@@ -142,10 +140,10 @@ static void updateFirmwareProcedure(DeviceInfo& deviceInfo, vector<PackageInfo>&
   }
 }
 
-static DeviceConfig getDeviceConfig(PortalBackend& backend, string chipId) {
+static DeviceConfig getDevicePortalConfig(PortalBackend& backend, DeviceInfo& deviceInfo) {
   std::promise<DeviceConfig> reqPromise;
   auto reqFuture = reqPromise.get_future();
-  DeviceConfigRequest request = {.chipId = chipId};
+  DeviceConfigRequest request = {.chipId = deviceInfo.chipId};
 
   backend.getDeviceConfig(request)
     .then([&reqPromise](DeviceConfigResponse res) { reqPromise.set_value(res.config); })
@@ -155,14 +153,29 @@ static DeviceConfig getDeviceConfig(PortalBackend& backend, string chipId) {
   return reqFuture.get();
 }
 
+static void updateDevicePortalConfig(PortalBackend& backend, DeviceInfo& deviceInfo) {
+  std::promise<void> reqPromise;
+  auto reqFuture = reqPromise.get_future();
+  DeviceConfigUpdateRequest request = {.chipId = deviceInfo.chipId, .fwVersion = deviceInfo.verion};
+
+  backend.updateDeviceConfig(request)
+    .then([&reqPromise]() { reqPromise.set_value(); })
+    .catchError([&reqPromise](const exception_ptr& ex) {
+      reqPromise.set_exception(ex);
+    });
+
+  reqFuture.wait();
+  return reqFuture.get();
+}
+
 static void updateDeviceConfig(DeviceInfo& deviceInfo) {
   PortalBackend backend(PortalHostEnv::Production);
-  auto config = getDeviceConfig(backend, deviceInfo.chipId);
+  auto config = getDevicePortalConfig(backend, deviceInfo);
   Logger dfuLogger("config");
   JetBeep::SerialDevice serial;
   serial.open(deviceInfo.systemPath);
-  //TODO apply config
-  //TODO report to backend
+  // TODO apply config
+  updateDevicePortalConfig(backend, deviceInfo);
 }
 
 int main(int argc, char* argv[]) {

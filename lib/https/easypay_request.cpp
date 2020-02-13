@@ -3,16 +3,11 @@
 
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
-#include <boost/algorithm/string/replace.hpp>
 
 namespace pt = boost::property_tree;
 
 using namespace std;
 using namespace JetBeep;
-
-static void replaceJsonTemplate(string& json, const string& placeholder, const string& value) {
-  boost::replace_all<string>(json, "\"" + placeholder + "\"", value);
-}
 
 string EasyPayAPI::tokenPaymentReqToJSON(TokenPaymentRequest& data) {
   pt::ptree json;
@@ -48,8 +43,8 @@ string EasyPayAPI::tokenPaymentReqToJSON(TokenPaymentRequest& data) {
 
   string templateJson = stream.str();
 
-  replaceJsonTemplate(templateJson, "{{DeviceId}}", std::to_string(DeviceId));
-  replaceJsonTemplate(templateJson, "{{AmountInCoin}}", std::to_string(data.AmountInCoin));
+  Utils::replaceInTemplate(templateJson, "{{DeviceId}}", std::to_string(DeviceId));
+  Utils::replaceInTemplate(templateJson, "{{AmountInCoin}}", std::to_string(data.AmountInCoin));
 
   return templateJson;
 }
@@ -67,8 +62,8 @@ string EasyPayAPI::tokenGetStatusReqToJSON(TokenGetStatusRequest& data) {
 
   string templateJson = stream.str();
 
-  replaceJsonTemplate(templateJson, "{{DeviceId}}", std::to_string(data.DeviceId));
-  replaceJsonTemplate(templateJson, "{{AmountInCoin}}", std::to_string(data.AmountInCoin));
+  Utils::replaceInTemplate(templateJson, "{{DeviceId}}", std::to_string(data.DeviceId));
+  Utils::replaceInTemplate(templateJson, "{{AmountInCoin}}", std::to_string(data.AmountInCoin));
 
   return templateJson;
 }
@@ -90,9 +85,9 @@ string EasyPayAPI::tokenRefundReqToJSON(TokenRefundRequest& data) {
 
   string templateJson = stream.str();
 
-  replaceJsonTemplate(templateJson, "{{DeviceId}}", std::to_string(data.DeviceId));
+  Utils::replaceInTemplate(templateJson, "{{DeviceId}}", std::to_string(data.DeviceId));
   if (!useUUID) {
-    replaceJsonTemplate(templateJson, "{{TransactionId}}", std::to_string(data.TransactionId));
+    Utils::replaceInTemplate(templateJson, "{{TransactionId}}", std::to_string(data.TransactionId));
   }
 
   return templateJson;

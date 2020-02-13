@@ -13,6 +13,13 @@ namespace JetBeep::PortalAPI {
     string chipId;
   } DeviceConfigRequest;
 
+  typedef struct {
+    string chipId;
+    string fwVersion; //the only field that can be actualy changed in dfu module
+  } DeviceConfigUpdateRequest;
+
+  string deviceConfigUpdateToJSON(DeviceConfigUpdateRequest& data);
+
 } // namespace JetBeep::PortalAPI
 
 #endif
