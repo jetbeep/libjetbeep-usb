@@ -68,7 +68,7 @@ elseif(UNIX AND NOT APPLE) #linux
   add_definitions(-DCURL_STATICLIB)
   message(STATUS "Using CURL_LIBRARIES: ${CURL_LIBRARIES}.")
   target_include_directories(jetbeep-jni PUBLIC ${CURL_INCLUDE_DIRS})
-  target_link_libraries(jetbeep-jni "-lpthread" "-ludev" ${CURL_LIBRARIES})
+  target_link_libraries(jetbeep-jni "-lpthread" "-ludev" ${CURL_LIBRARIES} -static-libgcc -static-libstdc++)
 elseif(WIN32)
   target_link_libraries(jetbeep-jni "wsock32" "ws2_32" "winhttp")
 endif()

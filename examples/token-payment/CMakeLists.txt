@@ -12,7 +12,7 @@ elseif(UNIX AND NOT APPLE) #linux
     add_definitions(-DCURL_STATICLIB)
     message(STATUS "Using CURL_LIBRARIES: ${CURL_LIBRARIES}.")
     target_include_directories(token_payment_example PUBLIC ${CURL_INCLUDE_DIRS})
-    target_link_libraries(token_payment_example "-lpthread" "-ludev" ${CURL_LIBRARIES})
+    target_link_libraries(token_payment_example "-lpthread" "-ludev" ${CURL_LIBRARIES} -static-libgcc -static-libstdc++)
 elseif(WIN32)
     target_link_libraries(token_payment_example "wsock32" "ws2_32" "winhttp")
 endif()
