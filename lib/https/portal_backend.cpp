@@ -104,15 +104,7 @@ Promise<void> PortalBackend::Impl::updateDeviceConfig(DeviceConfigUpdateRequest 
       promise.reject(make_exception_ptr(HttpErrors::ServerError(res.statusCode)));
       return promise;
     }
-    try {
-      DeviceConfigResponse result;
-      result.config = parseDeviceConfigResult(res.body);
-      result._rawResponse = res.body;
-      result.statusCode = res.statusCode;
-      promise.resolve();
-    } catch (...) {
-      promise.reject(make_exception_ptr(HttpErrors::APIError()));
-    }
+    promise.resolve();
     return promise;
   });
 }

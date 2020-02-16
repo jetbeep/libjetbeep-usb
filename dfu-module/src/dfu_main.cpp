@@ -1,3 +1,4 @@
+#include "../lib/utils/platform.hpp"
 #include "dfu_main.hpp"
 #include <stdio.h>
 #include <string.h>
@@ -16,12 +17,14 @@
 #include "ext_error.h"
 #include "device/device_utils.hpp"
 
+
 using namespace std;
 using namespace JetBeep;
 
 Logger l("main");
 
 static DeviceCandidate findJetBeepDeviceCandidate() {
+  l.i() << "Waiting for a JetBeep device ..." << Logger::endl;
   std::promise<DeviceCandidate> detectionPromise;
   DeviceDetection deviceDetection;
   deviceDetection.callback = [&detectionPromise](const DeviceDetectionEvent& event, const DeviceCandidate& candidate) {
@@ -55,8 +58,9 @@ static void resolveMcp2200Issue(JetBeep::SerialDevice& serial) {
 }
 
 static DeviceInfo getDeviceInfo() {
+  static string systemPath = findJetBeepDeviceCandidate().path;
   DeviceInfo deviceInfo;
-  deviceInfo.systemPath = findJetBeepDeviceCandidate().path;
+  deviceInfo.systemPath = systemPath;
   JetBeep::SerialDevice serial;
   serial.open(deviceInfo.systemPath);
   resolveMcp2200Issue(serial);
@@ -138,7 +142,7 @@ static void updateFirmwareProcedure(DeviceInfo& deviceInfo, vector<PackageInfo>&
           extErrorCode == (int)NRF_DFU_EXT_ERROR::FW_VERSION_FAILURE) {
         err_code = 0; // continue to app update assuming that bootloader and soft device are up to date already
         l.i() << "Bootloader and SD are up to date" << Logger::endl;
-      } else if (extErrorCode != (int)NRF_DFU_EXT_ERROR::NO_ERROR) {
+      } else if (extErrorCode != (int)NRF_DFU_EXT_ERROR::NO_ERROR_CODE) {
         throw DFU::ExtendedError(extErrorCode);
       } else {
         onError();
@@ -150,7 +154,8 @@ static void updateFirmwareProcedure(DeviceInfo& deviceInfo, vector<PackageInfo>&
 static DeviceConfig getDevicePortalConfig(PortalBackend& backend, DeviceInfo& deviceInfo) {
   std::promise<DeviceConfig> reqPromise;
   auto reqFuture = reqPromise.get_future();
-  DeviceConfigRequest request = {.chipId = deviceInfo.chipId};
+  DeviceConfigRequest request;
+  request.chipId = deviceInfo.chipId;
 
   backend.getDeviceConfig(request)
     .then([&reqPromise](DeviceConfigResponse res) { reqPromise.set_value(res.config); })
@@ -163,7 +168,9 @@ static DeviceConfig getDevicePortalConfig(PortalBackend& backend, DeviceInfo& de
 static void updateDevicePortalConfig(PortalBackend& backend, DeviceInfo& deviceInfo) {
   std::promise<void> reqPromise;
   auto reqFuture = reqPromise.get_future();
-  DeviceConfigUpdateRequest request = {.chipId = deviceInfo.chipId, .fwVersion = deviceInfo.version};
+  DeviceConfigUpdateRequest request;
+  request.chipId = deviceInfo.chipId;
+  request.fwVersion = deviceInfo.version;
 
   backend.updateDeviceConfig(request)
     .then([&reqPromise]() { reqPromise.set_value(); })
@@ -312,9 +319,13 @@ int main(int argc, char* argv[]) {
   }
 
   if (doConfiguration) {
-    l.i() << "Processing device configuration" << Logger::endl;
-    updateDeviceConfig(deviceInfo);
-    updateConfigDone = true;
+    try {
+      l.i() << "Processing device configuration" << Logger::endl;
+      updateDeviceConfig(deviceInfo);
+      updateConfigDone = true;
+    } catch (const exception& e) {
+      return onError(e);
+    }
   }
 
   l.i() << "-----------------------------------------------" << Logger::endl;

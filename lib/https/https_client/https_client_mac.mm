@@ -71,6 +71,8 @@ Promise<Response> HttpsClient::request(RequestOptions& options) {
       break;
       case RequestMethod::POST:
         [request setHTTPMethod:@"POST"];
+      case RequestMethod::PATCH:
+        [request setHTTPMethod:@"PATCH"];
       break;
     }
 

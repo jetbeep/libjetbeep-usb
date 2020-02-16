@@ -9,13 +9,13 @@ void set_ext_error_code(int code) {
 
 int get_ext_error_code() {
   int code = lastErrorCode;
-  lastErrorCode = (int)NRF_DFU_EXT_ERROR::NO_ERROR; // reset code
+  lastErrorCode = (int)NRF_DFU_EXT_ERROR::NO_ERROR_CODE; // reset code
   return code;
 }
 
 std::string getExtendedErrorMsg(int code) {
   switch (code) {
-  case (int)NRF_DFU_EXT_ERROR::NO_ERROR:
+  case (int)NRF_DFU_EXT_ERROR::NO_ERROR_CODE:
     return "An error happened, but its extended error code hasn't been set.";
   case (int)NRF_DFU_EXT_ERROR::INVALID_ERROR_CODE:
     return "An error happened, but its extended error code is incorrect.";

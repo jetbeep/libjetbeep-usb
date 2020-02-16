@@ -38,6 +38,10 @@ elseif(UNIX AND NOT APPLE) #linux
     target_link_libraries(dfu_module "-lpthread" "-ludev" ${CURL_LIBRARIES})
 elseif(WIN32)
     target_link_libraries(dfu_module "wsock32" "ws2_32" "winhttp")
+    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+
+    # disable autolinking in boost HACK to force build filesystem lib from sources
+    add_definitions(-DBOOST_ALL_NO_LIB -DBOOST_ALL_DYN_LINK)
 endif()
 
 #install(TARGETS dfu_module RUNTIME DESTINATION bin)

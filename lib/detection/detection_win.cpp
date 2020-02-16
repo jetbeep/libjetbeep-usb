@@ -141,7 +141,9 @@ void DeviceDetection::Impl::stopMonitoring() {
 
   // post message to window thread, to unblock GetMessage and exit
   if (m_hwnd && !PostMessageA(m_hwnd, APP_UNBLOCK_MSG, 0, 0)) {
-    throw runtime_error("Unable to PostMessageA");
+    //throw runtime_error("Unable to PostMessageA");
+    m_log.w() << "Unable to PostMessageA in stopMonitoring" << Logger::endl;
+    //TODO find out is it critical
   }
   if (m_thread.joinable()) {
     m_thread.join();
@@ -214,6 +216,7 @@ void DeviceDetection::Impl::monitorLoop() {
       });
     }
   }
+  m_log.d() << "device mon loop exit" << Logger::endl;
 }
 
 void DeviceDetection::Impl::detectConnected() {

@@ -6,8 +6,8 @@
 
 #include <exception>
 
-enum class NRF_DFU_EXT_ERROR : int {
-  NO_ERROR = 0x00,
+enum class NRF_DFU_EXT_ERROR {
+  NO_ERROR_CODE = 0x00,
   INVALID_ERROR_CODE = 0x01,
   WRONG_COMMAND_FORMAT = 0x02,
   UNKNOWN_COMMAND = 0x03,

@@ -28,7 +28,9 @@ vector<PackageInfo> findZipPackages() {
       const string fileName = path.filename().string();
 
       if (std::regex_match(fileName, match, pkgNameRe) && match.size() == 3) {
-        PackageInfo pkg = {.name = fileName, .path = path.string()};
+        PackageInfo pkg;
+        pkg.name = fileName;
+        pkg.path = path.string();
         pkg.dfuStyle = stringToDFUStyle(match[1]);
         if (match[2] == "1") {
           pkg.type = PackageType::BOOTLOADER_SD_FW;
