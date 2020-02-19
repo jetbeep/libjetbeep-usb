@@ -1,6 +1,7 @@
 add_executable(autodevice main.cpp cmd.cpp)
 target_include_directories(autodevice PUBLIC ${BOOST_SOURCE_DIR})
 
+add_dependencies(autodevice jetbeep_obj)
 target_link_libraries(autodevice $<TARGET_OBJECTS:jetbeep_obj>)
 
 if (APPLE) 
