@@ -11,6 +11,9 @@ namespace JetBeep {
       std::string getRequestError() {
         return m_serverMessage;
       }
+      virtual char const* what() const noexcept {
+        return m_serverMessage.c_str();
+      }
       private:
       std::string m_serverMessage;
     };

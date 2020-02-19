@@ -292,7 +292,7 @@ int main(int argc, char* argv[]) {
       return 0;
     } else if (param == "--config-only") {
       doConfiguration = true;
-       doFwUpdate = false;
+      doFwUpdate = false;
     } else if (param == "--dfu-only") {
       doFwUpdate = true;
       doConfiguration = false;

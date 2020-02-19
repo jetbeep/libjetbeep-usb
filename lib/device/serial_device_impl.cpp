@@ -24,7 +24,9 @@ SerialDevice::Impl::Impl(const SerialDeviceCallbacks& callbacks, IOContext conte
 
 SerialDevice::Impl::~Impl() {
   try {
+    m_port_state = SerialPortState::closing;
     m_port.close();
+    m_port_state = SerialPortState::closed;
   } catch (...) {
   }
 }
@@ -45,8 +47,7 @@ void SerialDevice::Impl::close() {
 void SerialDevice::Impl::writeCompleted(const boost::system::error_code& error, std::size_t bytes_transferred) {
   auto errorCallback = *m_callbacks.errorCallback;
 
-  //ignore read error on closing port
-  if (error && m_port_state == SerialPortState::open) {
+  if (error) {
     m_log.e() << "write error: " << error << Logger::endl;
     if (errorCallback) {
       errorCallback(make_exception_ptr(Errors::IOError()));
@@ -58,11 +59,14 @@ void SerialDevice::Impl::writeCompleted(const boost::system::error_code& error, 
 void SerialDevice::Impl::readCompleted(const boost::system::error_code& error) {
   auto errorCallback = *m_callbacks.errorCallback;
 
-  if (error) {
+  if (error && m_port_state == SerialPortState::open) {
     m_log.e() << "read error: " << error << Logger::endl;
     if (errorCallback) {
       errorCallback(make_exception_ptr(Errors::IOError()));
     }
+    return;
+  } else if (error) {
+    //ignore read error on closing port
     return;
   }
 

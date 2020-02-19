@@ -68,7 +68,7 @@ Promise<DeviceConfigResponse> PortalBackend::Impl::getDeviceConfig(DeviceConfigR
   return m_httpsClient.request(options).thenPromise<DeviceConfigResponse, Promise>([&](Response res) {
     auto promise = Promise<DeviceConfigResponse>();
     if (res.statusCode == 404) {
-      promise.reject(make_exception_ptr(HttpErrors::RequestError("device not found")));
+      promise.reject(make_exception_ptr(HttpErrors::RequestError("Server response: device not found")));
       return promise;
     }
     if (res.isHttpError) {
