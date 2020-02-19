@@ -105,7 +105,6 @@ Promise<string> SerialDevice::get(const DeviceParameter& parameter) {
   return m_impl->executeString(DeviceResponses::get, DeviceUtils::parameterToString(parameter));
 }
 Promise<void> SerialDevice::set(const DeviceParameter& parameter, const std::string& value) {
-  cout << "SET CMD VALUE: " << value << "\n"; //TODO remove
   return m_impl->execute(DeviceResponses::set, DeviceUtils::parameterToString(parameter) + " " + value);
 }
 Promise<void> SerialDevice::commit(const string& signature) {

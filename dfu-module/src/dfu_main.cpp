@@ -257,18 +257,29 @@ int main(int argc, char* argv[]) {
   bool doConfiguration = true;
   int err_code = 0;
   Logger::level = LoggerLevel::info;
+  string utilityVersion = JETBEEP_VERSION;
 
   for (int i = 1; i < argc; i++) {
     string param = string(argv[i]);
-    if (param == "--help") {
-      //TODO list params
+    if (param == "--help" || param == "-h") {
+      cout << "JetBeep device firmware and configuration update utility.\n";
+      cout << "Version: " << utilityVersion << "\n\n";
+      cout << "Optional parameters: " << "\n";
+      cout << "--log=verbose or --log=debug - to provide more details during update." << "\n";
+      cout << "--config-only - skip firware update. Same if no fw .zip were found." << "\n";
+      cout << "--dfu-only    - skip config update." << "\n";
+      cout << "--help        - display help info." << "\n\n";
+      cout << "Usage: " << "\n";
+      cout << "To update firmware place fw .zip packages in the same folder as utility binary." << "\n";
+      cout << "Device config will be updated after firmware and require internet connection." << "\n";
       return 0;
     } else if (param == "--log=verbose") {
       Logger::level = LoggerLevel::verbose;
     } else if (param == "--log=debug") {
       Logger::level = LoggerLevel::debug;
     } else if (param == "--version") {
-      //TODO display version
+      cout << utilityVersion << "\n";
+      return 0;
     } else if (param == "--config-only") {
       doConfiguration = true;
        doFwUpdate = false;
