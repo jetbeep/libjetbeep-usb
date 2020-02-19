@@ -57,10 +57,20 @@ static void resolveMcp2200Issue(JetBeep::SerialDevice& serial) {
   readyFuture.wait();
 }
 
-static DeviceInfo getDeviceInfo() {
-  static string systemPath = findJetBeepDeviceCandidate().path;
+//on 52840 path may change after each device reboot
+static string updateDeviceSystemPath(DeviceInfo &deviceInfo) {
+  return deviceInfo.systemPath = findJetBeepDeviceCandidate().path;
+}
+
+static DeviceInfo getDeviceInfo(bool updateSystemPath = false) {
+  static string systemPath;
   DeviceInfo deviceInfo;
-  deviceInfo.systemPath = systemPath;
+  if (updateSystemPath || systemPath.empty()) {
+    systemPath = updateDeviceSystemPath(deviceInfo);
+  } else {
+    deviceInfo.systemPath = systemPath;
+  }
+  
   JetBeep::SerialDevice serial;
   serial.open(deviceInfo.systemPath);
   resolveMcp2200Issue(serial);
@@ -237,6 +247,8 @@ static void writeDeviceConfig(DeviceConfig& config, JetBeep::SerialDevice& seria
     .catchError([&writePromise](const exception_ptr& ex) { writePromise.set_exception(ex); });
 
   writeDone.wait();
+
+  writeDone.get(); //raise exception if is set_exception
 }
 
 static void updateDeviceConfig(DeviceInfo& deviceInfo, PortalHostEnv env) {
@@ -262,7 +274,7 @@ int main(int argc, char* argv[]) {
   PortalHostEnv env = PortalHostEnv::Production;
   bool updateFwDone = false;
   bool updateConfigDone = false;
-  bool doFwUpdate = false;
+  bool doFwUpdate = true;
   bool doConfiguration = true;
   int err_code = 0;
   Logger::level = LoggerLevel::info;
@@ -313,6 +325,10 @@ int main(int argc, char* argv[]) {
   };
   try {
     deviceInfo = getDeviceInfo();
+    if (deviceInfo.deviceId == 0) {
+      l.e() << "Unable to proceed. The connected device is not initially configured (blank). Please contact your supplier." << Logger::endl;
+      return -1;
+    }
   } catch (const exception& e) {
     return onError(e);
   }
@@ -328,7 +344,8 @@ int main(int argc, char* argv[]) {
       } else {
         string prevFwVersion = deviceInfo.version;
         updateFirmwareProcedure(deviceInfo, zipPackages);
-        deviceInfo = getDeviceInfo();
+        delay_boot();
+        deviceInfo = getDeviceInfo(true);
         updateFwDone = prevFwVersion != deviceInfo.version;
         if (!updateFwDone) {
           l.i() << "The firmware version was not changed" << Logger::endl;
