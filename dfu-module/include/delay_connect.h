@@ -50,6 +50,8 @@ extern "C" {
 
 int delay_connect(void);
 void delay_boot(void);
+void delay_flash_write(void);
+
 
 #ifdef __cplusplus
 }   /* ... extern "C" */

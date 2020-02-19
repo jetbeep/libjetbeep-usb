@@ -24,6 +24,7 @@ namespace JetBeep {
   } SerialDeviceCallbacks;
 
   enum class SerialDeviceState { idle, executeInProgress };
+  enum class SerialPortState { open, closing, closed };
 
   class SerialDevice::Impl {
   public:
@@ -41,6 +42,7 @@ namespace JetBeep {
   private:
     IOContext m_context;
     SerialDeviceState m_state;
+    SerialPortState m_port_state;
     Promise<void> m_executePromise;
     Promise<std::string> m_executeStringPromise;
     Promise<SerialGetStateResult> m_executeGetStatePromise;
@@ -61,6 +63,7 @@ namespace JetBeep {
     bool handleResult(const std::string& command, const std::vector<std::string>& params);
     bool handleResultWithParams(const std::string& command, const std::vector<std::string>& params);
     bool handleEvent(const std::string& event, const std::vector<std::string>& params);
+    bool handleSystemEvent(const std::string& event, const std::vector<std::string>& params);
     void rejectPendingPromises(std::exception_ptr exception);
   };
 } // namespace JetBeep

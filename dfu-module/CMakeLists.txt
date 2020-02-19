@@ -23,6 +23,8 @@ add_executable(dfu_module ${BOOST_FILESYSTEM_SOURCES}
 
 target_include_directories(dfu_module PRIVATE ./include PUBLIC ${JETBEEP_LIB_SOURCE_DIR} ${BOOST_SOURCE_DIR} ${BOOST_SOURCE_DIR}/lib/filesystem/)
 
+add_dependencies(dfu_module jetbeep_obj)
+
 target_link_libraries(dfu_module $<TARGET_OBJECTS:jetbeep_obj>)
 
 if (APPLE) 

@@ -50,6 +50,9 @@ namespace DeviceResponses {
   const std::string paymentSuccessful = "PAYMENT_SUCCESSFUL";
   const std::string paymentError = "PAYMENT_ERROR";
   const std::string paymentToken = "PAYMENT_TOKEN";
+
+  //system events
+  const std::string systemReset = "SYSTEM_RESET";
 } // namespace DeviceResponses
 
 #endif

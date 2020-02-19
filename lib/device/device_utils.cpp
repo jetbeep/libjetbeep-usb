@@ -159,7 +159,7 @@ std::string DeviceUtils::mobileAppsUUIDsToString(std::vector<uint32_t> list) {
   stream << Utils::numberToHexString(list.at(0));
 
   for (auto uid : boost::make_iterator_range(list.begin() + 1, list.end())) {
-    stream << " " << Utils::numberToHexString(list.at(0));
+    stream << " " << Utils::numberToHexString(uid);
   }
 
   return stream.str();

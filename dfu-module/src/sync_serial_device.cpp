@@ -60,18 +60,6 @@ void DFU::SyncSerialDevice::close() {
   m_log.d() << "Port closed" << Logger::endl;
 }
 
-uint32_t DFU::SyncSerialDevice::getDeviceId() {
-  return std::stoul(getCmd("deviceId"), NULL, 16);
-}
-
-string DFU::SyncSerialDevice::getFirmwareVer() {
-  return getCmd("version");
-}
-
-string DFU::SyncSerialDevice::getPublicKey() {
-  return getCmd("pubKey");
-}
-
 void DFU::SyncSerialDevice::enterDFUMode() {
   string cmd = "ENTER_DFU_MODE" ENDING;
   write(m_port, asio::buffer(ENDING)); //to handle case with mcp2200 buffers issue after power on
@@ -79,12 +67,10 @@ void DFU::SyncSerialDevice::enterDFUMode() {
   m_log.d() << "TX: " <<  cmd;
 }
 
-bool DFU::SyncSerialDevice::isBootloaderMode() {
-  //TODO reimplement
-  auto handle = std::async(std::launch::async, [this]{ (void) getDeviceId(); });
-  std::future_status status = handle.wait_for(std::chrono::milliseconds(300));
-  //asume that device is in bootloader mode if it does't respond
-  return status == std::future_status::timeout;
+void DFU::SyncSerialDevice::reset() {
+  string cmd = "SOFT_RESET" ENDING;
+  write(m_port, asio::buffer(cmd)); 
+  m_log.d() << "TX: " <<  cmd;
 }
 
 string DFU::SyncSerialDevice::getResponseStr() {

@@ -51,6 +51,9 @@
 // number of seconds to delay after reboot
 #define DELAY_BOOT_SEC 1
 
+// number of seconds to delay after config write
+#define DELAY_FLASH_WRITE_SEC 2
+
 int delay_connect(void) {
 #ifdef WIN32
   Sleep(DELAY_CONNECT_SEC * 1000);
@@ -68,3 +71,12 @@ void delay_boot(void) {
   sleep(DELAY_BOOT_SEC);
 #endif
 }
+
+void delay_flash_write(void) {
+#ifdef WIN32
+  Sleep(DELAY_FLASH_WRITE_SEC * 1000);
+#else
+  sleep(DELAY_FLASH_WRITE_SEC);
+#endif
+}
+

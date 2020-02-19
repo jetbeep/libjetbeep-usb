@@ -23,17 +23,12 @@ namespace DFU {
 
     void open(const std::string& path);
     void close();
-
-    uint32_t getDeviceId();
-    string getFirmwareVer();
-    string getPublicKey();
-  
     void enterDFUMode();
+    void reset();
 
     size_t readBytes(void * p_data, size_t size);
     void writeBytes(void * p_data, size_t size);
 
-    bool isBootloaderMode();
   private:
     string getResponseStr();
     string getCmd(string prop);

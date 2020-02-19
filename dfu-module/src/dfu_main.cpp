@@ -239,18 +239,27 @@ static void writeDeviceConfig(DeviceConfig& config, JetBeep::SerialDevice& seria
   writeDone.wait();
 }
 
-static void updateDeviceConfig(DeviceInfo& deviceInfo) {
-  PortalBackend backend(PortalHostEnv::Production);
+static void updateDeviceConfig(DeviceInfo& deviceInfo, PortalHostEnv env) {
+  PortalBackend backend(env);
   auto config = getDevicePortalConfig(backend, deviceInfo);
-  Logger dfuLogger("config");
+  Logger configLogger("config");
   JetBeep::SerialDevice serial;
   serial.open(deviceInfo.systemPath);
+  configLogger.i() << "Applying new configuration ..." << Logger::endl;
   writeDeviceConfig(config, serial);
+  serial.close();
+  DFU::SyncSerialDevice syncSerialDevice = DFU::SyncSerialDevice();
+  configLogger.i() << "Reseting the device ..." << Logger::endl;
+  delay_flash_write(); //wait until flash write is completed
+  syncSerialDevice.open(deviceInfo.systemPath);
+  syncSerialDevice.reset();
+  syncSerialDevice.close();
   updateDevicePortalConfig(backend, deviceInfo);
 }
 
 int main(int argc, char* argv[]) {
   Logger::coutEnabled = true;
+  PortalHostEnv env = PortalHostEnv::Production;
   bool updateFwDone = false;
   bool updateConfigDone = false;
   bool doFwUpdate = false;
@@ -265,6 +274,7 @@ int main(int argc, char* argv[]) {
       cout << "JetBeep device firmware and configuration update utility.\n";
       cout << "Version: " << utilityVersion << "\n\n";
       cout << "Optional parameters: " << "\n";
+      cout << "--dev         - dev server configuration." << "\n";
       cout << "--log=verbose or --log=debug - to provide more details during update." << "\n";
       cout << "--config-only - skip firware update. Same if no fw .zip were found." << "\n";
       cout << "--dfu-only    - skip config update." << "\n";
@@ -286,6 +296,8 @@ int main(int argc, char* argv[]) {
     } else if (param == "--dfu-only") {
       doFwUpdate = true;
       doConfiguration = false;
+    } else if (param == "--dev") {
+      env = PortalHostEnv::Development;
     } else {
       cout << "Invalid parameter supplied: [" << param << "]\n";
       return -1;
@@ -332,7 +344,7 @@ int main(int argc, char* argv[]) {
   if (doConfiguration) {
     try {
       l.i() << "Processing device configuration" << Logger::endl;
-      updateDeviceConfig(deviceInfo);
+      updateDeviceConfig(deviceInfo, env);
       updateConfigDone = true;
     } catch (const exception& e) {
       return onError(e);
