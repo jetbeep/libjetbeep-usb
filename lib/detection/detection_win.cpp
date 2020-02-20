@@ -79,6 +79,7 @@ private:
   DeviceDetectionCallback* m_callback = nullptr;
   Logger m_log;
   std::atomic<bool> isMonActive;
+  std::atomic<bool> isMonLoopBlocked;
   std::thread m_thread;
 
   HWND m_hwnd;
@@ -123,6 +124,7 @@ _SetupDiOpenDevRegKey DeviceDetection::Impl::DllSetupDiOpenDevRegKey = nullptr;
 DeviceDetection::Impl::Impl(DeviceDetectionCallback* callback, IOContext context)
   : m_callback(callback), m_log("detection"), m_context(context) {
   isMonActive.store(false);
+  isMonLoopBlocked.store(false);
   if (!m_hInstLib) {
     loadFunctions();
   }
@@ -140,16 +142,15 @@ void DeviceDetection::Impl::stopMonitoring() {
   isMonActive.store(false);
 
   // post message to window thread, to unblock GetMessage and exit
-  if (m_hwnd && !PostMessageA(m_hwnd, APP_UNBLOCK_MSG, 0, 0)) {
-    //throw runtime_error("Unable to PostMessageA");
-    m_log.w() << "Unable to PostMessageA in stopMonitoring" << Logger::endl;
-    //TODO find out is it critical
+  if (m_hwnd && isMonLoopBlocked.load() && !PostMessageA(m_hwnd, APP_UNBLOCK_MSG, 0, 0)) {
+    m_log.e() << "Unable to PostMessageA in stopMonitoring" << Logger::endl;
+    throw runtime_error("Unable to PostMessageA");
   }
   if (m_thread.joinable()) {
     m_thread.join();
   }
 
-  m_log.d() << "Window mon stopped" << Logger::endl;
+  m_log.v() << "Window mon stopped" << Logger::endl;
 }
 
 void DeviceDetection::Impl::startMonitoring() {
@@ -196,7 +197,9 @@ void DeviceDetection::Impl::monitorLoop() {
   }
 
   MSG msg;
+
   while (isMonActive.load()) {
+    isMonLoopBlocked.store(true);
     BOOL bRet = GetMessage(&msg, m_hwnd, 0, 0);
     if ((bRet == 0) || (bRet == -1)) {
       break;
@@ -216,7 +219,7 @@ void DeviceDetection::Impl::monitorLoop() {
       });
     }
   }
-  m_log.d() << "device mon loop exit" << Logger::endl;
+  isMonLoopBlocked.store(false);
 }
 
 void DeviceDetection::Impl::detectConnected() {

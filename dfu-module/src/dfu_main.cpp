@@ -40,6 +40,7 @@ static DeviceCandidate findJetBeepDeviceCandidate() {
   deviceDetection.stop();
   const DeviceCandidate& candidate = detectionReady.get();
   l.i() << "Found JetBeep device:" << candidate.path << " vid: " << candidate.vid << " pid: " << candidate.pid << Logger::endl;
+  delay_boot(); //to handle case when device is just connected but not ready yet (win) 
   return candidate;
 }
 
@@ -57,12 +58,17 @@ static void resolveMcp2200Issue(JetBeep::SerialDevice& serial) {
   readyFuture.wait();
 }
 
+static bool isValidDeviceInfo(DeviceInfo &deviceInfo) {
+  return deviceInfo.bootState == DeviceBootState::APP && deviceInfo.chipId.length() == 16;
+}
+
 //on 52840 path may change after each device reboot
 static string updateDeviceSystemPath(DeviceInfo &deviceInfo) {
   return deviceInfo.systemPath = findJetBeepDeviceCandidate().path;
 }
 
 static DeviceInfo getDeviceInfo(bool updateSystemPath = false) {
+  l.v() << "getDeviceInfo call" << Logger::endl;
   static string systemPath;
   DeviceInfo deviceInfo;
   if (updateSystemPath || systemPath.empty()) {
@@ -95,7 +101,10 @@ static DeviceInfo getDeviceInfo(bool updateSystemPath = false) {
       deviceInfo.chipId = chipId; 
       infoReadPromise.set_value(true);
     })
-    .catchError([&infoReadPromise](const exception_ptr& ex) { infoReadPromise.set_exception(ex); });
+    .catchError([&infoReadPromise](const exception_ptr& ex) { 
+      l.d() << "getDeviceInfo exception" << Logger::endl;
+      infoReadPromise.set_exception(ex); 
+    });
 
   infoReady.wait();
   try {
@@ -252,6 +261,9 @@ static void writeDeviceConfig(DeviceConfig& config, JetBeep::SerialDevice& seria
 }
 
 static void updateDeviceConfig(DeviceInfo& deviceInfo, PortalHostEnv env) {
+  if (!isValidDeviceInfo(deviceInfo)) {
+      throw runtime_error("Unable to get device info. Try to reconnect the device.");
+  }
   PortalBackend backend(env);
   auto config = getDevicePortalConfig(backend, deviceInfo);
   Logger configLogger("config");
@@ -321,11 +333,13 @@ int main(int argc, char* argv[]) {
 
   auto onError = [&](const exception& e) -> int {
     l.e() << e.what() << Logger::endl;
+    l.i() << "Press Enter to exit " << Logger::endl;
+    (void)cin.get();
     return -1;
   };
   try {
     deviceInfo = getDeviceInfo();
-    if (deviceInfo.deviceId == 0) {
+    if (deviceInfo.deviceId == 0 && deviceInfo.bootState == DeviceBootState::APP) {
       l.e() << "Unable to proceed. The connected device is not initially configured (blank). Please contact your supplier." << Logger::endl;
       return -1;
     }
@@ -361,6 +375,9 @@ int main(int argc, char* argv[]) {
   if (doConfiguration) {
     try {
       l.i() << "Processing device configuration" << Logger::endl;
+      if (!isValidDeviceInfo(deviceInfo)) {
+        deviceInfo = getDeviceInfo(true);
+      }
       updateDeviceConfig(deviceInfo, env);
       updateConfigDone = true;
     } catch (const exception& e) {

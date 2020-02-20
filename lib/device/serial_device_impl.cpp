@@ -34,6 +34,10 @@ SerialDevice::Impl::~Impl() {
 void SerialDevice::Impl::open(const string& path) {
   m_port.open(path);
   m_port.set_option(serial_port_base::baud_rate(9600));
+  m_port.set_option(serial_port_base::stop_bits(serial_port_base::stop_bits::one));
+  m_port.set_option(serial_port_base::parity(serial_port_base::parity::none));
+  m_port.set_option(serial_port_base::flow_control(serial_port_base::flow_control::none));
+  m_port.set_option(serial_port_base::character_size(8U));
   m_port_state = SerialPortState::open;
   async_read_until(m_port, m_readBuffer, "\r\n", boost::bind(&SerialDevice::Impl::readCompleted, this, asio::placeholders::error));
 }

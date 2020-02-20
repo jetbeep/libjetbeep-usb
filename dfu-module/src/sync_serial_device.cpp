@@ -1,3 +1,4 @@
+#include "../lib/utils/platform.hpp"
 #include "sync_serial_device.hpp"
 #include <future>
 #include <chrono>

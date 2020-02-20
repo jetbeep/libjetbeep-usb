@@ -1,3 +1,4 @@
+#include "../lib/utils/platform.hpp"
 #include "packages_search.hpp"
 #include <regex>
 #include <boost/filesystem.hpp>
