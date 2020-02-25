@@ -129,9 +129,11 @@ static void updateFirmwareProcedure(DeviceInfo& deviceInfo, vector<PackageInfo>&
   syncSerialDevice.open(deviceInfo.systemPath);
 
   if (deviceInfo.bootState == DeviceBootState::APP) {
+    l.v() << "Entering DFU mode..." << Logger::endl;
     syncSerialDevice.enterDFUMode();
     syncSerialDevice.close();
     delay_boot();
+    updateDeviceSystemPath(deviceInfo);
     syncSerialDevice.open(deviceInfo.systemPath);
   }
 
@@ -284,6 +286,7 @@ static void updateDeviceConfig(DeviceInfo& deviceInfo, PortalHostEnv env) {
   DFU::SyncSerialDevice syncSerialDevice = DFU::SyncSerialDevice();
   configLogger.i() << "Reseting the device ..." << Logger::endl;
   delay_flash_write(); //wait until flash write is completed
+  updateDeviceSystemPath(deviceInfo);
   syncSerialDevice.open(deviceInfo.systemPath);
   syncSerialDevice.reset();
   syncSerialDevice.close();
