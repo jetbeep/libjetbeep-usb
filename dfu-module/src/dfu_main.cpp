@@ -300,17 +300,19 @@ int main(int argc, char* argv[]) {
   bool updateConfigDone = false;
   bool doFwUpdate = true;
   bool doConfiguration = true;
+  bool waitOnExit = false;
   int err_code = 0;
   Logger::level = LoggerLevel::info;
   string utilityVersion = JETBEEP_VERSION;
 
   for (int i = 1; i < argc; i++) {
     string param = string(argv[i]);
-    if (param == "--help" || param == "-h") {
+    if (param == "--help" || param == "-h" || param == "/?") {
       cout << "JetBeep device firmware and configuration update utility.\n";
       cout << "Version: " << utilityVersion << "\n\n";
       cout << "Optional parameters: " << "\n";
       cout << "--dev         - dev server configuration." << "\n";
+      cout << "--wait        - wait for Enter to exit" << "\n";
       cout << "--log=verbose or --log=debug - to provide more details during update." << "\n";
       cout << "--config-only - skip firware update. Same if no fw .zip were found." << "\n";
       cout << "--dfu-only    - skip config update." << "\n";
@@ -334,6 +336,8 @@ int main(int argc, char* argv[]) {
       doConfiguration = false;
     } else if (param == "--dev") {
       env = PortalHostEnv::Development;
+    } else if (param == "--wait") {
+      waitOnExit = true;
     } else {
       cout << "Invalid parameter supplied: [" << param << "]\n";
       return -1;
@@ -343,10 +347,16 @@ int main(int argc, char* argv[]) {
   DeviceInfo deviceInfo;
   vector<PackageInfo> zipPackages;
 
+  auto waitFunc = [&]() {
+    if (waitOnExit) {
+      l.i() << "Press Enter to exit " << Logger::endl;
+      (void)cin.get();
+    }
+  };
+
   auto onError = [&](const exception& e) -> int {
     l.e() << e.what() << Logger::endl;
-    l.i() << "Press Enter to exit " << Logger::endl;
-    (void)cin.get();
+    waitFunc();
     return -1;
   };
   try {
@@ -357,6 +367,8 @@ int main(int argc, char* argv[]) {
     }
   } catch (const exception& e) {
     return onError(e);
+  } catch (...) {
+    return onError(runtime_error("Unknown error"));
   }
 
   if (doFwUpdate) {
@@ -381,6 +393,8 @@ int main(int argc, char* argv[]) {
       return onError(e);
     } catch (const exception& e) {
       return onError(e);
+    } catch (...) {
+      return onError(runtime_error("Unknown error"));
     }
   }
 
@@ -394,6 +408,8 @@ int main(int argc, char* argv[]) {
       updateConfigDone = true;
     } catch (const exception& e) {
       return onError(e);
+    } catch (...) {
+      return onError(runtime_error("Unknown error"));
     }
   }
 
@@ -401,8 +417,7 @@ int main(int argc, char* argv[]) {
   l.i() << "Status: Firmware updated " << (updateFwDone ? "YES" : "NO") << ", Config updated "
         << (updateConfigDone ? "YES" : "NO") << Logger::endl;
 
-  l.i() << "Press Enter to exit " << Logger::endl;
-  (void)cin.get();
+  waitFunc();
 
   return 0;
 }
