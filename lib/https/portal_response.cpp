@@ -50,7 +50,8 @@ DeviceConfig PortalAPI::parseDeviceConfigResult(const string& json) {
 
     auto node = parser.get_child_optional("shopId");
     if (node.has_value()) {
-      result.shopId = (uint32_t)std::stoul(node.value().data());
+      string value = node.value().data();
+      result.shopId = value == "null" ? 0 : (uint32_t)std::stoul(value);
     }
     node = parser.get_child_optional("mode");
     if (node.has_value()) {
@@ -82,11 +83,13 @@ DeviceConfig PortalAPI::parseDeviceConfigResult(const string& json) {
     }
     node = parser.get_child_optional("merchantId");
     if (node.has_value()) {
-      result.merchantId = (uint16_t)std::stoul(node.value().data());
+      string value = node.value().data();
+      result.merchantId = value == "null" ? 0 : (uint16_t)std::stoul(value);
     }
     node = parser.get_child_optional("domainShopId");
     if (node.has_value()) {
-      result.domainShopId = (uint16_t)std::stoul(node.value().data());
+      string value = node.value().data();
+      result.domainShopId = value == "null" ? 0 : (uint16_t)std::stoul(value);
     }
     node = parser.get_child_optional("deviceId");
     if (node.has_value()) {
@@ -94,11 +97,13 @@ DeviceConfig PortalAPI::parseDeviceConfigResult(const string& json) {
     }
     node = parser.get_child_optional("cashierId");
     if (node.has_value()) {
-      result.cashierId = node.value().data();
+      string value = node.value().data();
+      result.cashierId = value == "null" ? "" : value;
     }
     node = parser.get_child_optional("shopKey");
     if (node.has_value()) {
-      result.shopKey = node.value().data();
+      string value = node.value().data();
+      result.shopKey = value == "null" ? "" : value;
     }
     node = parser.get_child_optional("mobileAppsUUIDs");
     if (node.has_value()) {

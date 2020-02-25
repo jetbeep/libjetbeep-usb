@@ -277,6 +277,9 @@ static void updateDeviceConfig(DeviceInfo& deviceInfo, PortalHostEnv env) {
   }
   PortalBackend backend(env);
   auto config = getDevicePortalConfig(backend, deviceInfo);
+  if (config.shopId == 0) {
+    throw runtime_error("Shop is not defined for current device. Update device profile at https://[dev or prod].jetbeep.com/portal");
+  }
   Logger configLogger("config");
   JetBeep::SerialDevice serial;
   serial.open(deviceInfo.systemPath);
