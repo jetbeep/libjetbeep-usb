@@ -139,7 +139,15 @@ static void updateFirmwareProcedure(DeviceInfo& deviceInfo, vector<PackageInfo>&
 
   auto onError = []() { throw runtime_error("Unable to complete firmware update procedure."); };
 
+  int pkgInx = 0;
   for (PackageInfo pkg : zipPackages) {
+    if (pkgInx > 0) {
+      //52840 may change port after reboot
+      syncSerialDevice.close();
+      delay_boot();
+      updateDeviceSystemPath(deviceInfo);
+      syncSerialDevice.open(deviceInfo.systemPath);
+    }
     // test that device in bootloader mode
     err_code = dfu_serial_ping(&uart_drv, 0x04 /* any value */);
     if (err_code == 0) {
@@ -167,6 +175,7 @@ static void updateFirmwareProcedure(DeviceInfo& deviceInfo, vector<PackageInfo>&
         onError();
       }
     }
+    pkgInx++;
   }
 }
 
