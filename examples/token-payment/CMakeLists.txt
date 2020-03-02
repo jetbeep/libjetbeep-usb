@@ -2,6 +2,7 @@ add_executable(token_payment_example main.cpp)
 
 target_include_directories(token_payment_example PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
+add_dependencies(token_payment_example jetbeep_obj)
 target_link_libraries(token_payment_example $<TARGET_OBJECTS:jetbeep_obj>)
 
 if (APPLE) 

@@ -10,5 +10,6 @@
 #include "device/auto_device.hpp"
 #include "io/iocontext.hpp"
 #include "https/easypay_backend.hpp"
+#include "https/portal_backend.hpp"
 
 #endif

@@ -98,6 +98,9 @@ void HttpsClient::doRequest(RequestOptions options) {
     case RequestMethod::POST:
       method = http::verb::post;
       break;
+    case RequestMethod::PATCH:
+      method = http::verb::patch;
+      break;
     default:
       throw runtime_error("HTTP method not supported");
     }

@@ -110,6 +110,9 @@ void HttpsClient::doRequest(RequestOptions options) {
     case RequestMethod::POST:
       code += curl_easy_setopt(m_curl, CURLOPT_POST, 1L);
       break;
+    case RequestMethod::PATCH:
+      code +=  curl_easy_setopt(m_curl, CURLOPT_CUSTOMREQUEST, "PATCH");
+      break;
     default:
       throw runtime_error("HTTP method not supported");
     }

@@ -1,5 +1,9 @@
 #include "device_utils.hpp"
 #include <stdexcept>
+#include "../utils/utils.hpp"
+#include <string>
+#include <sstream>
+#include <boost/range.hpp>
 
 using namespace JetBeep;
 using namespace std;
@@ -101,3 +105,62 @@ DeviceParameter DeviceUtils::stringToParameter(const std::string& parameter) {
     throw runtime_error("invalid input string");
   }
 }
+
+std::string DeviceUtils::operationModeToString(const DeviceOperationMode& value) {
+  switch (value) {
+  case DeviceOperationMode::driver:
+    return "driver";
+  case DeviceOperationMode::scanner:
+    return "scanner";
+  default:
+    throw runtime_error("invalid DeviceOperationMode");
+    break;
+  }
+}
+
+DeviceOperationMode DeviceUtils::stringToOperationMode(const std::string& value) {
+  if (value == "driver") {
+    return DeviceOperationMode::driver;
+  } else if (value == "scanner") {
+    return DeviceOperationMode::scanner;
+  } else {
+    throw runtime_error("invalid input string");
+  }
+}
+
+std::string DeviceUtils::connectionRoleToString(const DeviceConnectionRole& value) {
+  switch (value) {
+  case DeviceConnectionRole::master:
+    return "master";
+  case DeviceConnectionRole::slave:
+    return "slave";
+  default:
+    throw runtime_error("invalid DeviceConnectionRole");
+    break;
+  }
+}
+
+DeviceConnectionRole DeviceUtils::stringToConnectionRole(const std::string& value) {
+  if (value == "master") {
+    return DeviceConnectionRole::master;
+  } else if (value == "slave") {
+    return DeviceConnectionRole::slave;
+  } else {
+    throw runtime_error("invalid input string");
+  }
+}
+
+std::string DeviceUtils::mobileAppsUUIDsToString(std::vector<uint32_t> list) {
+  if (list.size() == 0) {
+    return "";
+  }
+  std::stringstream stream;
+
+  stream << Utils::numberToHexString(list.at(0));
+
+  for (auto uid : boost::make_iterator_range(list.begin() + 1, list.end())) {
+    stream << " " << Utils::numberToHexString(uid);
+  }
+
+  return stream.str();
+};

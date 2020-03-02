@@ -50,7 +50,7 @@ set_target_properties(jetbeep-jni PROPERTIES
   SOVERSION ${PROJECT_VERSION}
 )
 
-add_dependencies(jetbeep-jni GenerateJavaHeaders)
+add_dependencies(jetbeep-jni GenerateJavaHeaders jetbeep_obj)
 
 target_include_directories(jetbeep-jni PUBLIC ${JNI_INCLUDE_DIRS})
 

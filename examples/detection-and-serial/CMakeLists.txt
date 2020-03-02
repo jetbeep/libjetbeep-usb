@@ -1,6 +1,7 @@
 add_executable(detection_and_serial main.cpp cmd.cpp promise_test.cpp)
 target_include_directories(detection_and_serial PUBLIC ${BOOST_SOURCE_DIR})
 
+add_dependencies(detection_and_serial jetbeep_obj)
 target_link_libraries(detection_and_serial $<TARGET_OBJECTS:jetbeep_obj>)
 
 if (APPLE) 

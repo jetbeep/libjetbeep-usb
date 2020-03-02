@@ -2,13 +2,27 @@
 #define JETBEEP_DEVICE_UTILS__H
 
 #include "device_parameter.hpp"
+#include "device_types.hpp"
 #include <string>
+#include <vector>
 
 namespace JetBeep {
   class DeviceUtils {
   public:
     static std::string parameterToString(const DeviceParameter& parameter);
     static DeviceParameter stringToParameter(const std::string& parameter);
+
+    static std::string operationModeToString(const DeviceOperationMode& value);
+    static DeviceOperationMode stringToOperationMode(const std::string& value);
+
+    static std::string connectionRoleToString(const DeviceConnectionRole& value);
+    static DeviceConnectionRole stringToConnectionRole(const std::string& value);
+
+    static std::string boolToDeviceBoolStr(bool value) {
+      return value ? "1" : "0";
+    };
+
+    static std::string mobileAppsUUIDsToString(std::vector<uint32_t> list);
   };
 } // namespace JetBeep
 
@@ -36,6 +50,9 @@ namespace DeviceResponses {
   const std::string paymentSuccessful = "PAYMENT_SUCCESSFUL";
   const std::string paymentError = "PAYMENT_ERROR";
   const std::string paymentToken = "PAYMENT_TOKEN";
+
+  //system events
+  const std::string systemReset = "SYSTEM_RESET";
 } // namespace DeviceResponses
 
 #endif

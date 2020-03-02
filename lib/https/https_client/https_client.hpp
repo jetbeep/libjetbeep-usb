@@ -35,7 +35,7 @@
 using namespace std;
 
 namespace JetBeep {
-  enum class RequestMethod { GET, POST };
+  enum class RequestMethod { GET, POST, PATCH };
 
   enum class RequestContentType { JSON };
 

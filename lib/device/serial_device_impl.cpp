@@ -24,7 +24,9 @@ SerialDevice::Impl::Impl(const SerialDeviceCallbacks& callbacks, IOContext conte
 
 SerialDevice::Impl::~Impl() {
   try {
+    m_port_state = SerialPortState::closing;
     m_port.close();
+    m_port_state = SerialPortState::closed;
   } catch (...) {
   }
 }
@@ -32,12 +34,18 @@ SerialDevice::Impl::~Impl() {
 void SerialDevice::Impl::open(const string& path) {
   m_port.open(path);
   m_port.set_option(serial_port_base::baud_rate(9600));
-
+  m_port.set_option(serial_port_base::stop_bits(serial_port_base::stop_bits::one));
+  m_port.set_option(serial_port_base::parity(serial_port_base::parity::none));
+  m_port.set_option(serial_port_base::flow_control(serial_port_base::flow_control::none));
+  m_port.set_option(serial_port_base::character_size(8U));
+  m_port_state = SerialPortState::open;
   async_read_until(m_port, m_readBuffer, "\r\n", boost::bind(&SerialDevice::Impl::readCompleted, this, asio::placeholders::error));
 }
 
 void SerialDevice::Impl::close() {
+  m_port_state = SerialPortState::closing;
   m_port.close();
+  m_port_state = SerialPortState::closed;
 }
 
 void SerialDevice::Impl::writeCompleted(const boost::system::error_code& error, std::size_t bytes_transferred) {
@@ -55,11 +63,14 @@ void SerialDevice::Impl::writeCompleted(const boost::system::error_code& error, 
 void SerialDevice::Impl::readCompleted(const boost::system::error_code& error) {
   auto errorCallback = *m_callbacks.errorCallback;
 
-  if (error) {
+  if (error && m_port_state == SerialPortState::open) {
     m_log.e() << "read error: " << error << Logger::endl;
     if (errorCallback) {
       errorCallback(make_exception_ptr(Errors::IOError()));
     }
+    return;
+  } else if (error) {
+    //ignore read error on closing port
     return;
   }
 
@@ -108,6 +119,10 @@ void SerialDevice::Impl::handleResponse(const string& response) {
   }
 
   if (handleEvent(command, splitted)) {
+    return;
+  }
+
+  if (handleSystemEvent(command, splitted)) {
     return;
   }
 
@@ -321,6 +336,18 @@ bool SerialDevice::Impl::handleEvent(const string& event, const vector<string>& 
 
   return false;
 }
+
+bool SerialDevice::Impl::handleSystemEvent(const string& event, const vector<string>& params) {
+  auto errorCallback = *m_callbacks.errorCallback;
+
+  if (event == DeviceResponses::systemReset) {
+    //TODO 
+    return true;
+  } 
+
+  return false;
+}
+
 
 void SerialDevice::Impl::writeSerial(const string& cmd, unsigned int timeoutInMilliseconds) {
   lock_guard<recursive_mutex> guard(m_mutex);

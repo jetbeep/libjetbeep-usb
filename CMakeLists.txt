@@ -13,10 +13,14 @@ add_definitions("-DJETBEEP_VERSION=\"${JETBEEP_VERSION}\""
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(BOOST_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/boost_1_71_0)
+set(JETBEEP_LIB_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib)
+
 add_subdirectory(lib)
 
 add_subdirectory(examples/detection-and-serial)
 add_subdirectory(examples/autodevice)
 add_subdirectory(examples/token-payment)
 add_subdirectory(jni/libjetbeep-jni)
+add_subdirectory(dfu-module)
 add_subdirectory(delphi)
