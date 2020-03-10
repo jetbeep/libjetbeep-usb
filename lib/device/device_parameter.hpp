@@ -25,7 +25,8 @@ namespace JetBeep {
     connectionRole,
     logLevel,
     merchantId,
-    domainShopId
+    domainShopId,
+    virtKeyboard
   };
 }
 

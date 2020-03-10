@@ -64,7 +64,9 @@ static bool isValidDeviceInfo(DeviceInfo &deviceInfo) {
 
 //on 52840 path may change after each device reboot
 static string updateDeviceSystemPath(DeviceInfo &deviceInfo) {
-  return deviceInfo.systemPath = findJetBeepDeviceCandidate().path;
+  auto candidate = findJetBeepDeviceCandidate();
+  deviceInfo.nativeUSBSupport = candidate.isNativeUSB();
+  return deviceInfo.systemPath = candidate.path;
 }
 
 static DeviceInfo getDeviceInfo(bool updateSystemPath = false) {
@@ -212,9 +214,15 @@ static void updateDevicePortalConfig(PortalBackend& backend, DeviceInfo& deviceI
   return reqFuture.get();
 }
 
-static void writeDeviceConfig(DeviceConfig& config, JetBeep::SerialDevice& serial) {
+static void writeDeviceConfig(DeviceConfig& config, JetBeep::SerialDevice& serial, DeviceInfo& deviceInfo) {
   std::promise<void> writePromise;
   auto writeDone = writePromise.get_future();
+
+  auto makeResolved = []() {
+    auto resolved = Promise<void>();
+    resolved.resolve();
+    return resolved;
+  };
 
   SerialBeginPrivateMode configMode = config.signatureType == "setup" ? SerialBeginPrivateMode::setup : SerialBeginPrivateMode::config;
 
@@ -232,7 +240,10 @@ static void writeDeviceConfig(DeviceConfig& config, JetBeep::SerialDevice& seria
       return serial.set(DeviceParameter::merchantId,  Utils::numberToHexString(config.merchantId));
     })
     .thenPromise([&]() {
-      return serial.set(DeviceParameter::cashierId,  config.cashierId);
+      if (config.cashierId.length()) {
+        return serial.set(DeviceParameter::cashierId,  config.cashierId);
+      }
+      return makeResolved();
     })
     .thenPromise([&]() {
       return serial.set(DeviceParameter::devEnv,  DeviceUtils::boolToDeviceBoolStr(config.devEnv));
@@ -259,6 +270,14 @@ static void writeDeviceConfig(DeviceConfig& config, JetBeep::SerialDevice& seria
       return serial.set(DeviceParameter::tapSensitivity,  Utils::numberToHexString((uint8_t) config.tapSensitivity));
     })
     .thenPromise([&]() {
+      if (Utils::deviceFWVerToNumber(deviceInfo.version) >= Utils::deviceFWVerToNumber("1.4.0-alpha")
+          && deviceInfo.nativeUSBSupport
+          && config.virtKeyboard.length()) {
+        return serial.set(DeviceParameter::virtKeyboard,  config.virtKeyboard);
+      }
+      return makeResolved();
+    })
+    .thenPromise([&]() {
       return serial.commit(config.signature);
     })
     .then([&]() { 
@@ -282,17 +301,28 @@ static void updateDeviceConfig(DeviceInfo& deviceInfo, PortalHostEnv env) {
   }
   Logger configLogger("config");
   JetBeep::SerialDevice serial;
+  DFU::SyncSerialDevice syncSerialDevice = DFU::SyncSerialDevice();
+  auto resetDevice = [&](){
+    syncSerialDevice.open(deviceInfo.systemPath);
+    syncSerialDevice.reset();
+    syncSerialDevice.close();
+  };
+
   serial.open(deviceInfo.systemPath);
   configLogger.i() << "Applying new configuration ..." << Logger::endl;
-  writeDeviceConfig(config, serial);
+  try {
+    writeDeviceConfig(config, serial, deviceInfo);
+  } catch (...) {
+    serial.close();
+    resetDevice();
+    std::rethrow_exception(std::current_exception());
+  }
+  
   serial.close();
-  DFU::SyncSerialDevice syncSerialDevice = DFU::SyncSerialDevice();
   configLogger.i() << "Reseting the device ..." << Logger::endl;
   delay_flash_write(); //wait until flash write is completed
   updateDeviceSystemPath(deviceInfo);
-  syncSerialDevice.open(deviceInfo.systemPath);
-  syncSerialDevice.reset();
-  syncSerialDevice.close();
+  resetDevice();
   updateDevicePortalConfig(backend, deviceInfo);
 }
 

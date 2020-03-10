@@ -37,6 +37,7 @@ using namespace JetBeep::PortalAPI;
     "serialNumber": "A020100000092",
     "signature": "d3c30ba907a4d6aa1bda50fd5f0cebd1e8941994f16a7e5f57b29e8ffe7fd8428a1ac0fffab33dd9547bddd4a023a6ee76950cf836bbd9024aef4597a50a60aa",
     "signatureType": "config",
+    "virtKeyboard": "0 us no_ending no_alt"
     "configVersion": 2
 }
 */
@@ -123,11 +124,15 @@ DeviceConfig PortalAPI::parseDeviceConfigResult(const string& json) {
     if (node.has_value()) {
       result.signatureType = node.value().data();
     }
+    node = parser.get_child_optional("virtKeyboard");
+    if (node.has_value()) {
+      string value = node.value().data();
+      result.virtKeyboard = value == "null" ? "" : value;
+    }
     node = parser.get_child_optional("configVersion");
     if (node.has_value()) {
       result.configVersion = std::stoi(node.value().data());
     }
-
   } catch (pt::json_parser::json_parser_error& jsonError) {
     // cout << "JSON error: " << jsonError.what() << "\n\n";
     throw HttpErrors::APIError();

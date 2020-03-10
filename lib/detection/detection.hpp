@@ -24,6 +24,8 @@ namespace JetBeep {
 
     bool operator==(const DeviceCandidate& other);
     bool operator!=(const DeviceCandidate& other);
+
+    bool isNativeUSB();
   } DeviceCandidate;
 
   typedef std::function<void(DeviceDetectionEvent, DeviceCandidate)> DeviceDetectionCallback;

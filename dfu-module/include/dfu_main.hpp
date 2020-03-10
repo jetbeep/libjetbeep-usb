@@ -15,8 +15,9 @@ struct DeviceInfo {
   string pubKey;
   string version;
   string revision;
-  string systemPath;
   string chipId;
+  string systemPath;
+  bool nativeUSBSupport;
 };
 
 
