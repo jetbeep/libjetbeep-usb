@@ -31,6 +31,7 @@ namespace JetBeep::PortalAPI {
     string serialNumber;
     string signature;
     string signatureType;
+    string virtKeyboard;
     uint8_t configVersion;
   };
 

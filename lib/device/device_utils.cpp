@@ -52,6 +52,8 @@ std::string DeviceUtils::parameterToString(const DeviceParameter& parameter) {
     return "merchantId";
   case DeviceParameter::domainShopId:
     return "domainShopId";
+  case DeviceParameter::virtKeyboard:
+    return "virtKeyboard";
   default:
     throw runtime_error("invalid device parameter");
     break;
@@ -101,6 +103,8 @@ DeviceParameter DeviceUtils::stringToParameter(const std::string& parameter) {
     return DeviceParameter::merchantId;
   } else if (parameter == "domainShopId") {
     return DeviceParameter::domainShopId;
+  } else if (parameter == "virtKeyboard") {
+    return DeviceParameter::virtKeyboard;
   } else {
     throw runtime_error("invalid input string");
   }
