@@ -194,6 +194,11 @@ abstract public class EasyPayBackend {
     onPaymentResult(result);
   }
 
+  private void onNativePaymentError(String errorString) {
+    PaymentResult result = new PaymentResult(errorString);
+    onPaymentResult(result);
+  }
+
   private void onNativeRefundResult(String errorString) {
     RefundResult result = new RefundResult(errorString);
     onRefundResult(result);

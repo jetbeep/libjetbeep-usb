@@ -106,9 +106,9 @@ void onPaymentCatch(exception_ptr error, EasyPayBackend* backend) {
     return JniUtils::detachCurrentThread();
   }
   //string
-  auto onNativePaymentResult = env->GetMethodID(easyPayBackendClass, "onNativePaymentResult", "(Ljava/lang/String;)V");
-  if (onNativePaymentResult == nullptr) {
-    EasyPayBackendJni::log.e() << "unable to get onNativePaymentResult method" << Logger::endl;
+  auto onNativePaymentError = env->GetMethodID(easyPayBackendClass, "onNativePaymentError", "(Ljava/lang/String;)V");
+  if (onNativePaymentError == nullptr) {
+    EasyPayBackendJni::log.e() << "unable to get onNativePaymentError method" << Logger::endl;
     return JniUtils::detachCurrentThread();
   }
 
@@ -118,7 +118,7 @@ void onPaymentCatch(exception_ptr error, EasyPayBackend* backend) {
     return JniUtils::detachCurrentThread();
   }
 
-  env->CallVoidMethod(object, onNativePaymentResult, jerrorString);
+  env->CallVoidMethod(object, onNativePaymentError, jerrorString);
   JniUtils::detachCurrentThread();
 }
 
