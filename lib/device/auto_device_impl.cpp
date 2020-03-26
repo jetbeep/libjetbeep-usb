@@ -285,7 +285,7 @@ Promise<std::string> AutoDevice::Impl::createPaymentToken(uint32_t amount,
 
   auto lambda = [&, amount, transactionId, cashierId, metadata] {
     m_device.createPaymentToken(amount, transactionId, cashierId, metadata).then([&] { executeNextOperation(); }).catchError([&](exception_ptr) {
-      m_log.e() << "cancel barcodes error" << Logger::endl;
+      m_log.e() << "create payment token error" << Logger::endl;
       resetState();
     });
   };
