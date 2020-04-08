@@ -4,6 +4,8 @@ cmake_minimum_required (VERSION 3.10.2)
 #set(CMAKE_C_FLAGS -m32)
 #set(CMAKE_CXX_FLAGS -m32)
 
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake-modules")
+
 file (READ "${CMAKE_CURRENT_SOURCE_DIR}/VERSION" JETBEEP_VERSION)
 project (libjetbeep VERSION ${JETBEEP_VERSION})
 

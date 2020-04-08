@@ -44,7 +44,8 @@ Promise<void> SerialDevice::createPayment(uint32_t amount,
                                           const PaymentMetadata& metadata) {
   ostringstream ss;
 
-  ss << amount << " " << transactionId;
+// NOTE: to_string(amount) is used to overcome very strange bug in Linux 32-bit and Java JNI calls
+  ss << to_string(amount) << " " << transactionId;
 
   if (cashierId != "") {
     ss << " " << cashierId;
@@ -71,7 +72,8 @@ Promise<void> SerialDevice::createPaymentToken(uint32_t amount,
                                                const PaymentMetadata& metadata) {
   ostringstream ss;
 
-  ss << amount << " " << transactionId;
+// NOTE: to_string(amount) is used to overcome very strange bug in Linux 32-bit and Java JNI calls
+  ss << to_string(amount) << " " << transactionId;
 
   if (cashierId != "") {
     ss << " " << cashierId;
