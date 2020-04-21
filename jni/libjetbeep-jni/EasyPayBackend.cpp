@@ -112,7 +112,22 @@ void onPaymentCatch(exception_ptr error, EasyPayBackend* backend) {
     return JniUtils::detachCurrentThread();
   }
 
-  jstring jerrorString = env->NewStringUTF("io exception");
+  string errorMessage = "Невідома системна помилка";
+  try {
+    rethrow_exception(error);
+  } catch (const HttpErrors::RequestError &e) {
+    errorMessage = e.what();
+  } catch (const HttpErrors::APIError &e) {
+    errorMessage = "Помилка роботи API серверу";
+  } catch (const HttpErrors::ServerError &e) {
+    errorMessage = "Помилка роботи серверу";
+  } catch (const HttpErrors::NetworkError &e) {
+    errorMessage = "Мережеве з'єднання недоступне";
+  } catch (...) {
+    errorMessage = "Невідома системна помилка";
+  }
+
+  jstring jerrorString = env->NewStringUTF(errorMessage.c_str());
   if (jerrorString == nullptr) {
     EasyPayBackendJni::log.e() << "unable to create jString" << Logger::endl;
     return JniUtils::detachCurrentThread();
@@ -252,7 +267,22 @@ void onRefundCatch(exception_ptr error, EasyPayBackend* backend) {
     return JniUtils::detachCurrentThread();
   }
 
-  jstring jerrorString = env->NewStringUTF("io error");
+  string errorMessage = "Невідома системна помилка";
+  try {
+    rethrow_exception(error);
+  } catch (const HttpErrors::RequestError &e) {
+    errorMessage = e.what();
+  } catch (const HttpErrors::APIError &e) {
+    errorMessage = "Помилка роботи API серверу";
+  } catch (const HttpErrors::ServerError &e) {
+    errorMessage = "Помилка роботи серверу";
+  } catch (const HttpErrors::NetworkError &e) {
+    errorMessage = "Мережеве з'єднання недоступне";
+  } catch (...) {
+    errorMessage = "Невідома системна помилка";
+  }
+
+  jstring jerrorString = env->NewStringUTF(errorMessage.c_str());
   if (jerrorString == nullptr) {
     EasyPayBackendJni::log.e() << "unable to create jString" << Logger::endl;
     return JniUtils::detachCurrentThread();
