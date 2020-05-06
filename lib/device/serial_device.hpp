@@ -49,7 +49,8 @@ namespace JetBeep {
     SerialPaymentSuccessCallback paymentSuccessCallback;
     SerialPaymentTokenCallback paymentTokenCallback;
     SerialMobileCallback mobileCallback;
-
+    SerialNFCEventCallback nfcEventCallback;
+    SerialNFCDetectionErrorCallback nfcDetectionErrorCallback; 
   private:
     class Impl;
     std::unique_ptr<Impl> m_impl;

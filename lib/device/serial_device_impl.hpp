@@ -21,6 +21,9 @@ namespace JetBeep {
     SerialPaymentSuccessCallback* paymentSuccessCallback;
     SerialPaymentTokenCallback* paymentTokenCallback;
     SerialMobileCallback* mobileCallback;
+    SerialNFCEventCallback* nfcEventCallback;
+    SerialNFCDetectionErrorCallback* nfcDetectionErrorCallback; 
+
   } SerialDeviceCallbacks;
 
   enum class SerialDeviceState { idle, executeInProgress };

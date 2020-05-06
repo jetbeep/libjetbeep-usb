@@ -10,7 +10,7 @@ using namespace std;
 
 SerialDevice::SerialDevice(IOContext context) {
   SerialDeviceCallbacks callbacks = {&errorCallback,          &barcodesCallback,     &paymentErrorCallback,
-                                     &paymentSuccessCallback, &paymentTokenCallback, &mobileCallback};
+                                     &paymentSuccessCallback, &paymentTokenCallback, &mobileCallback, &nfcEventCallback, &nfcDetectionErrorCallback};
 
   m_impl.reset(new Impl(callbacks, context));
 }

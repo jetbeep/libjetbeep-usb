@@ -23,6 +23,7 @@ namespace JetBeep {
     };
 
     static std::string mobileAppsUUIDsToString(std::vector<uint32_t> list);
+    static NFCDetectionEventData parseNFCDetectionEventData(const std::vector<std::string>& params);
   };
 } // namespace JetBeep
 
@@ -50,6 +51,9 @@ namespace DeviceResponses {
   const std::string paymentSuccessful = "PAYMENT_SUCCESSFUL";
   const std::string paymentError = "PAYMENT_ERROR";
   const std::string paymentToken = "PAYMENT_TOKEN";
+  const std::string nfcDetected = "NFC_DETECTED";
+  const std::string nfcRemoved = "NFC_REMOVED";
+  const std::string nfcDetectionError = "NFC_DETECTION_ERROR";
 
   //system events
   const std::string systemReset = "SYSTEM_RESET";

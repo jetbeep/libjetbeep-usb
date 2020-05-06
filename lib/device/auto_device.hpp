@@ -28,6 +28,8 @@ namespace JetBeep {
   typedef std::function<void(const PaymentError& error)> AutoDevicePaymentErrorCallback;
   typedef std::function<void(AutoDeviceState state, std::exception_ptr error)> AutoDeviceStateCallback;
   typedef SerialMobileCallback AutoDeviceMobileCallback;
+  typedef SerialNFCEventCallback AutoDeviceNFCEventCallback;
+  typedef SerialNFCDetectionErrorCallback AutoDeviceNFCDetectionErrorCallback;
 
   class AutoDevice {
   public:
@@ -38,6 +40,12 @@ namespace JetBeep {
     void stop();
     void openSession();
     void closeSession();
+
+    void enableBluetooth();
+    void disableBluetooth();
+
+    void enableNFC();
+    void disableNFC();
 
     Promise<std::vector<Barcode>> requestBarcodes();
     void cancelBarcodes();
@@ -63,7 +71,8 @@ namespace JetBeep {
     AutoDeviceStateCallback stateCallback;
     AutoDevicePaymentErrorCallback paymentErrorCallback;
     AutoDeviceMobileCallback mobileCallback;
-
+    AutoDeviceNFCEventCallback nfcEventCallback;
+    AutoDeviceNFCDetectionErrorCallback nfcDetectionErrorCallback;
     AutoDeviceState state();
 
   private:

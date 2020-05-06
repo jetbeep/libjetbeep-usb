@@ -332,6 +332,46 @@ bool SerialDevice::Impl::handleEvent(const string& event, const vector<string>& 
       (*m_callbacks.paymentSuccessCallback)();
     }
     return true;
+  } else if (event == DeviceResponses::nfcDetected) {
+    NFCDetectionEventData eventData; 
+    try {
+      eventData = DeviceUtils::parseNFCDetectionEventData(params);
+    } catch (std::exception &err) {
+      m_log.e() << err.what() << Logger::endl;
+      if (errorCallback) {
+        errorCallback(make_exception_ptr(Errors::ProtocolError()));
+      }
+      return true;
+    } 
+    if (*m_callbacks.nfcEventCallback) {
+      (*m_callbacks.nfcEventCallback)(SerialNFCEvent::detected, eventData);
+    }
+    return true;
+  } else if (event == DeviceResponses::nfcRemoved) {
+    if (*m_callbacks.nfcEventCallback) {
+      (*m_callbacks.nfcEventCallback)(SerialNFCEvent::removed, NFCDetectionEventData());
+    }
+    return true;
+  } else if (event == DeviceResponses::nfcDetectionError) {
+    if (params.size() != 1) {
+      m_log.e() << "invalid params count of nfc Detection Error: " << params.size() << Logger::endl;
+      if (errorCallback) {
+        errorCallback(make_exception_ptr(Errors::ProtocolError()));
+      }
+      return true;
+    }
+
+    auto reasonStr = params[0];
+    auto reason = NFCDetectionErrorReason::UNKNOWN;
+    if (reasonStr == "multiple_cards") {
+      reason = NFCDetectionErrorReason::MULTIPLE_CARDS;
+    } else if (reasonStr == "unsupported_type") {
+      reason = NFCDetectionErrorReason::UNSUPPORTED;
+    }
+    if (*m_callbacks.nfcDetectionErrorCallback) {
+      (*m_callbacks.nfcDetectionErrorCallback)(reason);
+    }
+    return true;
   }
 
   return false;
