@@ -23,7 +23,7 @@ namespace JetBeep {
     };
 
     static std::string mobileAppsUUIDsToString(std::vector<uint32_t> list);
-    static NFCDetectionEventData parseNFCDetectionEventData(const std::vector<std::string>& params);
+    static NFC::DetectionEventData parseNFCDetectionEventData(const std::vector<std::string>& params);
   };
 } // namespace JetBeep
 

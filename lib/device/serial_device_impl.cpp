@@ -333,7 +333,7 @@ bool SerialDevice::Impl::handleEvent(const string& event, const vector<string>& 
     }
     return true;
   } else if (event == DeviceResponses::nfcDetected) {
-    NFCDetectionEventData eventData; 
+    NFC::DetectionEventData eventData;
     try {
       eventData = DeviceUtils::parseNFCDetectionEventData(params);
     } catch (std::exception &err) {
@@ -349,7 +349,7 @@ bool SerialDevice::Impl::handleEvent(const string& event, const vector<string>& 
     return true;
   } else if (event == DeviceResponses::nfcRemoved) {
     if (*m_callbacks.nfcEventCallback) {
-      (*m_callbacks.nfcEventCallback)(SerialNFCEvent::removed, NFCDetectionEventData());
+      (*m_callbacks.nfcEventCallback)(SerialNFCEvent::removed, NFC::DetectionEventData());
     }
     return true;
   } else if (event == DeviceResponses::nfcDetectionError) {
@@ -362,11 +362,11 @@ bool SerialDevice::Impl::handleEvent(const string& event, const vector<string>& 
     }
 
     auto reasonStr = params[0];
-    auto reason = NFCDetectionErrorReason::UNKNOWN;
+    auto reason = NFC::DetectionErrorReason::UNKNOWN;
     if (reasonStr == "multiple_cards") {
-      reason = NFCDetectionErrorReason::MULTIPLE_CARDS;
+      reason = NFC::DetectionErrorReason::MULTIPLE_CARDS;
     } else if (reasonStr == "unsupported_type") {
-      reason = NFCDetectionErrorReason::UNSUPPORTED;
+      reason = NFC::DetectionErrorReason::UNSUPPORTED;
     }
     if (*m_callbacks.nfcDetectionErrorCallback) {
       (*m_callbacks.nfcDetectionErrorCallback)(reason);

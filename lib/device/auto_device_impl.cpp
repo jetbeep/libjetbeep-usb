@@ -3,6 +3,7 @@
 #include "../io/iocontext_impl.hpp"
 #include "../utils/utils.hpp"
 #include "device_errors.hpp"
+#include "./nfc/mifare-classic/mfc-provider.hpp"
 
 #include <functional>
 
@@ -486,11 +487,12 @@ void AutoDevice::Impl::onMobileConnectionChange(const SerialMobileEvent& event) 
   }
 }
 
-void AutoDevice::Impl::onNFCEvent(const SerialNFCEvent& event, const NFCDetectionEventData &data) {
+void AutoDevice::Impl::onNFCEvent(const SerialNFCEvent& event, const NFC::DetectionEventData &data) {
   auto callback = *m_nfcEventCallback;
 
   if (event == SerialNFCEvent::detected) {
     m_nfcDetected = true;
+    m_nfcCardInfo = data;
   } else {
     m_nfcDetected = false;
   }
@@ -500,7 +502,7 @@ void AutoDevice::Impl::onNFCEvent(const SerialNFCEvent& event, const NFCDetectio
   }
 }
 
-void AutoDevice::Impl::onNFCDetectionError(const NFCDetectionErrorReason& reason) {
+void AutoDevice::Impl::onNFCDetectionError(const NFC::DetectionErrorReason& reason) {
   auto callback = *m_nfcDetectionErrorCallback;
 
   m_nfcDetected = false;
@@ -508,6 +510,14 @@ void AutoDevice::Impl::onNFCDetectionError(const NFCDetectionErrorReason& reason
   if (callback) {
     callback(reason);
   }
+}
+
+NFC::DetectionEventData AutoDevice::Impl::getNFCCardInfo() {
+  if (!m_nfcDetected) {
+    throw Errors::InvalidState();
+  }
+
+  return m_nfcCardInfo;
 }
 
 void AutoDevice::Impl::rejectPendingOperations() {
@@ -547,9 +557,19 @@ bool AutoDevice::Impl::isMobileConnected() {
   return m_mobileConnected;
 }
 
+bool AutoDevice::Impl::isNFCDetected() {
+  return m_nfcDetected;
+}
+
 std::string AutoDevice::Impl::version() {
   return m_version;
 }
 unsigned long AutoDevice::Impl::deviceId() {
   return m_deviceId;
+}
+
+std::shared_ptr<NFC::MifareClassic::MifareClassicProvider> AutoDevice::Impl::createMifareClassicProvider() {
+  std::shared_ptr<SerialDevice> device_p(&m_device);
+  std::shared_ptr< NFC::MifareClassic::MifareClassicProvider> sp (new NFC::MifareClassic::MifareClassicProvider(std::weak_ptr<SerialDevice>(device_p)));
+  return sp;
 }

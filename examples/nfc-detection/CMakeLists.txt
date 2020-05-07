@@ -1,6 +1,6 @@
 add_executable(nfc_detection_example main.cpp)
 
-target_include_directories(nfc_detection_example PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(nfc_detection_example PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${BOOST_SOURCE_DIR})
 
 add_dependencies(nfc_detection_example jetbeep_obj)
 target_link_libraries(nfc_detection_example $<TARGET_OBJECTS:jetbeep_obj>)

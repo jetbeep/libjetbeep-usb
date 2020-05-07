@@ -178,25 +178,24 @@ std::string DeviceUtils::mobileAppsUUIDsToString(std::vector<uint32_t> list) {
 };
 
 
-NFCDetectionEventData DeviceUtils::parseNFCDetectionEventData(const vector<string>& params) {
+NFC::DetectionEventData DeviceUtils::parseNFCDetectionEventData(const vector<string>& params) {
   if (params.size() != 2) {
     throw runtime_error("invalid NFC detection params count");
   }
-  NFCDetectionEventData eventData;
+  NFC::DetectionEventData eventData;
   int typeId = std::stoi(params[0]);
   switch (typeId) {
-    case 1: eventData.cardType = NFCCardType::EMV_CARD; break;
-    case 2: eventData.cardType = NFCCardType::MIFARE_CLASSIC_1K; break;
-    case 3: eventData.cardType = NFCCardType::MIFARE_CLASSIC_4K; break;
-    case 4: eventData.cardType = NFCCardType::MIFARE_PLUS_2K; break;
-    case 5: eventData.cardType = NFCCardType::MIFARE_PLUS_4K; break;
-    case 6: eventData.cardType = NFCCardType::MIFARE_DESFIRE_2K; break;
-    case 7: eventData.cardType = NFCCardType::MIFARE_DESFIRE_4K; break;
-    case 8: eventData.cardType = NFCCardType::MIFARE_DESFIRE_8K; break;
+    case 1: eventData.cardType = NFC::CardType::EMV_CARD; break;
+    case 2: eventData.cardType = NFC::CardType::MIFARE_CLASSIC_1K; break;
+    case 3: eventData.cardType = NFC::CardType::MIFARE_CLASSIC_4K; break;
+    case 4: eventData.cardType = NFC::CardType::MIFARE_PLUS_2K; break;
+    case 5: eventData.cardType = NFC::CardType::MIFARE_PLUS_4K; break;
+    case 6: eventData.cardType = NFC::CardType::MIFARE_DESFIRE_2K; break;
+    case 7: eventData.cardType = NFC::CardType::MIFARE_DESFIRE_4K; break;
+    case 8: eventData.cardType = NFC::CardType::MIFARE_DESFIRE_8K; break;
     default: 
-      eventData.cardType = NFCCardType::UNKNOWN;
+      eventData.cardType = NFC::CardType::UNKNOWN;
   }
-  auto metaStr = params[1];
-
+  eventData.meta = params[1];
   return eventData;
 }

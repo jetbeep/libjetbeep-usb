@@ -80,6 +80,13 @@ AutoDeviceState AutoDevice::state() {
 bool AutoDevice::isMobileConnected() {
   return m_impl->isMobileConnected();
 }
+bool AutoDevice::isNFCDetected() {
+  return m_impl->isNFCDetected();
+}
+
+NFC::DetectionEventData AutoDevice::getNFCCardInfo() {
+  return m_impl->getNFCCardInfo();
+}
 
 unsigned long AutoDevice::deviceId() {
   return m_impl->deviceId();
@@ -87,4 +94,8 @@ unsigned long AutoDevice::deviceId() {
 
 std::string AutoDevice::version() {
   return m_impl->version();
+}
+
+std::shared_ptr<NFC::MifareClassic::MifareClassicProvider> AutoDevice::createMifareClassicProvider() {
+  return m_impl->createMifareClassicProvider();
 }

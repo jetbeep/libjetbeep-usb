@@ -9,6 +9,7 @@
 #include "../io/iocontext.hpp"
 #include "../utils/promise.hpp"
 #include "device_types.hpp"
+#include "./nfc/mifare-classic/mfc-provider.hpp"
 
 namespace JetBeep {
   enum class AutoDeviceState {
@@ -44,9 +45,6 @@ namespace JetBeep {
     void enableBluetooth();
     void disableBluetooth();
 
-    void enableNFC();
-    void disableNFC();
-
     Promise<std::vector<Barcode>> requestBarcodes();
     void cancelBarcodes();
 
@@ -63,6 +61,7 @@ namespace JetBeep {
     void cancelPayment();
 
     bool isMobileConnected();
+
     std::string version();
     unsigned long deviceId();
 
@@ -71,9 +70,20 @@ namespace JetBeep {
     AutoDeviceStateCallback stateCallback;
     AutoDevicePaymentErrorCallback paymentErrorCallback;
     AutoDeviceMobileCallback mobileCallback;
+
+    AutoDeviceState state();
+
+    /* NFC related section */
     AutoDeviceNFCEventCallback nfcEventCallback;
     AutoDeviceNFCDetectionErrorCallback nfcDetectionErrorCallback;
-    AutoDeviceState state();
+
+    void enableNFC();
+    void disableNFC();
+
+    bool isNFCDetected();
+    NFC::DetectionEventData getNFCCardInfo();
+
+    std::shared_ptr<NFC::MifareClassic::MifareClassicProvider> createMifareClassicProvider();
 
   private:
     class Impl;

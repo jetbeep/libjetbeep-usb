@@ -56,14 +56,19 @@ namespace JetBeep {
 
     AutoDeviceState state();
     bool isMobileConnected();
+    bool isNFCDetected();
+    NFC::DetectionEventData getNFCCardInfo();
     std::string version();
     unsigned long deviceId();
+    std::shared_ptr<NFC::MifareClassic::MifareClassicProvider> createMifareClassicProvider();
 
   private:
     IOContext m_context;
     bool m_started;
     bool m_mobileConnected;
     bool m_nfcDetected;
+
+    NFC::DetectionEventData m_nfcCardInfo;
 
     AutoDeviceStateCallback* m_stateCallback;
     AutoDevicePaymentErrorCallback* m_paymentErrorCallback;
@@ -98,8 +103,8 @@ namespace JetBeep {
     void onPaymentSuccess();
     void onPaymentToken(const std::string& token);
     void onMobileConnectionChange(const SerialMobileEvent& event);
-    void onNFCEvent(const SerialNFCEvent& event, const NFCDetectionEventData &data);
-    void onNFCDetectionError(const NFCDetectionErrorReason& reason);
+    void onNFCEvent(const SerialNFCEvent& event, const NFC::DetectionEventData &data);
+    void onNFCDetectionError(const NFC::DetectionErrorReason& reason);
     void rejectPendingOperations();
   };
 } // namespace JetBeep
