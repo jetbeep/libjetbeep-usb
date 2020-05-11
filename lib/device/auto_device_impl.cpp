@@ -29,6 +29,7 @@ AutoDevice::Impl::Impl(AutoDeviceStateCallback* stateCallback,
     m_mobileConnected(false),
     m_started(false),
     m_deviceId(0) {
+  m_device_sp = std::shared_ptr<SerialDevice>(&m_device);
   m_detection.callback = std::bind(&AutoDevice::Impl::onDeviceEvent, this, std::placeholders::_1, std::placeholders::_2);
   m_device.barcodesCallback = std::bind(&AutoDevice::Impl::onBarcodes, this, std::placeholders::_1);
   m_device.paymentErrorCallback = std::bind(&AutoDevice::Impl::onPaymentError, this, std::placeholders::_1);
@@ -564,12 +565,26 @@ bool AutoDevice::Impl::isNFCDetected() {
 std::string AutoDevice::Impl::version() {
   return m_version;
 }
+
 unsigned long AutoDevice::Impl::deviceId() {
   return m_deviceId;
 }
 
-std::shared_ptr<NFC::MifareClassic::MifareClassicProvider> AutoDevice::Impl::createMifareClassicProvider() {
-  std::shared_ptr<SerialDevice> device_p(&m_device);
-  std::shared_ptr< NFC::MifareClassic::MifareClassicProvider> sp (new NFC::MifareClassic::MifareClassicProvider(std::weak_ptr<SerialDevice>(device_p)));
-  return sp;
+std::shared_ptr<NFC::NFCApiProvider> AutoDevice::Impl::createNFCApiProvider() {
+  if (!m_nfcDetected) {
+    throw Errors::InvalidState();
+  }
+
+  switch (m_nfcCardInfo.cardType) {
+  case NFC::CardType::MIFARE_CLASSIC_1K:
+  case NFC::CardType::MIFARE_CLASSIC_4K: {
+    std::shared_ptr<NFC::MifareClassic::MifareClassicProvider> sp(
+      new NFC::MifareClassic::MifareClassicProvider(m_device_sp, m_nfcCardInfo));
+    return std::static_pointer_cast<NFC::NFCApiProvider>(sp);
+  }
+  default:
+    throw Errors::InvalidState();
+  }
+
+
 }

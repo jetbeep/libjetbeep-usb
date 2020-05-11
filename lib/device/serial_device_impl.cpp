@@ -152,7 +152,7 @@ bool SerialDevice::Impl::handleResult(const string& command, const vector<string
   m_state = SerialDeviceState::idle;
   m_timer.cancel();
 
-  if (params.size() != 1) {
+  if (params.size() == 0 || params.size() > 2) {
     m_log.e() << "invalid response params size: " << params.size() << Logger::endl;
     m_executePromise.reject(make_exception_ptr(Errors::InvalidResponse()));
     return true;
@@ -162,6 +162,9 @@ bool SerialDevice::Impl::handleResult(const string& command, const vector<string
 
   if (result == "ok") {
     m_executePromise.resolve();
+  } else if (result == "error" && params.size() == 2 /* error with a reason */) {
+    m_log.e() << "result is not ok: " << result << Logger::endl;
+    m_executePromise.reject(make_exception_ptr(Errors::InvalidResponseWithReason(params[1])));
   } else {
     m_log.e() << "result is not ok: " << result << Logger::endl;
     m_executePromise.reject(make_exception_ptr(Errors::InvalidResponse()));

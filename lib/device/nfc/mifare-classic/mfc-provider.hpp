@@ -3,6 +3,7 @@
 
 #include <memory>
 #include "../../serial_device.hpp"
+#include "../nfc-api-provider.hpp"
 
 namespace JetBeep::NFC {
   namespace MifareClassic {
@@ -29,11 +30,18 @@ namespace JetBeep::NFC {
       MifareClassicKeyType type;
     } NFCMifareClassicKey;
 
-    class MifareClassicProvider {
+    typedef struct MifareBlockContent {
+      char data[16];
+      int blockNo;
+    } MifareBlockContent;
+
+    class MifareClassicProvider: public NFCApiProvider {
     public:
       virtual ~MifareClassicProvider();
+      void readBlock(const int, const MifareClassicKey &, MifareBlockContent &);
+      void writeBlock(const MifareBlockContent & content, const MifareClassicKey &key);
     private:
-      MifareClassicProvider(std::weak_ptr<SerialDevice>);
+      MifareClassicProvider(std::shared_ptr<SerialDevice> &, DetectionEventData &cardInfo);
       class Impl;
       std::unique_ptr<Impl> m_impl;
 

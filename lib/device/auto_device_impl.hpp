@@ -60,7 +60,7 @@ namespace JetBeep {
     NFC::DetectionEventData getNFCCardInfo();
     std::string version();
     unsigned long deviceId();
-    std::shared_ptr<NFC::MifareClassic::MifareClassicProvider> createMifareClassicProvider();
+    std::shared_ptr<NFC::NFCApiProvider> createNFCApiProvider();
 
   private:
     IOContext m_context;
@@ -84,6 +84,7 @@ namespace JetBeep {
     AutoDeviceState m_state;
     DeviceDetection m_detection;
     SerialDevice m_device;
+    std::shared_ptr<SerialDevice> m_device_sp;
     boost::asio::deadline_timer m_timer;
     std::recursive_mutex m_mutex;
     std::vector<std::function<void()>> m_pendingOperations;

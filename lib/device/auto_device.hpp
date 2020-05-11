@@ -83,7 +83,7 @@ namespace JetBeep {
     bool isNFCDetected();
     NFC::DetectionEventData getNFCCardInfo();
 
-    std::shared_ptr<NFC::MifareClassic::MifareClassicProvider> createMifareClassicProvider();
+    std::shared_ptr<NFC::NFCApiProvider> createNFCApiProvider();
 
   private:
     class Impl;

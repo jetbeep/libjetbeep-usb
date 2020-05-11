@@ -44,6 +44,13 @@ namespace DeviceResponses {
   const std::string commit = "COMMIT";
   const std::string getState = "GETSTATE";
 
+  /* NFC api */
+  const std::string nfcSecureReadMFC = "NFC_SECURE_READ_MFC";
+  const std::string nfcReadMFC = "NFC_READ_MFC";
+  const std::string nfcSecureWriteMFC = "NFC_SECURE_WRITE_MFC";
+  const std::string nfcWriteMFC = "NFC_WRITE_MFC";
+
+
   // events
   const std::string mobileConnected = "MOBILE_CONNECTED";
   const std::string mobileDisconnected = "MOBILE_DISCONNECTED";

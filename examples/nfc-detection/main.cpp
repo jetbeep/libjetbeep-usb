@@ -11,7 +11,7 @@ using namespace std;
 /* Mifare Classic test vars */
 #define MFC_TEST_BLOCKNO 61
 #define MFC_TEST_KEY_BASE64 "Zku67Rb6"
-#define MFC_TEST_KEY_TYPE 1
+#define MFC_TEST_KEY_TYPE NFC::MifareClassic::MifareClassicKeyType::KEY_A
 
 Logger l("ex-main");
 
@@ -46,9 +46,22 @@ void performMifareClassicRW() {
   if (!autoDevice.isNFCDetected()) {
     return;
   }
+
+
+  auto nfcApiProvider = autoDevice.createNFCApiProvider();
+  auto mifareApi = std::dynamic_pointer_cast<NFC::MifareClassic::MifareClassicProvider>(nfcApiProvider);
+
+  NFC::MifareClassic::MifareBlockContent rBlockContent;
+  NFC::MifareClassic::MifareBlockContent wBlockContent;
+  NFC::MifareClassic::MifareClassicKey key;
+
+  char * key_base64 = MFC_TEST_KEY_BASE64;
+  key.type = MFC_TEST_KEY_TYPE;
+  boost::beast::detail::base64::decode(key.key_data, key_base64, 8 /*base64 len*/);
+
   /* read test */
   l.i() << "Reading Mifare block " << MFC_TEST_BLOCKNO << " ..."  << Logger::endl;
-
+  mifareApi->readBlock(MFC_TEST_BLOCKNO, key, rBlockContent);
   l.i() << "Content of block "<<MFC_TEST_BLOCKNO<<" (base64): " << "" << Logger::endl;
 
   string input;

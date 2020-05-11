@@ -8,11 +8,13 @@
 namespace JetBeep::NFC::MifareClassic {
   class MifareClassicProvider::Impl {
   public:
-    Impl(std::weak_ptr<SerialDevice>);
+    Impl(DetectionEventData &);
     virtual ~Impl();
 
+    void readBlock(std::shared_ptr<SerialDevice>, const int, const MifareClassicKey &, MifareBlockContent &);
+    void writeBlock(std::shared_ptr<SerialDevice>, const MifareBlockContent & content, const MifareClassicKey &key);
   private:
-    std::weak_ptr<SerialDevice> m_serialDevice_p;
+    DetectionEventData &m_cardInfo;
   };
 } // namespace JetBeep::NFC::MifareClassic
 
