@@ -585,6 +585,4 @@ std::shared_ptr<NFC::NFCApiProvider> AutoDevice::Impl::createNFCApiProvider() {
   default:
     throw Errors::InvalidState();
   }
-
-
 }

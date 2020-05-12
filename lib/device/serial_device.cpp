@@ -131,3 +131,30 @@ Promise<void> SerialDevice::beginPrivate(const SerialBeginPrivateMode& mode) {
 
   return m_impl->execute(DeviceResponses::beginPrivate, param);
 }
+
+Promise<std::string> SerialDevice::nfcReadMFC(uint8_t blockNo) {
+  return m_impl->executeString(DeviceResponses::nfcReadMFC, std::to_string(blockNo));
+}
+
+Promise<std::string> SerialDevice::nfcSecureReadMFC(uint8_t blockNo,
+                                                    const std::string& keyBase64,
+                                                    const std::string& keyType) {
+  std::stringstream ss;
+  ss << std::to_string(blockNo) << " " << keyBase64 << " " << keyType;
+  return m_impl->executeString(DeviceResponses::nfcSecureReadMFC, ss.str());
+}
+
+Promise<void> SerialDevice::nfcWriteMFC(uint8_t blockNo, const std::string& contentBase64) {
+  std::stringstream ss;
+  ss << std::to_string(blockNo) << " " << contentBase64;
+  return m_impl->execute(DeviceResponses::nfcWriteMFC, ss.str());
+}
+
+Promise<void> SerialDevice::nfcSecureWriteMFC(uint8_t blockNo,
+                                const std::string& contentBase64,
+                                const std::string& keyBase64,
+                                const std::string& keyType) {
+  std::stringstream ss;
+  ss << std::to_string(blockNo) << " " << contentBase64 << " " << keyBase64 << " " << keyType;
+  return m_impl->execute(DeviceResponses::nfcSecureWriteMFC, ss.str());
+}

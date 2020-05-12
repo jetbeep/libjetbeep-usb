@@ -12,8 +12,6 @@ namespace JetBeep::NFC {
   protected:
     NFCApiProvider(std::shared_ptr<SerialDevice> &);
     std::weak_ptr<SerialDevice> m_serial_p;
-
-    friend class AutoDevice;
   };
 } // namespace JetBeep::NFC
 

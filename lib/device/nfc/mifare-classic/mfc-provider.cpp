@@ -12,7 +12,7 @@ MifareClassicProvider::MifareClassicProvider(std::shared_ptr<SerialDevice>& devi
 MifareClassicProvider::~MifareClassicProvider() {}
 
 
-void MifareClassicProvider::readBlock(const int blockNo, const MifareClassicKey &key, MifareBlockContent & content){
+JetBeep::Promise<void> MifareClassicProvider::readBlock(int blockNo, MifareBlockContent & content, const MifareClassicKey *key){
   auto serial = m_serial_p.lock();
   if (!serial) {
     throw Errors::NullPointerError();
@@ -20,7 +20,7 @@ void MifareClassicProvider::readBlock(const int blockNo, const MifareClassicKey 
   return m_impl->readBlock(serial, blockNo, key, content);
 }
 
-void MifareClassicProvider::writeBlock(const MifareBlockContent & content, const MifareClassicKey &key){
+JetBeep::Promise<void> MifareClassicProvider::writeBlock(const MifareBlockContent & content, const MifareClassicKey *key){
   auto serial = m_serial_p.lock();
   if (!serial) {
     throw Errors::NullPointerError();

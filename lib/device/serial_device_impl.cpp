@@ -152,7 +152,7 @@ bool SerialDevice::Impl::handleResult(const string& command, const vector<string
   m_state = SerialDeviceState::idle;
   m_timer.cancel();
 
-  if (params.size() == 0 || params.size() > 2) {
+  if (params.size() == 0 || params.size() > 2 || (params.size() == 2 && params[0] != "error") ) {
     m_log.e() << "invalid response params size: " << params.size() << Logger::endl;
     m_executePromise.reject(make_exception_ptr(Errors::InvalidResponse()));
     return true;
@@ -163,7 +163,7 @@ bool SerialDevice::Impl::handleResult(const string& command, const vector<string
   if (result == "ok") {
     m_executePromise.resolve();
   } else if (result == "error" && params.size() == 2 /* error with a reason */) {
-    m_log.e() << "result is not ok: " << result << Logger::endl;
+    m_log.e() << "result is not ok: " << result << ", reason: " << params[1] << Logger::endl;
     m_executePromise.reject(make_exception_ptr(Errors::InvalidResponseWithReason(params[1])));
   } else {
     m_log.e() << "result is not ok: " << result << Logger::endl;
@@ -195,7 +195,13 @@ bool SerialDevice::Impl::handleResultWithParams(const std::string& command, cons
       return true;
     }
 
-    if (params.size() != 2) {
+    if (!params.empty() && params[0] == "error") {
+      m_log.e() << "get cmd error" << Logger::endl;
+      m_executeStringPromise.reject(make_exception_ptr(Errors::InvalidResponse()));
+      return true;
+    }
+
+    if (params.size() != 2) { //also
       m_log.e() << "invalid get response split size: " << params.size() << Logger::endl;
       m_executeStringPromise.reject(make_exception_ptr(Errors::InvalidResponse()));
       return true;
@@ -235,6 +241,38 @@ bool SerialDevice::Impl::handleResultWithParams(const std::string& command, cons
     result.isRefundRequested = params[5] == "1";
 
     m_executeGetStatePromise.resolve(result);
+    return true;
+  } else if (command == DeviceResponses::nfcReadMFC || command == DeviceResponses::nfcSecureReadMFC) {
+    if (m_executeStringPromise.state() != PromiseState::undefined) {
+      m_log.e() << "invalid promise state" << Logger::endl;
+      if (errorCallback) {
+        errorCallback(make_exception_ptr(Errors::ProtocolError()));
+      }
+      return true;
+    }
+
+    if (params.size() != 2) {
+      m_log.e() << "invalid response size: " << params.size() << Logger::endl;
+      m_executeStringPromise.reject(make_exception_ptr(Errors::InvalidResponse()));
+      return true;
+    }
+
+    auto result = params[0];
+    auto value = params[1];
+
+    if (result  == "error") {
+      m_log.e() << "nfcReadMFC(secure) error: " << value << Logger::endl;
+      m_executeStringPromise.reject(make_exception_ptr(Errors::InvalidResponseWithReason(value)));
+      return true;
+    }
+
+    if (result == "ok") {
+      m_executeStringPromise.resolve(value);
+      return true;
+    }
+
+    m_log.e() << "unexpected nfcReadMFC(secure) response: " << result << Logger::endl;
+    m_executeStringPromise.reject(make_exception_ptr(Errors::InvalidResponse()));
     return true;
   }
 

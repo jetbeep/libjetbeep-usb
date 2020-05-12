@@ -10,6 +10,7 @@
 #include "../utils/promise.hpp"
 #include "device_types.hpp"
 #include "./nfc/mifare-classic/mfc-provider.hpp"
+#include "./nfc/nfc-api-provider.hpp"
 
 namespace JetBeep {
   enum class AutoDeviceState {

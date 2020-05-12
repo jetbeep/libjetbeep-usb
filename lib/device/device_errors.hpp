@@ -35,12 +35,17 @@ namespace JetBeep {
 
     class InvalidResponseWithReason : public std::exception {
     public:
-      InvalidResponseWithReason(std::string reason) :m_reason("Device returned error response" + reason) { }
+      InvalidResponseWithReason(std::string code) :m_reason("Device returned error response: " + code), m_code(code) { }
       virtual char const* what() const noexcept {
         return m_reason.c_str();
       }
-    private:
+      std::string getErrorCode() {
+        return m_code;
+      }
+
+    protected:
       std::string m_reason;
+      std::string m_code;
     };
 
     class DeviceLost : public std::exception {

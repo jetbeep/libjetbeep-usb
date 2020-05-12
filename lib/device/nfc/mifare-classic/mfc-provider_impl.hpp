@@ -4,6 +4,7 @@
 #include <boost/beast/core/detail/base64.hpp>
 #include "mfc-provider.hpp"
 #include "../../serial_device.hpp"
+#include <mutex>
 
 namespace JetBeep::NFC::MifareClassic {
   class MifareClassicProvider::Impl {
@@ -11,10 +12,11 @@ namespace JetBeep::NFC::MifareClassic {
     Impl(DetectionEventData &);
     virtual ~Impl();
 
-    void readBlock(std::shared_ptr<SerialDevice>, const int, const MifareClassicKey &, MifareBlockContent &);
-    void writeBlock(std::shared_ptr<SerialDevice>, const MifareBlockContent & content, const MifareClassicKey &key);
+    Promise<void> readBlock(std::shared_ptr<SerialDevice>, int, const MifareClassicKey *, MifareBlockContent &);
+    Promise<void> writeBlock(std::shared_ptr<SerialDevice>, const MifareBlockContent & content, const MifareClassicKey *);
   private:
     DetectionEventData &m_cardInfo;
+    std::recursive_mutex m_mutex;
   };
 } // namespace JetBeep::NFC::MifareClassic
 
