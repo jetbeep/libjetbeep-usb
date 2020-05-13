@@ -26,8 +26,8 @@ JetBeep::Promise<void> MifareClassicProvider::Impl::readBlock(std::shared_ptr<Se
   auto onError = [&result](const std::exception_ptr error) {
     try {
       rethrow_exception(error);
-    } catch (Errors::InvalidResponseWithReason& error) {
-      result.reject(make_exception_ptr(MifareIOException(error.getErrorCode())));
+    } catch (Errors::InvalidResponseWithReason& errorWithReason) {
+      result.reject(make_exception_ptr(MifareIOException(errorWithReason.getErrorCode())));
     } catch (...) {
       result.reject(make_exception_ptr(Errors::ProtocolError()));
     }
@@ -36,7 +36,7 @@ JetBeep::Promise<void> MifareClassicProvider::Impl::readBlock(std::shared_ptr<Se
     serial->nfcReadMFC((uint8_t)blockNo).then(onResult).catchError(onError);
   } else {
     std::string keyBase64Str;
-    keyBase64Str.reserve(boost::beast::detail::base64::encoded_size(MFC_KEY_SIZE));
+    keyBase64Str.resize(boost::beast::detail::base64::encoded_size(MFC_KEY_SIZE));
     std::string keyTypeStr = key->type == MifareClassicKeyType::KEY_A ? "1" : "2";
     boost::beast::detail::base64::encode((void*)keyBase64Str.c_str(), key->key_data, MFC_KEY_SIZE);
     serial->nfcSecureReadMFC((uint8_t)blockNo, keyBase64Str, keyTypeStr).then(onResult).catchError(onError);
@@ -62,17 +62,17 @@ JetBeep::Promise<void> MifareClassicProvider::Impl::writeBlock(std::shared_ptr<S
   };
   if (key == nullptr || key->type == MifareClassicKeyType::NONE) {
     std::string contentBase64;
-    contentBase64.reserve(boost::beast::detail::base64::encoded_size(MFC_BLOCK_SIZE));
+    contentBase64.resize(boost::beast::detail::base64::encoded_size(MFC_BLOCK_SIZE));
     boost::beast::detail::base64::encode((void*)contentBase64.c_str(), content.data, MFC_BLOCK_SIZE);
 
     serial->nfcWriteMFC((uint8_t)content.blockNo, contentBase64).then(onResult).catchError(onError);
   } else {
     std::string keyBase64Str;
-    keyBase64Str.reserve(boost::beast::detail::base64::encoded_size(MFC_KEY_SIZE));
+    keyBase64Str.resize(boost::beast::detail::base64::encoded_size(MFC_KEY_SIZE));
     std::string keyTypeStr = key->type == MifareClassicKeyType::KEY_A ? "1" : "2";
     boost::beast::detail::base64::encode((void*)keyBase64Str.c_str(), key->key_data, MFC_KEY_SIZE);
     std::string contentBase64;
-    contentBase64.reserve(boost::beast::detail::base64::encoded_size(MFC_BLOCK_SIZE));
+    contentBase64.resize(boost::beast::detail::base64::encoded_size(MFC_BLOCK_SIZE));
     boost::beast::detail::base64::encode((void*)contentBase64.c_str(), content.data, MFC_BLOCK_SIZE);
     serial->nfcSecureWriteMFC((uint8_t)content.blockNo, contentBase64, keyBase64Str, keyTypeStr).then(onResult).catchError(onError);
   }

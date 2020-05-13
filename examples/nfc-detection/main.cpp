@@ -15,7 +15,7 @@ using namespace std;
 
 Logger l("ex-main");
 
-JetBeep::AutoDevice autoDevice;
+JetBeep::AutoDevice * autoDevice_p;
 
 void onStateChange(AutoDeviceState state, std::exception_ptr error) {
   switch (state) {
@@ -42,13 +42,14 @@ void onMobileEvent(const JetBeep::SerialMobileEvent& event) {
   }
 }
 
+static JetBeep::Promise<void> mifareIOPromise;
+
 void performMifareClassicRW() {
-  if (!autoDevice.isNFCDetected()) {
+  if (!autoDevice_p->isNFCDetected()) {
     return;
   }
 
-
-  auto nfcApiProvider = autoDevice.createNFCApiProvider();
+  auto nfcApiProvider = autoDevice_p->createNFCApiProvider();
   auto mifareApi = std::dynamic_pointer_cast<NFC::MifareClassic::MifareClassicProvider>(nfcApiProvider);
 
   NFC::MifareClassic::MifareBlockContent rBlockContent;
@@ -59,77 +60,84 @@ void performMifareClassicRW() {
   auto mifareBlockSizeBase64 = boost::beast::detail::base64::encoded_size(MFC_BLOCK_SIZE);
   auto mifareKeySizeBase64 = keyBase64.size();
 
-  //prepare key
+  // prepare key
   key.type = MFC_TEST_KEY_TYPE;
   boost::beast::detail::base64::decode(key.key_data, keyBase64.c_str(), mifareKeySizeBase64);
 
   /* read test */
   l.i() << "Reading Mifare block " << MFC_TEST_BLOCKNO << " ..." << Logger::endl;
-  mifareApi->readBlock(MFC_TEST_BLOCKNO, rBlockContent, &key /* pass nullptr to use default (factory) Mifare key */).then([&]() {
-    std::string base64Result;
-    base64Result.reserve(boost::beast::detail::base64::encoded_size(MFC_BLOCK_SIZE));
-    boost::beast::detail::base64::encode((void*)base64Result.c_str(), rBlockContent.data, MFC_BLOCK_SIZE);
-    l.i() << "Content of block " << MFC_TEST_BLOCKNO << " (base64): " << base64Result << Logger::endl;
 
-    string input;
-    l.i() << "Write 'yes' to perform writing test" << Logger::endl;
-    getline(cin, input);
-    if (input != "yes") {
-      return;
-    }
+  auto onIOError = [&](const std::exception_ptr& error) {
+      try {
+        rethrow_exception(error);
+      } catch (JetBeep::NFC::MifareClassic::MifareIOException& error) {
+        l.e() << "Read/Write failed. " << error.what() << Logger::endl;
+        switch (error.getIOErrorReason()) {
+        case JetBeep::NFC::MifareClassic::MifareIOErrorReason::AUTH_ERROR:
+          l.e() << "Invalid Mifare sector key" << Logger::endl;
+          break;
+        case JetBeep::NFC::MifareClassic::MifareIOErrorReason::CARD_REMOVED:
+          l.e() << "Card removed before operation completed" << Logger::endl;
+          break;
+        case JetBeep::NFC::MifareClassic::MifareIOErrorReason::UNSUPPORTED_CARD_TYPE:
+          l.e() << "Card type is not Mifare Classic" << Logger::endl;
+          break;
+        case JetBeep::NFC::MifareClassic::MifareIOErrorReason::DATA_SIZE:
+          l.e() << "Invalid content data size" << Logger::endl;
+          break;
+        case JetBeep::NFC::MifareClassic::MifareIOErrorReason::INTERRUPTED:
+          l.e() << "IO command interrupted" << Logger::endl;
+          break;
+        case JetBeep::NFC::MifareClassic::MifareIOErrorReason::KEY_PARAM_INVALID:
+          l.e() << "Invalid key format" << Logger::endl;
+          break;
+        case JetBeep::NFC::MifareClassic::MifareIOErrorReason::UNKNOWN:
+          break;
+        case JetBeep::NFC::MifareClassic::MifareIOErrorReason::PARAMS_INVALID:
+          l.e() << "Block # is out of bounds" << Logger::endl;
+          break;
+        }
+      } catch (...) {
+        l.e() << "Read/Write failed due to unknown error" << Logger::endl;
+      }
+    };
 
-    /* write test */
-    l.i() << "Please enter base64 content (24 chars) for block " << MFC_TEST_BLOCKNO << "" << Logger::endl;
-    bool contentValid = false;
-    do {
+  mifareIOPromise = mifareApi->readBlock(MFC_TEST_BLOCKNO, rBlockContent, &key /* pass nullptr to use default (factory) Mifare key */);
+
+  mifareIOPromise.thenPromise([&]() -> Promise<void> {
+      std::string base64Result;
+      base64Result.resize(boost::beast::detail::base64::encoded_size(MFC_BLOCK_SIZE));
+      boost::beast::detail::base64::encode((void*)base64Result.c_str(), rBlockContent.data, MFC_BLOCK_SIZE);
+      l.i() << "Content of block " << MFC_TEST_BLOCKNO << " (base64): " << base64Result << Logger::endl;
+
+      string input;
+      l.i() << "Write 'yes' to perform writing test" << Logger::endl;
       getline(cin, input);
-      if (input.size() == mifareBlockSizeBase64) {
-        char buf[18 /*boost::beast::detail::base64::decoded_size(mifareBlockSizeBase64)*/];
-        auto result = boost::beast::detail::base64::decode(buf, input.c_str(), mifareBlockSizeBase64);
-        contentValid = result.first == MFC_BLOCK_SIZE;
+      if (input != "yes") {
+        throw runtime_error("Write rejected");
       }
-      if (!contentValid) {
-        l.i() << "Invalid input, please try again" << Logger::endl;
-      }
-    } while (!contentValid);
 
-    l.i() << "Writing data to block " << MFC_TEST_BLOCKNO << " ..." << Logger::endl;
-    wBlockContent.blockNo = MFC_TEST_BLOCKNO;
-    mifareApi->writeBlock( wBlockContent, &key  /* pass nullptr to use default (factory) Mifare key */);
-  }).catchError([&](const std::exception_ptr &error){
-    try {
-      rethrow_exception(error);
-    } catch (JetBeep::NFC::MifareClassic::MifareIOException & error) {
-      l.e() << "Write failed. " << error.what() << Logger::endl;
-      switch (error.getIOErrorReason()) {
-      case JetBeep::NFC::MifareClassic::MifareIOErrorReason::AUTH_ERROR:
-        l.e() << "Invalid Mifare sector key" << Logger::endl;
-        break;
-      case JetBeep::NFC::MifareClassic::MifareIOErrorReason::CARD_REMOVED:
-        l.e() << "Card removed before operation completed" << Logger::endl;
-        break;
-      case JetBeep::NFC::MifareClassic::MifareIOErrorReason::UNSUPPORTED_CARD_TYPE:
-        l.e() << "Card type is not Mifare Classic" << Logger::endl;
-        break;
-      case JetBeep::NFC::MifareClassic::MifareIOErrorReason::DATA_SIZE:
-        l.e() << "Invalid content data size" << Logger::endl;
-        break;
-      case JetBeep::NFC::MifareClassic::MifareIOErrorReason::INTERRUPTED:
-        l.e() << "IO command interrupted" << Logger::endl;
-        break;
-      case JetBeep::NFC::MifareClassic::MifareIOErrorReason::KEY_PARAM_INVALID:
-        l.e() << "Invalid key format" << Logger::endl;
-        break;
-      case JetBeep::NFC::MifareClassic::MifareIOErrorReason::UNKNOWN:
-        break;
-      case JetBeep::NFC::MifareClassic::MifareIOErrorReason::PARAMS_INVALID:
-        l.e() << "Block # is out of bounds" << Logger::endl;
-        break;
-      }
-    } catch (...) {
-      l.e() << "Write failed due to unknown error" << Logger::endl;
-    }
-    });
+      /* write test */
+      l.i() << "Please enter base64 content (24 chars) for block " << MFC_TEST_BLOCKNO << "" << Logger::endl;
+      bool contentValid = false;
+      do {
+        getline(cin, input);
+        if (input.size() == mifareBlockSizeBase64) {
+          char buf[18 /*boost::beast::detail::base64::decoded_size(mifareBlockSizeBase64)*/];
+          auto result = boost::beast::detail::base64::decode(buf, input.c_str(), mifareBlockSizeBase64);
+          contentValid = result.first == MFC_BLOCK_SIZE;
+        }
+        if (!contentValid) {
+          l.i() << "Invalid input, please try again" << Logger::endl;
+        }
+      } while (!contentValid);
+
+      l.i() << "Writing data to block " << MFC_TEST_BLOCKNO << " ..." << Logger::endl;
+      wBlockContent.blockNo = MFC_TEST_BLOCKNO;
+      return mifareApi->writeBlock(wBlockContent, &key /* pass nullptr to use default (factory) Mifare key */);
+    })
+    .then([&]() { l.i() << "Write success " << MFC_TEST_BLOCKNO << " ..." << Logger::endl; })
+    .catchError(onIOError);
 }
 
 void handleDetectedCard(const NFC::DetectionEventData& data) {
@@ -193,6 +201,9 @@ int main() {
   string input;
   Logger::coutEnabled = true;
   Logger::level = LoggerLevel::verbose;
+
+  JetBeep::AutoDevice autoDevice;
+  autoDevice_p = &autoDevice;
 
   autoDevice.mobileCallback = onMobileEvent;
   autoDevice.stateCallback = onStateChange;
