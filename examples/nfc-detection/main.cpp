@@ -84,7 +84,7 @@ void performMifareClassicRW() {
     do {
       getline(cin, input);
       if (input.size() == mifareBlockSizeBase64) {
-        char buf[boost::beast::detail::base64::decoded_size(mifareBlockSizeBase64)];
+        char buf[18 /*boost::beast::detail::base64::decoded_size(mifareBlockSizeBase64)*/];
         auto result = boost::beast::detail::base64::decode(buf, input.c_str(), mifareBlockSizeBase64);
         contentValid = result.first == MFC_BLOCK_SIZE;
       }

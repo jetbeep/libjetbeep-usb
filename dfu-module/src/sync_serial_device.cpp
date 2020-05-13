@@ -30,7 +30,7 @@ size_t DFU::SyncSerialDevice::readBytes(void* p_buff, size_t read_size = 1) {
   auto logHandle = m_log.v();
 
   logHandle << "RX " << resSize << " bytes: [ ";
-  for (int i = 0; i < resSize; i++) {
+  for (size_t i = 0; i < resSize; i++) {
     logHandle << *((char*)(p_buff) + i) << " ";
   }
   logHandle << "]" << Logger::endl;

@@ -1,8 +1,8 @@
 .DS_Store
 build
 .idea
-cmake-build-debug
-cmake-build-release
+cmake-build-debug*
+cmake-build-release*
 examples/detection-and-serial/jetbeep_usb_test
 lib/libjetbeep.*.dylib
 lib/libjetbeep.dylib

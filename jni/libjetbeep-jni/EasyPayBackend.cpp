@@ -117,11 +117,11 @@ void onPaymentCatch(exception_ptr error, EasyPayBackend* backend) {
     rethrow_exception(error);
   } catch (const HttpErrors::RequestError &e) {
     errorMessage = e.what();
-  } catch (const HttpErrors::APIError &e) {
+  } catch (const HttpErrors::APIError &) {
     errorMessage = "Помилка роботи API серверу";
-  } catch (const HttpErrors::ServerError &e) {
+  } catch (const HttpErrors::ServerError &) {
     errorMessage = "Помилка роботи серверу";
-  } catch (const HttpErrors::NetworkError &e) {
+  } catch (const HttpErrors::NetworkError &) {
     errorMessage = "Мережеве з'єднання недоступне";
   } catch (...) {
     errorMessage = "Невідома системна помилка";
@@ -272,11 +272,11 @@ void onRefundCatch(exception_ptr error, EasyPayBackend* backend) {
     rethrow_exception(error);
   } catch (const HttpErrors::RequestError &e) {
     errorMessage = e.what();
-  } catch (const HttpErrors::APIError &e) {
+  } catch (const HttpErrors::APIError &) {
     errorMessage = "Помилка роботи API серверу";
-  } catch (const HttpErrors::ServerError &e) {
+  } catch (const HttpErrors::ServerError &) {
     errorMessage = "Помилка роботи серверу";
-  } catch (const HttpErrors::NetworkError &e) {
+  } catch (const HttpErrors::NetworkError &) {
     errorMessage = "Мережеве з'єднання недоступне";
   } catch (...) {
     errorMessage = "Невідома системна помилка";
