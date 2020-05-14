@@ -574,6 +574,10 @@ NFC::MifareClassic::MifareClassicProvider AutoDevice::Impl::getNFCMifareApiProvi
   if (!m_nfcDetected) {
     throw Errors::InvalidState();
   }
+  if (m_nfcCardInfo.cardType != NFC::CardType::MIFARE_CLASSIC_1K
+      && m_nfcCardInfo.cardType != NFC::CardType::MIFARE_CLASSIC_4K) {
+    throw Errors::InvalidState();
+  }
 
   return NFC::MifareClassic::MifareClassicProvider(m_device_sp, m_nfcCardInfo);
 }
