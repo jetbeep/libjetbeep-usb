@@ -3,7 +3,6 @@
 
 #include <memory>
 #include "../../serial_device.hpp"
-#include "../../auto_device.hpp"
 #include "../nfc-api-provider.hpp"
 
 #define MFC_BLOCK_SIZE 16
@@ -76,11 +75,11 @@ namespace JetBeep::NFC {
     public:
       virtual ~MifareClassicProvider();
       JetBeep::Promise<void> readBlock(int blockNo, MifareBlockContent & content, const MifareClassicKey *key = nullptr);
-      JetBeep::Promise<void> writeBlock(const MifareBlockContent & content, const MifareClassicKey *key = nullptr);
+      JetBeep::Promise<void> writeBlock(const MifareBlockContent & content, const MifareClassicKey *key = nullptr) const;
       MifareClassicProvider(std::shared_ptr<SerialDevice> &, DetectionEventData &cardInfo);
     private:
       class Impl;
-      std::unique_ptr<Impl> m_impl;
+      std::shared_ptr<Impl> m_impl;
     };
 
   } //namespace MifareClassic

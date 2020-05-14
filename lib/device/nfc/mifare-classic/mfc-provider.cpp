@@ -6,7 +6,7 @@ using namespace std;
 using namespace JetBeep::NFC::MifareClassic;
 
 MifareClassicProvider::MifareClassicProvider(std::shared_ptr<SerialDevice>& device_p, DetectionEventData& cardInfo)
-  : NFCApiProvider(device_p),
+  : NFCApiProvider(device_p, cardInfo),
     m_impl(new Impl(cardInfo)){};
 
 MifareClassicProvider::~MifareClassicProvider() {}
@@ -20,7 +20,7 @@ JetBeep::Promise<void> MifareClassicProvider::readBlock(int blockNo, MifareBlock
   return m_impl->readBlock(serial, blockNo, key, content);
 }
 
-JetBeep::Promise<void> MifareClassicProvider::writeBlock(const MifareBlockContent & content, const MifareClassicKey *key){
+JetBeep::Promise<void> MifareClassicProvider::writeBlock(const MifareBlockContent & content, const MifareClassicKey *key) const {
   auto serial = m_serial_p.lock();
   if (!serial) {
     throw Errors::NullPointerError();

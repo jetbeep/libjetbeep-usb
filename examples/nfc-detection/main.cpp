@@ -53,8 +53,7 @@ void performMifareClassicRW() {
     return;
   }
 
-  auto nfcApiProvider = autoDevice_p->createNFCApiProvider();
-  auto mifareApi = std::dynamic_pointer_cast<NFC::MifareClassic::MifareClassicProvider>(nfcApiProvider);
+  auto mifareApi = autoDevice_p->getNFCMifareApiProvider();
 
   std::string keyBase64 = MFC_TEST_KEY_BASE64;
   auto mifareKeySizeBase64 = keyBase64.size();
@@ -96,14 +95,14 @@ void performMifareClassicRW() {
           l.e() << "Block # is out of bounds" << Logger::endl;
           break;
         }
-      } catch (const std::exception error) {
+      } catch (const std::exception &error) {
         l.e() << "Read/Write error:" << error.what() << Logger::endl;
       }catch (...) {
         l.e() << "Read/Write failed due to unknown error" << Logger::endl;
       }
     };
 
-  mifareApi->readBlock(MFC_TEST_BLOCKNO, rBlockContent, &key /* pass nullptr to use default (factory) Mifare key */)
+  mifareApi.readBlock(MFC_TEST_BLOCKNO, rBlockContent, &key /* pass nullptr to use default (factory) Mifare key */)
     .thenPromise([&, mifareApi]() -> Promise<void> {
       std::string base64Result;
       base64Result.resize(boost::beast::detail::base64::encoded_size(MFC_BLOCK_SIZE));
@@ -128,7 +127,7 @@ void performMifareClassicRW() {
         }
 
         l.i() << "Writing data to block " << MFC_TEST_BLOCKNO << " ..." << Logger::endl;
-        return mifareApi->writeBlock(wBlockContent, &key /* pass nullptr to use default (factory) Mifare key */);
+        return mifareApi.writeBlock(wBlockContent, &key /* pass nullptr to use default (factory) Mifare key */);
       } else {
         auto p = Promise<void>();
         p.resolve();

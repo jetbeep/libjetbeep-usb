@@ -570,19 +570,10 @@ unsigned long AutoDevice::Impl::deviceId() {
   return m_deviceId;
 }
 
-std::shared_ptr<NFC::NFCApiProvider> AutoDevice::Impl::createNFCApiProvider() {
+NFC::MifareClassic::MifareClassicProvider AutoDevice::Impl::getNFCMifareApiProvider() {
   if (!m_nfcDetected) {
     throw Errors::InvalidState();
   }
 
-  switch (m_nfcCardInfo.cardType) {
-  case NFC::CardType::MIFARE_CLASSIC_1K:
-  case NFC::CardType::MIFARE_CLASSIC_4K: {
-    std::shared_ptr<NFC::MifareClassic::MifareClassicProvider> sp(
-      new NFC::MifareClassic::MifareClassicProvider(m_device_sp, m_nfcCardInfo));
-    return std::static_pointer_cast<NFC::NFCApiProvider>(sp);
-  }
-  default:
-    throw Errors::InvalidState();
-  }
+  return NFC::MifareClassic::MifareClassicProvider(m_device_sp, m_nfcCardInfo);
 }

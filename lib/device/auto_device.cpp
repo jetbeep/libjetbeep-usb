@@ -96,6 +96,6 @@ std::string AutoDevice::version() {
   return m_impl->version();
 }
 
-std::shared_ptr<NFC::NFCApiProvider> AutoDevice::createNFCApiProvider() {
-  return m_impl->createNFCApiProvider();
+NFC::MifareClassic::MifareClassicProvider AutoDevice::getNFCMifareApiProvider() {
+  return m_impl->getNFCMifareApiProvider();
 }
