@@ -14,22 +14,22 @@ JetBeep::Promise<void> MifareClassicProvider::Impl::readBlock(std::shared_ptr<Se
                                                               const MifareClassicKey* key,
                                                               MifareBlockContent& content) {
   std::lock_guard<recursive_mutex> guard(m_mutex);
-  auto result = JetBeep::Promise<void>();
-  auto onResult = [blockNo, &content, &result](std::string contentBase64) {
+  m_result_promise = JetBeep::Promise<void>();
+  auto onResult = [blockNo, &content, this](std::string contentBase64) {
     content.blockNo = blockNo;
     auto decodeResult = boost::beast::detail::base64::decode(content.data, contentBase64.c_str(), contentBase64.size());
     if (decodeResult.first != MFC_BLOCK_SIZE) {
-      result.reject(make_exception_ptr(Errors::ProtocolError()));
+      m_result_promise.reject(make_exception_ptr(Errors::ProtocolError()));
     }
-    result.resolve();
+    m_result_promise.resolve();
   };
-  auto onError = [&result](const std::exception_ptr error) {
+  auto onError = [this](const std::exception_ptr error) {
     try {
       rethrow_exception(error);
     } catch (Errors::InvalidResponseWithReason& errorWithReason) {
-      result.reject(make_exception_ptr(MifareIOException(errorWithReason.getErrorCode())));
+      m_result_promise.reject(make_exception_ptr(MifareIOException(errorWithReason.getErrorCode())));
     } catch (...) {
-      result.reject(make_exception_ptr(Errors::ProtocolError()));
+      m_result_promise.reject(make_exception_ptr(Errors::ProtocolError()));
     }
   };
   if (key == nullptr || key->type == MifareClassicKeyType::NONE) {
@@ -42,22 +42,22 @@ JetBeep::Promise<void> MifareClassicProvider::Impl::readBlock(std::shared_ptr<Se
     serial->nfcSecureReadMFC((uint8_t)blockNo, keyBase64Str, keyTypeStr).then(onResult).catchError(onError);
   }
 
-  return result;
+  return m_result_promise;
 }
 
 JetBeep::Promise<void> MifareClassicProvider::Impl::writeBlock(std::shared_ptr<SerialDevice> serial,
                                                                const MifareBlockContent& content,
                                                                const MifareClassicKey* key) {
   std::lock_guard<recursive_mutex> guard(m_mutex);
-  auto result = JetBeep::Promise<void>();
-  auto onResult = [&]() { result.resolve(); };
-  auto onError = [&result](const std::exception_ptr error) {
+  m_result_promise = JetBeep::Promise<void>();
+  auto onResult = [this]() { m_result_promise.resolve(); };
+  auto onError = [this](const std::exception_ptr error) {
     try {
       rethrow_exception(error);
     } catch (Errors::InvalidResponseWithReason& error) {
-      result.reject(make_exception_ptr(MifareIOException(error.getErrorCode())));
+      m_result_promise.reject(make_exception_ptr(MifareIOException(error.getErrorCode())));
     } catch (...) {
-      result.reject(make_exception_ptr(Errors::ProtocolError()));
+      m_result_promise.reject(make_exception_ptr(Errors::ProtocolError()));
     }
   };
   if (key == nullptr || key->type == MifareClassicKeyType::NONE) {
@@ -77,5 +77,5 @@ JetBeep::Promise<void> MifareClassicProvider::Impl::writeBlock(std::shared_ptr<S
     serial->nfcSecureWriteMFC((uint8_t)content.blockNo, contentBase64, keyBase64Str, keyTypeStr).then(onResult).catchError(onError);
   }
 
-  return result;
+  return m_result_promise;
 }

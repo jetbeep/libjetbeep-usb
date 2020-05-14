@@ -13,6 +13,9 @@ using namespace std;
 #define MFC_TEST_KEY_BASE64 "Zku67Rb6"
 #define MFC_TEST_KEY_TYPE NFC::MifareClassic::MifareClassicKeyType::KEY_A
 
+#define MFC_TEST_WRITE_ENABLED true
+#define MFC_TEST_WRITE_CONTENT "ABEiM0RVZneImaq7zN3u/w=="
+
 Logger l("ex-main");
 
 JetBeep::AutoDevice * autoDevice_p;
@@ -41,8 +44,9 @@ void onMobileEvent(const JetBeep::SerialMobileEvent& event) {
     l.e() << "disconnected" << Logger::endl;
   }
 }
-
-static JetBeep::Promise<void> mifareIOPromise;
+NFC::MifareClassic::MifareBlockContent rBlockContent;
+NFC::MifareClassic::MifareBlockContent wBlockContent;
+NFC::MifareClassic::MifareClassicKey key;
 
 void performMifareClassicRW() {
   if (!autoDevice_p->isNFCDetected()) {
@@ -52,12 +56,7 @@ void performMifareClassicRW() {
   auto nfcApiProvider = autoDevice_p->createNFCApiProvider();
   auto mifareApi = std::dynamic_pointer_cast<NFC::MifareClassic::MifareClassicProvider>(nfcApiProvider);
 
-  NFC::MifareClassic::MifareBlockContent rBlockContent;
-  NFC::MifareClassic::MifareBlockContent wBlockContent;
-  NFC::MifareClassic::MifareClassicKey key;
-
   std::string keyBase64 = MFC_TEST_KEY_BASE64;
-  auto mifareBlockSizeBase64 = boost::beast::detail::base64::encoded_size(MFC_BLOCK_SIZE);
   auto mifareKeySizeBase64 = keyBase64.size();
 
   // prepare key
@@ -97,46 +96,46 @@ void performMifareClassicRW() {
           l.e() << "Block # is out of bounds" << Logger::endl;
           break;
         }
-      } catch (...) {
+      } catch (const std::exception error) {
+        l.e() << "Read/Write error:" << error.what() << Logger::endl;
+      }catch (...) {
         l.e() << "Read/Write failed due to unknown error" << Logger::endl;
       }
     };
 
-  mifareIOPromise = mifareApi->readBlock(MFC_TEST_BLOCKNO, rBlockContent, &key /* pass nullptr to use default (factory) Mifare key */);
-
-  mifareIOPromise.thenPromise([&]() -> Promise<void> {
+  mifareApi->readBlock(MFC_TEST_BLOCKNO, rBlockContent, &key /* pass nullptr to use default (factory) Mifare key */)
+    .thenPromise([&, mifareApi]() -> Promise<void> {
       std::string base64Result;
       base64Result.resize(boost::beast::detail::base64::encoded_size(MFC_BLOCK_SIZE));
       boost::beast::detail::base64::encode((void*)base64Result.c_str(), rBlockContent.data, MFC_BLOCK_SIZE);
       l.i() << "Content of block " << MFC_TEST_BLOCKNO << " (base64): " << base64Result << Logger::endl;
 
-      string input;
-      l.i() << "Write 'yes' to perform writing test" << Logger::endl;
-      getline(cin, input);
-      if (input != "yes") {
-        throw runtime_error("Write rejected");
-      }
-
       /* write test */
-      l.i() << "Please enter base64 content (24 chars) for block " << MFC_TEST_BLOCKNO << "" << Logger::endl;
-      bool contentValid = false;
-      do {
-        getline(cin, input);
-        if (input.size() == mifareBlockSizeBase64) {
+      if (MFC_TEST_WRITE_ENABLED) {
+        auto mifareBlockSizeBase64 = boost::beast::detail::base64::encoded_size(MFC_BLOCK_SIZE);
+        auto content = string(MFC_TEST_WRITE_CONTENT);
+        if (content.size() == mifareBlockSizeBase64) {
           char buf[18 /*boost::beast::detail::base64::decoded_size(mifareBlockSizeBase64)*/];
-          auto result = boost::beast::detail::base64::decode(buf, input.c_str(), mifareBlockSizeBase64);
-          contentValid = result.first == MFC_BLOCK_SIZE;
+          auto result = boost::beast::detail::base64::decode(buf, content.c_str(), mifareBlockSizeBase64);
+          auto contentValid = result.first == MFC_BLOCK_SIZE;
+          if (!contentValid) {
+            l.e() << "Invalid content" << Logger::endl;
+            throw runtime_error("invalid content");
+          }
+          //setting up content
+          memcpy(wBlockContent.data, buf, MFC_BLOCK_SIZE);
+          wBlockContent.blockNo = MFC_TEST_BLOCKNO;
         }
-        if (!contentValid) {
-          l.i() << "Invalid input, please try again" << Logger::endl;
-        }
-      } while (!contentValid);
 
-      l.i() << "Writing data to block " << MFC_TEST_BLOCKNO << " ..." << Logger::endl;
-      wBlockContent.blockNo = MFC_TEST_BLOCKNO;
-      return mifareApi->writeBlock(wBlockContent, &key /* pass nullptr to use default (factory) Mifare key */);
+        l.i() << "Writing data to block " << MFC_TEST_BLOCKNO << " ..." << Logger::endl;
+        return mifareApi->writeBlock(wBlockContent, &key /* pass nullptr to use default (factory) Mifare key */);
+      } else {
+        auto p = Promise<void>();
+        p.resolve();
+        return p;
+      }
     })
-    .then([&]() { l.i() << "Write success " << MFC_TEST_BLOCKNO << " ..." << Logger::endl; })
+    .then([&]() { l.i() << "Write success " << Logger::endl; })
     .catchError(onIOError);
 }
 

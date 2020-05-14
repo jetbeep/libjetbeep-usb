@@ -17,6 +17,7 @@ namespace JetBeep::NFC::MifareClassic {
   private:
     DetectionEventData &m_cardInfo;
     std::recursive_mutex m_mutex;
+    JetBeep::Promise<void> m_result_promise;
   };
 } // namespace JetBeep::NFC::MifareClassic
 
