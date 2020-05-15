@@ -1,6 +1,8 @@
 package example;
 
 import com.jetbeep.*;
+import com.jetbeep.nfc.*;
+import com.jetbeep.nfc.mifare_classic.*;
 import java.util.HashMap;
 
 
@@ -45,6 +47,32 @@ public class DeviceHandler extends AutoDevice {
   public void onMobileConnectionChange(boolean isConnected) {
     System.out.println("is mobile connected == " + isConnected);
   }
+
+  public void onNFCDetectionEvent(DetectionEvent event) {
+    if (event.event == DetectionEvent.Event.DETECTED) {
+      System.out.println("NFC: card detected");
+      return;
+    }
+    if (event.event == DetectionEvent.Event.REMOVED) {
+      System.out.println("NFC: card removed");
+      return;
+    }
+  }
+
+  public void onNFCDetectionError(DetectionError error) {
+    switch(error) {
+      case UNSUPPORTED: 
+        System.out.println("NFC: detected card type is not supported");
+      break;
+      case MULTIPLE_CARDS: 
+        System.out.println("NFC: Thre is multiple cards in detection field");
+      break;
+      case UNKNOWN: //falls through
+      default:
+      System.out.println("NFC: Unknown detection error");
+    }
+  }
+
 
   public void free() {
     backend.free();

@@ -3,6 +3,8 @@
 #include <mutex>
 #include <string>
 
+#define JSTRING_SIGNATURE "Ljava/lang/String;"
+
 namespace JetBeep {
   class JniUtils {
   public:
@@ -25,6 +27,8 @@ namespace JetBeep {
     static void storeEasyPayBackendJObject(JNIEnv* env, jobject object, EasyPayBackend* backend);
     static void releaseEasyPayBackendJObject(JNIEnv* env, EasyPayBackend* backend);
     static jobject getEasyPayBackendJObject(EasyPayBackend* backend);
+
+    static jobject getJCardInfoObj(JNIEnv* env, const NFC::DetectionEventData * detectionEventData);
 
     static jfieldID getPtrField(JNIEnv *env, jobject object);
     static std::recursive_mutex mutex;

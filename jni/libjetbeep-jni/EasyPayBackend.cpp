@@ -1,5 +1,5 @@
 #include "../../lib/libjetbeep.hpp"
-#include "com_jetbeep_EasyPayBackend.h"
+#include "./include/com_jetbeep_EasyPayBackend.h"
 #include "jni-utils.hpp"
 #include <functional>
 

@@ -3,6 +3,7 @@ package com.jetbeep;
 import java.util.Map;
 
 import com.jetbeep.Barcode;
+import com.jetbeep.nfc.*;
 
 import java.lang.IllegalStateException;
 import java.io.IOException;
@@ -313,6 +314,49 @@ abstract public class AutoDevice {
     return isMobileConnected(ptr);    
   }
 
+  /** 
+   * @return boolean true - there is some NFC card in detection field, false - otherwise
+   */
+  public boolean isNFCDetected() {
+    return isNFCDetected(ptr);    
+  }
+
+  /** 
+   * @return CardInfo - information on NFC card in detection field
+   * @throws IllegalStateException there is no NFC card in detection field
+   */
+  public CardInfo getNFCCardInfo() throws IllegalStateException {
+    return getNFCCardInfo(ptr);    
+  }
+
+  /** 
+   * <p>This method enables NFC detection, must be called before session is open</p>
+   */
+  public void enableNFC() {
+    enableNFC(ptr);   
+  }
+
+  /** 
+   * <p>This method disables NFC detection, must be called before session is open</p>
+   */
+  public void disableNFC() {
+    disableNFC(ptr);   
+  }
+
+  /** 
+   * <p>This method enables Bluetooth connection, must be called before session is open</p>
+   */
+  public void enableBluetooth() {
+    enableBluetooth(ptr);   
+  }
+
+  /** 
+   * <p>This method disables Bluetooth connection, must be called before session is open</p>
+   */
+  public void disableBluetooth() {
+    disableBluetooth(ptr);   
+  }
+
   
   /** 
    * <p>This callback will be fired once the barcodes(loyalty) will be received from the mobile phone.</p>
@@ -339,6 +383,18 @@ abstract public class AutoDevice {
    * @param isConnected true - mobile phone connected, false - otherwise
    */
   abstract public void onMobileConnectionChange(boolean isConnected);
+
+   /** 
+   * <p>This callback will be fired once NFC card detected or removed</p>
+   * @param event - event data, including CardInfo for detected event.
+   */
+  abstract public void onNFCDetectionEvent(DetectionEvent event);
+
+  /** 
+   * <p>This callback will be fired once there is detection error</p>
+   * @param error - type of error.
+   */
+  abstract public void onNFCDetectionError(DetectionError error);
 
   private void onBarcodeBegin(int size) {
     m_barcodes = new Barcode[size];
@@ -374,6 +430,14 @@ abstract public class AutoDevice {
   private native long deviceId(long ptr);
   private native String version(long ptr);
 
+  private native boolean isNFCDetected(long ptr);
+  private native CardInfo getNFCCardInfo(long ptr);
+
+  private native void enableNFC(long ptr);
+  private native void disableNFC(long ptr);
+
+  private native void enableBluetooth(long ptr);
+  private native void disableBluetooth(long ptr);
 
   private long ptr;
 }

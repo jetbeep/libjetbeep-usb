@@ -1,5 +1,5 @@
 #include "../../lib/libjetbeep.hpp"
-#include "com_jetbeep_AutoDevice.h"
+#include "./include/com_jetbeep_AutoDevice.h"
 #include "jni-utils.hpp"
 #include <unordered_map>
 
@@ -72,6 +72,69 @@ JNIEXPORT jlong JNICALL Java_com_jetbeep_AutoDevice_init(JNIEnv* env, jobject ob
     jboolean isConnected = (jboolean)(event == SerialMobileEvent::connected);
     env->CallVoidMethod(object, onMobileConnectionChange, isConnected);
 
+    JniUtils::detachCurrentThread();
+  };
+
+  device->nfcEventCallback = [object = newObject] (const SerialNFCEvent& event, const NFC::DetectionEventData& eventData) {
+    std::lock_guard<recursive_mutex> lock(JniUtils::mutex);
+    auto env = JniUtils::attachCurrentThread();
+    if (env == nullptr) {
+      AutoDeviceJni::log.e() << "unable to get env" << Logger::endl;
+      return;
+    }
+
+    auto autoDeviceClass = env->GetObjectClass(object);
+    if (autoDeviceClass == nullptr) {
+      AutoDeviceJni::log.e() << "unable to get AutoDevice class" << Logger::endl;
+      return JniUtils::detachCurrentThread();
+    }
+    auto onNFCDetectionEvent = env->GetMethodID(autoDeviceClass, "onNFCDetectionEvent", "(Lcom/jetbeep/nfc/CardInfo;)V");
+    if (onNFCDetectionEvent == nullptr) {
+      AutoDeviceJni::log.e() << "unable to get onNFCDetectionEvent method" << Logger::endl;
+      return JniUtils::detachCurrentThread();
+    }
+    auto jCardInfoObj = JniUtils::getJCardInfoObj(env, &eventData);
+    env->CallVoidMethod(object, onNFCDetectionEvent, jCardInfoObj);
+    JniUtils::detachCurrentThread();
+  };
+
+  device->nfcDetectionErrorCallback = [object = newObject] (const NFC::DetectionErrorReason& reason) {
+    std::lock_guard<recursive_mutex> lock(JniUtils::mutex);
+    auto env = JniUtils::attachCurrentThread();
+    if (env == nullptr) {
+      AutoDeviceJni::log.e() << "unable to get env" << Logger::endl;
+      return;
+    }
+
+    auto autoDeviceClass = env->GetObjectClass(object);
+    if (autoDeviceClass == nullptr) {
+      AutoDeviceJni::log.e() << "unable to get AutoDevice class" << Logger::endl;
+      return JniUtils::detachCurrentThread();
+    }
+    string detectionErrorClassName = "com/jetbeep/nfc/DetectionError";
+    string methodSig = "(L" + detectionErrorClassName + ";)V";
+    auto onNFCDetectionError = env->GetMethodID(autoDeviceClass, "onNFCDetectionError", methodSig.c_str());
+    if (onNFCDetectionError == nullptr) {
+      AutoDeviceJni::log.e() << "unable to get onNFCDetectionError method" << Logger::endl;
+      return JniUtils::detachCurrentThread();
+    }
+    jclass jDetectionErrorClass = env->FindClass(detectionErrorClassName.c_str());
+    jfieldID fieldId = nullptr;
+    switch (reason) {
+    case JetBeep::NFC::DetectionErrorReason::MULTIPLE_CARDS:
+      fieldId = env->GetStaticFieldID(jDetectionErrorClass, "MULTIPLE_CARDS", ("L" + detectionErrorClassName + ";").c_str());
+      break;
+    case JetBeep::NFC::DetectionErrorReason::UNSUPPORTED:
+      fieldId = env->GetStaticFieldID(jDetectionErrorClass, "UNSUPPORTED", ("L" + detectionErrorClassName + ";").c_str());
+      break;
+    case JetBeep::NFC::DetectionErrorReason::UNKNOWN: // falls through
+    default:
+      fieldId = env->GetStaticFieldID(jDetectionErrorClass, "UNKNOWN", ("L" + detectionErrorClassName + ";").c_str());
+    }
+
+    jobject jErrorValueObj = env->GetStaticObjectField(jDetectionErrorClass, fieldId);
+
+    env->CallVoidMethod(object, onNFCDetectionError, jErrorValueObj);
     JniUtils::detachCurrentThread();
   };
 
@@ -378,4 +441,93 @@ JNIEXPORT jstring JNICALL Java_com_jetbeep_AutoDevice_version(JNIEnv* env, jobje
 
   jstring jDeviceId = env->NewStringUTF(device->version().c_str());
   return jDeviceId;
+}
+
+JNIEXPORT jboolean JNICALL Java_com_jetbeep_AutoDevice_isNFCDetected(JNIEnv* env, jobject object, jlong ptr) {
+  std::lock_guard<recursive_mutex> lock(JniUtils::mutex);
+  AutoDevice* device = nullptr;
+  if (!JniUtils::getAutoDevicePointer(env, ptr, &device)) {
+    return false;
+  }
+
+  return device->isNFCDetected();
+}
+
+JNIEXPORT jobject JNICALL Java_com_jetbeep_AutoDevice_getNFCCardInfo(JNIEnv* env, jobject object, jlong ptr) {
+  std::lock_guard<recursive_mutex> lock(JniUtils::mutex);
+  AutoDevice* device = nullptr;
+  if (!JniUtils::getAutoDevicePointer(env, ptr, &device)) {
+    return nullptr;
+  }
+
+  JetBeep::NFC::DetectionEventData cardInfo;
+  try {
+    cardInfo = device->getNFCCardInfo();
+  } catch (const Errors::InvalidState& ) {
+    JniUtils::throwIllegalStateException(env, "NFC card is not detected");
+  } catch (...) {
+    JniUtils::throwIOException(env, "system error");
+  }
+  return JniUtils::getJCardInfoObj(env, &cardInfo);
+}
+
+
+JNIEXPORT void JNICALL Java_com_jetbeep_AutoDevice_enableNFC(JNIEnv* env, jobject object, jlong ptr) {
+  std::lock_guard<recursive_mutex> lock(JniUtils::mutex);
+  AutoDevice* device = nullptr;
+  if (!JniUtils::getAutoDevicePointer(env, ptr, &device)) {
+    return ;
+  }
+  try {
+    device->enableNFC();
+  } catch (const Errors::InvalidState& ) {
+    JniUtils::throwIllegalStateException(env, "Enabling/Disabling interfaces is not allowed while session open");
+  } catch (...) {
+    JniUtils::throwIOException(env, "system error");
+  }
+}
+
+JNIEXPORT void JNICALL Java_com_jetbeep_AutoDevice_disableNFC(JNIEnv* env, jobject object, jlong ptr) {
+  std::lock_guard<recursive_mutex> lock(JniUtils::mutex);
+  AutoDevice* device = nullptr;
+  if (!JniUtils::getAutoDevicePointer(env, ptr, &device)) {
+    return ;
+  }
+  try {
+    device->disableNFC();
+  } catch (const Errors::InvalidState& ) {
+    JniUtils::throwIllegalStateException(env, "Enabling/Disabling interfaces is not allowed while session open");
+  } catch (...) {
+    JniUtils::throwIOException(env, "system error");
+  }
+}
+
+JNIEXPORT void JNICALL Java_com_jetbeep_AutoDevice_enableBluetooth(JNIEnv* env, jobject object, jlong ptr) {
+  std::lock_guard<recursive_mutex> lock(JniUtils::mutex);
+  AutoDevice* device = nullptr;
+  if (!JniUtils::getAutoDevicePointer(env, ptr, &device)) {
+    return ;
+  }
+  try {
+    device->enableBluetooth();
+  } catch (const Errors::InvalidState& ) {
+    JniUtils::throwIllegalStateException(env, "Enabling/Disabling interfaces is not allowed while session open");
+  } catch (...) {
+    JniUtils::throwIOException(env, "system error");
+  }
+}
+
+JNIEXPORT void JNICALL Java_com_jetbeep_AutoDevice_disableBluetooth(JNIEnv* env, jobject object, jlong ptr) {
+  std::lock_guard<recursive_mutex> lock(JniUtils::mutex);
+  AutoDevice* device = nullptr;
+  if (!JniUtils::getAutoDevicePointer(env, ptr, &device)) {
+    return ;
+  }
+  try {
+    device->disableBluetooth();
+  } catch (const Errors::InvalidState& ) {
+    JniUtils::throwIllegalStateException(env, "Enabling/Disabling interfaces is not allowed while session open");
+  } catch (...) {
+    JniUtils::throwIOException(env, "system error");
+  }
 }

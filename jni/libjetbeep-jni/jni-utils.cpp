@@ -214,3 +214,55 @@ jfieldID JniUtils::getPtrField(JNIEnv* env, jobject object) {
   }
   return ptrField;
 }
+
+jobject JniUtils::getJCardInfoObj(JNIEnv* env, const NFC::DetectionEventData* detectionEventData) {
+    string cardInfoClassName = "com/jetbeep/nfc/CardInfo";
+    string cardInfoTypeClassName = "com/jetbeep/nfc/CardInfo$Type";
+
+    jclass jCardInfo = env->FindClass(cardInfoClassName.c_str());
+    jclass jCardInfoType = env->FindClass(cardInfoTypeClassName.c_str());
+    jobject jTypeValue = nullptr;
+    jfieldID fieldId = nullptr;
+    auto objSignatureFun = [&](string name) -> string { return "L" + name + ";"; };
+
+    switch(detectionEventData->cardType) {
+        case JetBeep::NFC::CardType::UNKNOWN:
+            fieldId = env->GetStaticFieldID(jCardInfo, "UNKNOWN", objSignatureFun(cardInfoTypeClassName).c_str());
+            break;
+        case JetBeep::NFC::CardType::EMV_CARD:
+            fieldId = env->GetStaticFieldID(jCardInfo, "EMV_CARD", objSignatureFun(cardInfoTypeClassName).c_str());
+            break;
+        case JetBeep::NFC::CardType::MIFARE_CLASSIC_1K:
+            fieldId = env->GetStaticFieldID(jCardInfo, "MIFARE_CLASSIC_1K", objSignatureFun(cardInfoTypeClassName).c_str());
+            break;
+        case JetBeep::NFC::CardType::MIFARE_CLASSIC_4K:
+            fieldId = env->GetStaticFieldID(jCardInfo, "MIFARE_CLASSIC_4K", objSignatureFun(cardInfoTypeClassName).c_str());
+            break;
+        case JetBeep::NFC::CardType::MIFARE_PLUS_2K:
+            fieldId = env->GetStaticFieldID(jCardInfo, "MIFARE_PLUS_2K", objSignatureFun(cardInfoTypeClassName).c_str());
+            break;
+        case JetBeep::NFC::CardType::MIFARE_PLUS_4K:
+            fieldId = env->GetStaticFieldID(jCardInfo, "MIFARE_PLUS_4K", objSignatureFun(cardInfoTypeClassName).c_str());
+            break;
+        case JetBeep::NFC::CardType::MIFARE_DESFIRE_2K:
+            fieldId = env->GetStaticFieldID(jCardInfo, "MIFARE_DESFIRE_2K", objSignatureFun(cardInfoTypeClassName).c_str());
+            break;
+        case JetBeep::NFC::CardType::MIFARE_DESFIRE_4K:
+            fieldId = env->GetStaticFieldID(jCardInfo, "MIFARE_DESFIRE_4K", objSignatureFun(cardInfoTypeClassName).c_str());
+            break;
+        case JetBeep::NFC::CardType::MIFARE_DESFIRE_8K:
+            fieldId = env->GetStaticFieldID(jCardInfo, "MIFARE_DESFIRE_8K", objSignatureFun(cardInfoTypeClassName).c_str());
+            break;
+        default:
+            fieldId = env->GetStaticFieldID(jCardInfo, "UNKNOWN", objSignatureFun(cardInfoTypeClassName).c_str());
+    }
+
+    jTypeValue = env->GetStaticObjectField(jCardInfoType, fieldId);
+    jstring jMetaStr = env->NewStringUTF(detectionEventData->meta.c_str());
+
+    string constructorSignature = "(" + objSignatureFun(cardInfoTypeClassName) + JSTRING_SIGNATURE + ")V";
+    jmethodID constructorMethodId = env->GetMethodID(jCardInfo, "<init>", constructorSignature.c_str());
+
+    return env->NewObject(jCardInfo, constructorMethodId, jTypeValue, jMetaStr);
+    //DO WE NEED NEW GLOBAL REF?
+}

@@ -40,7 +40,7 @@ val mdpdf by tasks.register<Exec>("mdpdf") {
 
 tasks.distZip {
     archiveName = "libjetbeep-jni-$version-$osName-$osArch.zip"
-    dependsOn(mdpdf)
+    //dependsOn(mdpdf)
 }
 
 distributions {
