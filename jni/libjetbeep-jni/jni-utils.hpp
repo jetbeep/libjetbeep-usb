@@ -30,7 +30,7 @@ namespace JetBeep {
 
     static jobject getJCardInfoObj(JNIEnv* env, const NFC::DetectionEventData * detectionEventData);
 
-    static jfieldID getPtrField(JNIEnv *env, jobject object);
+    static jfieldID getPtrField(JNIEnv *env, jobject object, std::string classAlias = "AutoDevice");
     static std::recursive_mutex mutex;
 
   private:

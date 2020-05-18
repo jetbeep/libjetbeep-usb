@@ -4,6 +4,7 @@ import java.util.Map;
 
 import com.jetbeep.Barcode;
 import com.jetbeep.nfc.*;
+import com.jetbeep.nfc.mifare_classic.MFCApiProvider;
 
 import java.lang.IllegalStateException;
 import java.io.IOException;
@@ -343,6 +344,15 @@ abstract public class AutoDevice {
     disableNFC(ptr);   
   }
 
+  /**
+   * <p>This method creates Mifare Classic API provider </p>
+   * @return MFCApiProvider
+   * @throws IllegalStateException no Mifare Classic card is detected
+   */
+  public MFCApiProvider getNFCMifareApiProvider() throws IllegalStateException{
+     return getNFCMifareApiProvider(ptr);
+  }
+
   /** 
    * <p>This method enables Bluetooth connection, must be called before session is open</p>
    */
@@ -435,6 +445,8 @@ abstract public class AutoDevice {
 
   private native void enableNFC(long ptr);
   private native void disableNFC(long ptr);
+
+  private native MFCApiProvider getNFCMifareApiProvider(long ptr);
 
   private native void enableBluetooth(long ptr);
   private native void disableBluetooth(long ptr);

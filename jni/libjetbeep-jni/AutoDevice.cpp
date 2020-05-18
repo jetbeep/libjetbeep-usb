@@ -463,14 +463,14 @@ JNIEXPORT jobject JNICALL Java_com_jetbeep_AutoDevice_getNFCCardInfo(JNIEnv* env
   JetBeep::NFC::DetectionEventData cardInfo;
   try {
     cardInfo = device->getNFCCardInfo();
+    return JniUtils::getJCardInfoObj(env, &cardInfo);
   } catch (const Errors::InvalidState& ) {
     JniUtils::throwIllegalStateException(env, "NFC card is not detected");
   } catch (...) {
     JniUtils::throwIOException(env, "system error");
   }
-  return JniUtils::getJCardInfoObj(env, &cardInfo);
+  return nullptr;
 }
-
 
 JNIEXPORT void JNICALL Java_com_jetbeep_AutoDevice_enableNFC(JNIEnv* env, jobject object, jlong ptr) {
   std::lock_guard<recursive_mutex> lock(JniUtils::mutex);
@@ -500,6 +500,31 @@ JNIEXPORT void JNICALL Java_com_jetbeep_AutoDevice_disableNFC(JNIEnv* env, jobje
   } catch (...) {
     JniUtils::throwIOException(env, "system error");
   }
+}
+
+JNIEXPORT jobject JNICALL Java_com_jetbeep_AutoDevice_getNFCMifareApiProvider(JNIEnv* env, jobject object, jlong ptr) {
+  std::lock_guard<recursive_mutex> lock(JniUtils::mutex);
+  AutoDevice* device = nullptr;
+  if (!JniUtils::getAutoDevicePointer(env, ptr, &device)) {
+    return nullptr;
+  }
+  jobject resultObj = nullptr;
+  string providerClassName = "com/jetbeep/nfc/mifare_classic/MFCApiProvider";
+  jclass jProviderClass = env->FindClass(providerClassName.c_str());
+
+  try {
+    auto provider = device->getNFCMifareApiProvider();
+    auto * provider_p = new NFC::MifareClassic::MifareClassicProvider(provider);
+    string constructorSignature = "(L" + providerClassName + ";J)V";
+    jmethodID constructorMethodId = env->GetMethodID(jProviderClass, "<init>", constructorSignature.c_str());
+    return env->NewObject(jProviderClass, constructorMethodId, (jlong) provider_p);
+
+  } catch (const Errors::InvalidState& ) {
+    JniUtils::throwIllegalStateException(env, "NFC card is not detected");
+  } catch (...) {
+    JniUtils::throwIOException(env, "system error");
+  }
+  return resultObj;
 }
 
 JNIEXPORT void JNICALL Java_com_jetbeep_AutoDevice_enableBluetooth(JNIEnv* env, jobject object, jlong ptr) {

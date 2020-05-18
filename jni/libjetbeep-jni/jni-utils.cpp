@@ -200,14 +200,14 @@ jobject JniUtils::getEasyPayBackendJObject(EasyPayBackend* backend) {
   return (jobject)(backend->opaque);
 }
 
-jfieldID JniUtils::getPtrField(JNIEnv* env, jobject object) {
-  auto autoDeviceClass = env->GetObjectClass(object);
-  if (autoDeviceClass == nullptr) {
-    m_log.e() << "unable to get AutoDevice class" << Logger::endl;
+jfieldID JniUtils::getPtrField(JNIEnv* env, jobject object, std::string classAlias) {
+  auto jClass = env->GetObjectClass(object);
+  if (jClass == nullptr) {
+    m_log.e() << "unable to get " << classAlias <<" class" << Logger::endl;
     return nullptr;
   }
 
-  auto ptrField = env->GetFieldID(autoDeviceClass, "ptr", "J");
+  auto ptrField = env->GetFieldID(jClass, "ptr", "J");
   if (ptrField == nullptr) {
     m_log.e() << "unable to get ptr field" << Logger::endl;
     return nullptr;
