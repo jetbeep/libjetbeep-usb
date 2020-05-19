@@ -14,7 +14,7 @@ size_t DeviceDetection::vidPidCount = 3;
 VidPid DeviceDetection::validVidPids[] = {{0x04d8, 0x00df} /*MCP2200*/, {NORDIC_VID, JETBEEP_PID}, {NORDIC_VID, 0x521F /*legacy bootloader PID 52840*/}};
 
 bool DeviceDetection::isValidVidPid(const VidPid& vidpid) {
-  for (int i = 0; i < vidPidCount; ++i) {
+  for (size_t i = 0; i < vidPidCount; ++i) {
     if (validVidPids[i].vid == vidpid.vid && validVidPids[i].pid == vidpid.pid) {
       return true;
     }

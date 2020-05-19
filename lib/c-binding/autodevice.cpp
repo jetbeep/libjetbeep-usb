@@ -114,7 +114,7 @@ JETBEEP_API jetbeep_error_t jetbeep_autodevice_create_payment(jetbeep_autodevice
     auto cashierId = string(cashier_id);
     PaymentMetadata metaData;
 
-    for (int i = 0; i < metadata_size; ++i) {
+    for (size_t i = 0; i < metadata_size; ++i) {
       auto key = string(metadata[i].key);
       auto value = string(metadata[i].value);
 
@@ -158,7 +158,7 @@ JETBEEP_API jetbeep_error_t jetbeep_autodevice_create_payment_token(jetbeep_auto
     auto cashierId = string(cashier_id);
     PaymentMetadata metaData;
 
-    for (int i = 0; i < metadata_size; ++i) {
+    for (size_t i = 0; i < metadata_size; ++i) {
       auto key = string(metadata[i].key);
       auto value = string(metadata[i].value);
 

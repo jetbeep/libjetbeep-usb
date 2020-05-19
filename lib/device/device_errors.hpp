@@ -33,6 +33,21 @@ namespace JetBeep {
       }
     };
 
+    class InvalidResponseWithReason : public std::exception {
+    public:
+      InvalidResponseWithReason(std::string code) :m_reason("Device returned error response: " + code), m_code(code) { }
+      virtual char const* what() const noexcept {
+        return m_reason.c_str();
+      }
+      std::string getErrorCode() {
+        return m_code;
+      }
+
+    protected:
+      std::string m_reason;
+      std::string m_code;
+    };
+
     class DeviceLost : public std::exception {
     public:
       virtual char const* what() const noexcept {
@@ -46,6 +61,7 @@ namespace JetBeep {
         return "Invalid state";
       }
     };
+
     class ProtocolError : public std::exception {
     public:
       virtual char const* what() const noexcept {
@@ -71,6 +87,13 @@ namespace JetBeep {
     public:
       virtual char const* what() const noexcept {
         return "Device firmware version is not supported";
+      }
+    };
+
+    class NullPointerError : public std::exception {
+    public:
+      virtual char const* what() const noexcept {
+        return "Null pointer encounter";
       }
     };
   } // namespace Errors

@@ -43,13 +43,26 @@ namespace JetBeep {
     Promise<void> commit(const std::string& signature);
     Promise<SerialGetStateResult> getState();
 
+    /* NFC cmds */
+    Promise<std::string> nfcReadMFC(uint8_t blockNo);
+    Promise<std::string> nfcSecureReadMFC(uint8_t blockNo,
+                                          const std::string& keyBase64,
+                                          const std::string& keyType);
+
+    Promise<void> nfcWriteMFC(uint8_t blockNo, const std::string& contentBase64);
+    Promise<void> nfcSecureWriteMFC(uint8_t blockNo,
+                                    const std::string& contentBase64,
+                                    const std::string& keyBase64,
+                                    const std::string& keyType);
+
     SerialErrorCallback errorCallback;
     SerialBarcodesCallback barcodesCallback;
     SerialPaymentErrorCallback paymentErrorCallback;
     SerialPaymentSuccessCallback paymentSuccessCallback;
     SerialPaymentTokenCallback paymentTokenCallback;
     SerialMobileCallback mobileCallback;
-
+    SerialNFCEventCallback nfcEventCallback;
+    SerialNFCDetectionErrorCallback nfcDetectionErrorCallback; 
   private:
     class Impl;
     std::unique_ptr<Impl> m_impl;

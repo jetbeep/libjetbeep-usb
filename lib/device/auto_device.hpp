@@ -9,6 +9,8 @@
 #include "../io/iocontext.hpp"
 #include "../utils/promise.hpp"
 #include "device_types.hpp"
+#include "./nfc/mifare-classic/mfc-provider.hpp"
+#include "./nfc/nfc-api-provider.hpp"
 
 namespace JetBeep {
   enum class AutoDeviceState {
@@ -28,6 +30,8 @@ namespace JetBeep {
   typedef std::function<void(const PaymentError& error)> AutoDevicePaymentErrorCallback;
   typedef std::function<void(AutoDeviceState state, std::exception_ptr error)> AutoDeviceStateCallback;
   typedef SerialMobileCallback AutoDeviceMobileCallback;
+  typedef SerialNFCEventCallback AutoDeviceNFCEventCallback;
+  typedef SerialNFCDetectionErrorCallback AutoDeviceNFCDetectionErrorCallback;
 
   class AutoDevice {
   public:
@@ -38,6 +42,9 @@ namespace JetBeep {
     void stop();
     void openSession();
     void closeSession();
+
+    void enableBluetooth();
+    void disableBluetooth();
 
     Promise<std::vector<Barcode>> requestBarcodes();
     void cancelBarcodes();
@@ -55,6 +62,7 @@ namespace JetBeep {
     void cancelPayment();
 
     bool isMobileConnected();
+
     std::string version();
     unsigned long deviceId();
 
@@ -65,6 +73,18 @@ namespace JetBeep {
     AutoDeviceMobileCallback mobileCallback;
 
     AutoDeviceState state();
+
+    /* NFC related section */
+    AutoDeviceNFCEventCallback nfcEventCallback;
+    AutoDeviceNFCDetectionErrorCallback nfcDetectionErrorCallback;
+
+    void enableNFC();
+    void disableNFC();
+
+    bool isNFCDetected();
+    NFC::DetectionEventData getNFCCardInfo();
+
+    NFC::MifareClassic::MifareClassicProvider getNFCMifareApiProvider();
 
   private:
     class Impl;

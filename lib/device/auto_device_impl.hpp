@@ -21,7 +21,9 @@ namespace JetBeep {
   public:
     Impl(AutoDeviceStateCallback* stateCallback,
          AutoDevicePaymentErrorCallback* paymentErrorCallback,
-         SerialMobileCallback* mobileCallback,
+         AutoDeviceMobileCallback* mobileCallback,
+         AutoDeviceNFCEventCallback*  nfcEventCallback,
+         AutoDeviceNFCDetectionErrorCallback * nfcDetectionErrorCallback,
          IOContext context);
     virtual ~Impl();
 
@@ -30,6 +32,12 @@ namespace JetBeep {
 
     void openSession();
     void closeSession();
+
+    void enableBluetooth();
+    void disableBluetooth();
+
+    void enableNFC();
+    void disableNFC();
 
     Promise<std::vector<Barcode>> requestBarcodes();
     void cancelBarcodes();
@@ -48,16 +56,26 @@ namespace JetBeep {
 
     AutoDeviceState state();
     bool isMobileConnected();
+    bool isNFCDetected();
+    NFC::DetectionEventData getNFCCardInfo();
     std::string version();
     unsigned long deviceId();
+    NFC::MifareClassic::MifareClassicProvider getNFCMifareApiProvider();
 
   private:
     IOContext m_context;
     bool m_started;
     bool m_mobileConnected;
+    bool m_nfcDetected;
+
+    NFC::DetectionEventData m_nfcCardInfo;
+
     AutoDeviceStateCallback* m_stateCallback;
     AutoDevicePaymentErrorCallback* m_paymentErrorCallback;
-    SerialMobileCallback* m_mobileCallback;
+    AutoDeviceMobileCallback* m_mobileCallback;
+    AutoDeviceNFCEventCallback*  m_nfcEventCallback;
+    AutoDeviceNFCDetectionErrorCallback* m_nfcDetectionErrorCallback;
+
     Promise<std::vector<Barcode>> m_barcodesPromise;
     Promise<void> m_paymentPromise;
     Promise<std::string> m_paymentTokenPromise;
@@ -66,6 +84,7 @@ namespace JetBeep {
     AutoDeviceState m_state;
     DeviceDetection m_detection;
     SerialDevice m_device;
+    std::shared_ptr<SerialDevice> m_device_sp;
     boost::asio::deadline_timer m_timer;
     std::recursive_mutex m_mutex;
     std::vector<std::function<void()>> m_pendingOperations;
@@ -85,6 +104,8 @@ namespace JetBeep {
     void onPaymentSuccess();
     void onPaymentToken(const std::string& token);
     void onMobileConnectionChange(const SerialMobileEvent& event);
+    void onNFCEvent(const SerialNFCEvent& event, const NFC::DetectionEventData &data);
+    void onNFCDetectionError(const NFC::DetectionErrorReason& reason);
     void rejectPendingOperations();
   };
 } // namespace JetBeep

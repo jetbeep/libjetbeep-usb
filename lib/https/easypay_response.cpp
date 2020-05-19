@@ -187,10 +187,11 @@ static void parseResponse(const string& json, pt::ptree* parser, EasyPayAPI::Eas
       throw HttpErrors::APIError();
     }
 
-  } catch (pt::json_parser::json_parser_error &jsonError) {
+  } /*catch (pt::json_parser::json_parser_error &jsonError) {
     //cout << "JSON error: " << jsonError.what() << "\n\n";
     throw HttpErrors::APIError();
-  } catch (...) {
+  } */
+  catch (...) {
     throw HttpErrors::APIError();
   }
 

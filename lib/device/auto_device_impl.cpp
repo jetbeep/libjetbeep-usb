@@ -3,6 +3,7 @@
 #include "../io/iocontext_impl.hpp"
 #include "../utils/utils.hpp"
 #include "device_errors.hpp"
+#include "./nfc/mifare-classic/mfc-provider.hpp"
 
 #include <functional>
 
@@ -12,24 +13,32 @@ using namespace JetBeep;
 
 AutoDevice::Impl::Impl(AutoDeviceStateCallback* stateCallback,
                        AutoDevicePaymentErrorCallback* paymentErrorCallback,
-                       SerialMobileCallback* mobileCallback,
+                       AutoDeviceMobileCallback* mobileCallback,
+                       AutoDeviceNFCEventCallback*  nfcEventCallback,
+                       AutoDeviceNFCDetectionErrorCallback * nfcDetectionErrorCallback,
                        IOContext context)
   : m_context(context),
     m_stateCallback(stateCallback),
     m_paymentErrorCallback(paymentErrorCallback),
     m_mobileCallback(mobileCallback),
+    m_nfcEventCallback(nfcEventCallback),
+    m_nfcDetectionErrorCallback(nfcDetectionErrorCallback),
     m_state(AutoDeviceState::invalid),
     m_log("autodevice"),
     m_timer(context.m_impl->ioService),
     m_mobileConnected(false),
     m_started(false),
     m_deviceId(0) {
+  m_device_sp = std::shared_ptr<SerialDevice>(&m_device);
   m_detection.callback = std::bind(&AutoDevice::Impl::onDeviceEvent, this, std::placeholders::_1, std::placeholders::_2);
   m_device.barcodesCallback = std::bind(&AutoDevice::Impl::onBarcodes, this, std::placeholders::_1);
   m_device.paymentErrorCallback = std::bind(&AutoDevice::Impl::onPaymentError, this, std::placeholders::_1);
   m_device.paymentSuccessCallback = std::bind(&AutoDevice::Impl::onPaymentSuccess, this);
   m_device.paymentTokenCallback = std::bind(&AutoDevice::Impl::onPaymentToken, this, std::placeholders::_1);
   m_device.mobileCallback = std::bind(&AutoDevice::Impl::onMobileConnectionChange, this, std::placeholders::_1);
+  m_device.nfcEventCallback = std::bind(&AutoDevice::Impl::onNFCEvent, this, std::placeholders::_1, std::placeholders::_2);
+  m_device.nfcDetectionErrorCallback = std::bind(&AutoDevice::Impl::onNFCDetectionError, this, std::placeholders::_1);
+
 }
 
 AutoDevice::Impl::~Impl() {
@@ -207,6 +216,67 @@ void AutoDevice::Impl::closeSession() {
   };
 
   enqueueOperation(lambda);
+}
+
+void AutoDevice::Impl::enableBluetooth() {
+  std::lock_guard<recursive_mutex> guard(m_mutex);
+
+  if (m_state == AutoDeviceState::sessionOpened || m_state == AutoDeviceState::invalid) {
+    throw Errors::InvalidState();
+  }
+  auto operation = [&] {
+    m_device.set(DeviceParameter::bluetooth, INTERFACE_ENABLED).then([&] { executeNextOperation(); }).catchError([&](exception_ptr) {
+      m_log.e() << "bluetooth enabling error" << Logger::endl;
+    });
+  };
+
+  enqueueOperation(operation);
+}
+
+void AutoDevice::Impl::disableBluetooth() {
+  std::lock_guard<recursive_mutex> guard(m_mutex);
+
+  if (m_state == AutoDeviceState::sessionOpened || m_state == AutoDeviceState::invalid) {
+    throw Errors::InvalidState();
+  }
+  auto operation = [&] {
+    m_device.set(DeviceParameter::bluetooth, INTERFACE_DISABLED).then([&] { executeNextOperation(); }).catchError([&](exception_ptr) {
+      m_log.e() << "bluetooth disabling error" << Logger::endl;
+    });
+  };
+
+  enqueueOperation(operation);
+}
+
+void AutoDevice::Impl::enableNFC() {
+  std::lock_guard<recursive_mutex> guard(m_mutex);
+
+  if (m_state == AutoDeviceState::sessionOpened || m_state == AutoDeviceState::invalid) {
+    throw Errors::InvalidState();
+  }
+  auto operation = [&] {
+    m_device.set(DeviceParameter::nfc, INTERFACE_ENABLED).then([&] { executeNextOperation(); }).catchError([&](exception_ptr) {
+      m_log.e() << "NFC enabling error" << Logger::endl;
+    });
+  };
+  //TODO pass error to application, to handle cases when NFC is not available
+
+  enqueueOperation(operation);
+}
+
+void AutoDevice::Impl::disableNFC() {
+  std::lock_guard<recursive_mutex> guard(m_mutex);
+
+  if (m_state == AutoDeviceState::sessionOpened || m_state == AutoDeviceState::invalid) {
+    throw Errors::InvalidState();
+  }
+  auto operation = [&] {
+    m_device.set(DeviceParameter::nfc, INTERFACE_DISABLED).then([&] { executeNextOperation(); }).catchError([&](exception_ptr) {
+      m_log.e() << "NFC disabling error" << Logger::endl;
+    });
+  };
+
+  enqueueOperation(operation);
 }
 
 Promise<std::vector<Barcode>> AutoDevice::Impl::requestBarcodes() {
@@ -418,6 +488,39 @@ void AutoDevice::Impl::onMobileConnectionChange(const SerialMobileEvent& event) 
   }
 }
 
+void AutoDevice::Impl::onNFCEvent(const SerialNFCEvent& event, const NFC::DetectionEventData &data) {
+  auto callback = *m_nfcEventCallback;
+
+  if (event == SerialNFCEvent::detected) {
+    m_nfcDetected = true;
+    m_nfcCardInfo = data;
+  } else {
+    m_nfcDetected = false;
+  }
+
+  if (callback) {
+    callback(event, data);
+  }
+}
+
+void AutoDevice::Impl::onNFCDetectionError(const NFC::DetectionErrorReason& reason) {
+  auto callback = *m_nfcDetectionErrorCallback;
+
+  m_nfcDetected = false;
+
+  if (callback) {
+    callback(reason);
+  }
+}
+
+NFC::DetectionEventData AutoDevice::Impl::getNFCCardInfo() {
+  if (!m_nfcDetected) {
+    throw Errors::InvalidState();
+  }
+
+  return m_nfcCardInfo;
+}
+
 void AutoDevice::Impl::rejectPendingOperations() {
   std::lock_guard<recursive_mutex> guard(m_mutex);
 
@@ -455,9 +558,26 @@ bool AutoDevice::Impl::isMobileConnected() {
   return m_mobileConnected;
 }
 
+bool AutoDevice::Impl::isNFCDetected() {
+  return m_nfcDetected;
+}
+
 std::string AutoDevice::Impl::version() {
   return m_version;
 }
+
 unsigned long AutoDevice::Impl::deviceId() {
   return m_deviceId;
+}
+
+NFC::MifareClassic::MifareClassicProvider AutoDevice::Impl::getNFCMifareApiProvider() {
+  if (!m_nfcDetected) {
+    throw Errors::InvalidState();
+  }
+  if (m_nfcCardInfo.cardType != NFC::CardType::MIFARE_CLASSIC_1K
+      && m_nfcCardInfo.cardType != NFC::CardType::MIFARE_CLASSIC_4K) {
+    throw Errors::InvalidState();
+  }
+
+  return NFC::MifareClassic::MifareClassicProvider(m_device_sp, m_nfcCardInfo);
 }

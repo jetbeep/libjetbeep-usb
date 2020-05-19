@@ -11,5 +11,7 @@
 #include "io/iocontext.hpp"
 #include "https/easypay_backend.hpp"
 #include "https/portal_backend.hpp"
+#include "device/nfc/mifare-classic/mfc-provider.hpp"
+#include "device/nfc/nfc-api-provider.hpp"
 
 #endif

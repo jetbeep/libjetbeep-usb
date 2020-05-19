@@ -10,6 +10,10 @@
 #include "barcode.hpp"
 #include "device_errors.hpp"
 #include "payment_error.hpp"
+#include "nfc/nfc_types.hpp"
+
+#define INTERFACE_ENABLED  "enabled"
+#define INTERFACE_DISABLED "disabled"
 
 namespace JetBeep {
   enum class SerialMobileEvent { connected, disconnected };
@@ -30,6 +34,8 @@ namespace JetBeep {
   typedef std::function<void()> SerialPaymentSuccessCallback;
   typedef std::function<void(const std::string&)> SerialPaymentTokenCallback;
   typedef std::function<void(const SerialMobileEvent&)> SerialMobileCallback;
+  typedef std::function<void(const SerialNFCEvent&, const NFC::DetectionEventData&)> SerialNFCEventCallback;
+  typedef std::function<void(const NFC::DetectionErrorReason&)> SerialNFCDetectionErrorCallback;
 
   typedef std::unordered_map<std::string, std::string> PaymentMetadata;
 

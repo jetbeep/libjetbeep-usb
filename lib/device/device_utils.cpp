@@ -54,6 +54,10 @@ std::string DeviceUtils::parameterToString(const DeviceParameter& parameter) {
     return "domainShopId";
   case DeviceParameter::virtKeyboard:
     return "virtKeyboard";
+  case DeviceParameter::nfc:
+    return "nfc";
+  case DeviceParameter::bluetooth:
+    return "bluetooth";
   default:
     throw runtime_error("invalid device parameter");
     break;
@@ -105,6 +109,10 @@ DeviceParameter DeviceUtils::stringToParameter(const std::string& parameter) {
     return DeviceParameter::domainShopId;
   } else if (parameter == "virtKeyboard") {
     return DeviceParameter::virtKeyboard;
+  } else if (parameter == "bluetooth") {
+    return DeviceParameter::bluetooth;
+  } else if (parameter == "nfc") {
+    return DeviceParameter::nfc;
   } else {
     throw runtime_error("invalid input string");
   }
@@ -168,3 +176,26 @@ std::string DeviceUtils::mobileAppsUUIDsToString(std::vector<uint32_t> list) {
 
   return stream.str();
 };
+
+
+NFC::DetectionEventData DeviceUtils::parseNFCDetectionEventData(const vector<string>& params) {
+  if (params.size() != 2) {
+    throw runtime_error("invalid NFC detection params count");
+  }
+  NFC::DetectionEventData eventData;
+  int typeId = std::stoi(params[0]);
+  switch (typeId) {
+    case 1: eventData.cardType = NFC::CardType::EMV_CARD; break;
+    case 2: eventData.cardType = NFC::CardType::MIFARE_CLASSIC_1K; break;
+    case 3: eventData.cardType = NFC::CardType::MIFARE_CLASSIC_4K; break;
+    case 4: eventData.cardType = NFC::CardType::MIFARE_PLUS_2K; break;
+    case 5: eventData.cardType = NFC::CardType::MIFARE_PLUS_4K; break;
+    case 6: eventData.cardType = NFC::CardType::MIFARE_DESFIRE_2K; break;
+    case 7: eventData.cardType = NFC::CardType::MIFARE_DESFIRE_4K; break;
+    case 8: eventData.cardType = NFC::CardType::MIFARE_DESFIRE_8K; break;
+    default: 
+      eventData.cardType = NFC::CardType::UNKNOWN;
+  }
+  eventData.meta = params[1];
+  return eventData;
+}

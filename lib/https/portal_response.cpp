@@ -133,10 +133,11 @@ DeviceConfig PortalAPI::parseDeviceConfigResult(const string& json) {
     if (node.has_value()) {
       result.configVersion = std::stoi(node.value().data());
     }
-  } catch (pt::json_parser::json_parser_error& jsonError) {
-    // cout << "JSON error: " << jsonError.what() << "\n\n";
+  } /*catch (pt::json_parser::json_parser_error& jsonError) {
+    cout << "JSON error: " << jsonError.what() << "\n\n";
     throw HttpErrors::APIError();
-  } catch (...) {
+  } */
+  catch (...) {
     throw HttpErrors::APIError();
   }
 

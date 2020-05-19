@@ -26,7 +26,11 @@ namespace JetBeep {
     logLevel,
     merchantId,
     domainShopId,
-    virtKeyboard
+    //after 1.4.0
+    virtKeyboard,
+    //after 1.5.0
+    nfc,
+    bluetooth
   };
 }
 

@@ -6,7 +6,7 @@ using namespace std;
 using namespace JetBeep;
 
 AutoDevice::AutoDevice(IOContext context)
-  : m_impl(new AutoDevice::Impl(&stateCallback, &paymentErrorCallback, &mobileCallback, context)), opaque(nullptr) {
+  : m_impl(new AutoDevice::Impl(&stateCallback, &paymentErrorCallback, &mobileCallback, &nfcEventCallback, &nfcDetectionErrorCallback, context)), opaque(nullptr) {
 }
 AutoDevice::~AutoDevice() {
 }
@@ -25,6 +25,22 @@ void AutoDevice::openSession() {
 
 void AutoDevice::closeSession() {
   m_impl->closeSession();
+}
+
+void AutoDevice::enableBluetooth() {
+  m_impl->enableBluetooth();
+}
+
+void AutoDevice::disableBluetooth() {
+  m_impl->disableBluetooth();
+}
+
+void AutoDevice::enableNFC() {
+  m_impl->enableNFC();
+}
+
+void AutoDevice::disableNFC() {
+  m_impl->disableNFC();
 }
 
 Promise<std::vector<Barcode>> AutoDevice::requestBarcodes() {
@@ -64,6 +80,13 @@ AutoDeviceState AutoDevice::state() {
 bool AutoDevice::isMobileConnected() {
   return m_impl->isMobileConnected();
 }
+bool AutoDevice::isNFCDetected() {
+  return m_impl->isNFCDetected();
+}
+
+NFC::DetectionEventData AutoDevice::getNFCCardInfo() {
+  return m_impl->getNFCCardInfo();
+}
 
 unsigned long AutoDevice::deviceId() {
   return m_impl->deviceId();
@@ -71,4 +94,8 @@ unsigned long AutoDevice::deviceId() {
 
 std::string AutoDevice::version() {
   return m_impl->version();
+}
+
+NFC::MifareClassic::MifareClassicProvider AutoDevice::getNFCMifareApiProvider() {
+  return m_impl->getNFCMifareApiProvider();
 }
