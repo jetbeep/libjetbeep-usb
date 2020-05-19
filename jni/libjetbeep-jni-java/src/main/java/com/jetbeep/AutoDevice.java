@@ -332,6 +332,7 @@ abstract public class AutoDevice {
 
   /** 
    * <p>This method enables NFC detection, must be called before session is open</p>
+   * <p>onNFCDetectionEvent or onNFCDetectionError will be fired up on detection event </p>
    */
   public void enableNFC() {
     enableNFC(ptr);   

@@ -7,7 +7,7 @@ public class MFCBlockData {
   public int blockNo = 0;
   public byte[] value;
 
-  MFCBlockData(int blockNo, byte[] value) {
+  public MFCBlockData(int blockNo, byte[] value) {
     this(blockNo);
     if (value.length != MFCBlockData.SIZE) {
       throw new Error("Invalid data size");
@@ -15,10 +15,11 @@ public class MFCBlockData {
     this.value = value;
   }
 
-  MFCBlockData(int blockNo) {
+  public MFCBlockData(int blockNo) {
     if (blockNo < 0 || blockNo >= 256) {
       throw new Error("blockNo is out of range");
     }
     this.blockNo = blockNo;
+    this.value = new byte[SIZE];
   }
 }

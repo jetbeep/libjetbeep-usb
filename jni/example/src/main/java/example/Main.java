@@ -5,9 +5,21 @@ import java.util.HashMap;
 import java.util.Scanner;
 
 import com.jetbeep.*;
+import com.jetbeep.nfc.*;
+import com.jetbeep.nfc.mifare_classic.*;
 
 import example.DeviceHandler;
 class Main {
+/*
+    hardcoded parameters for Mifare Classic commands.
+*/
+static final int mfcBlockNumber = 61;
+static final MFCKey mfcKey = new MFCKey(MFCKey.Type.KEY_A,
+    new byte[] { 0x66, 0x4B, (byte) 0xBA, (byte) 0xED, 0x16, (byte) 0xFA });
+static final MFCBlockData mfcBlockData = new MFCBlockData(mfcBlockNumber,
+    new byte[] { 0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, (byte) 0x88, (byte) 0x99, (byte) 0xAA, (byte) 0xBB,
+        (byte) 0xCC, (byte) 0xDD, (byte) 0xEE, (byte) 0xFF });
+
   public static void main(String[] args) {        
     System.out.println("example started");
     com.jetbeep.Logger.setCoutEnabled(true);
@@ -152,6 +164,59 @@ class Main {
             e.printStackTrace();
           }
           break;
+        case "enablenfc":
+        case "enable_nfc":
+           try {
+              handler.enableNFC();
+           } catch (Exception e) {
+              e.printStackTrace();
+           }
+        break;
+        case "disablenfc":
+        case "disable_nfc":
+           try {
+              handler.disableNFC();
+           } catch (Exception e) {
+              e.printStackTrace();
+           }
+        break;
+
+        case "enablebluetooth":
+        case "enable_bluetooth":
+           try {
+              handler.enableBluetooth();
+           } catch (Exception e) {
+              e.printStackTrace();
+           }
+        break;
+        case "disablebluetooth":
+        case "disable_bluetooth":
+           try {
+              handler.disableBluetooth();
+           } catch (Exception e) {
+              e.printStackTrace();
+           }
+        break;
+        case "nfc_read_mfc_block":
+        case "nfcreadmfcblock":
+          try {
+            MFCApiProvider provider = handler.getNFCMifareApiProvider();
+            MFCBlockData data = provider.readBlock(mfcBlockNumber, mfcKey);
+            System.out.println("nfc_read_mfc_block success" + data.toString());
+          } catch (Exception e) {
+            e.printStackTrace();
+          }
+        break;
+        case "nfc_write_mfc_block":
+        case "nfcwritemfcblock":
+        try {
+          MFCApiProvider provider = handler.getNFCMifareApiProvider();
+          provider.writeBlock(mfcBlockData, mfcKey);
+          System.out.println("nfc_write_mfc_block success");
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+        break;
         default:
           System.out.println("unknown command: " + cmd);
           break;

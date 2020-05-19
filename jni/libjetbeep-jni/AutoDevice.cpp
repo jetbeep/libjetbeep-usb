@@ -515,10 +515,8 @@ JNIEXPORT jobject JNICALL Java_com_jetbeep_AutoDevice_getNFCMifareApiProvider(JN
   try {
     auto provider = device->getNFCMifareApiProvider();
     auto * provider_p = new NFC::MifareClassic::MifareClassicProvider(provider);
-    string constructorSignature = "(L" + providerClassName + ";J)V";
-    jmethodID constructorMethodId = env->GetMethodID(jProviderClass, "<init>", constructorSignature.c_str());
+    jmethodID constructorMethodId = env->GetMethodID(jProviderClass, "<init>", "(J)V");
     return env->NewObject(jProviderClass, constructorMethodId, (jlong) provider_p);
-
   } catch (const Errors::InvalidState& ) {
     JniUtils::throwIllegalStateException(env, "NFC card is not detected");
   } catch (...) {

@@ -29,6 +29,10 @@ namespace JetBeep {
     static jobject getEasyPayBackendJObject(EasyPayBackend* backend);
 
     static jobject getJCardInfoObj(JNIEnv* env, const NFC::DetectionEventData * detectionEventData);
+    static void getMifareClassicKeyFromMFCKey(JNIEnv* env, jobject jMFCKeyObj, NFC::MifareClassic::MifareClassicKey* key_p);
+    static jobject getMFCBlockDataFromMifareBlockContent(JNIEnv* env, NFC::MifareClassic::MifareBlockContent * content_p);
+    static void getMifareBlockContentFromMFCBlockData(JNIEnv* env, jobject jBlockDataObj, NFC::MifareClassic::MifareBlockContent * content_p);
+    static void throwMFCOperationException(JNIEnv* env, JetBeep::NFC::MifareClassic::MifareIOException& error);
 
     static jfieldID getPtrField(JNIEnv *env, jobject object, std::string classAlias = "AutoDevice");
     static std::recursive_mutex mutex;

@@ -50,7 +50,30 @@ public class DeviceHandler extends AutoDevice {
 
   public void onNFCDetectionEvent(DetectionEvent event) {
     if (event.event == DetectionEvent.Event.DETECTED) {
-      System.out.println("NFC: card detected");
+      System.out.println("NFC: card detected:");
+      switch(event.cardInfo.type) {
+         case EMV_CARD:
+            System.out.println("Bank card, PAN + exp. date: " + event.cardInfo.meta);
+         break;
+         case MIFARE_CLASSIC_1K://falls through
+            System.out.println("MIFARE Classic 1K, UUID/NUID: " + event.cardInfo.meta + " memory 1024, blocks 64");
+         break;
+         case MIFARE_CLASSIC_4K:
+            System.out.println("MIFARE Classic 4K, UUID/NUID: " + event.cardInfo.meta + "memory 4096, blocks 256");
+         break;
+         case MIFARE_PLUS_2K: //falls through
+         case MIFARE_PLUS_4K:
+            System.out.println("MIFARE PLUS family, UUID/NUID: " + event.cardInfo.meta);
+         break;
+         case MIFARE_DESFIRE_2K: //falls through
+         case MIFARE_DESFIRE_4K:
+         case MIFARE_DESFIRE_8K:
+            System.out.println("MIFARE DESFIRE family");
+         break;
+         case UNKNOWN: //falls through
+         default:
+         System.out.println("unknown card type");
+      }
       return;
     }
     if (event.event == DetectionEvent.Event.REMOVED) {

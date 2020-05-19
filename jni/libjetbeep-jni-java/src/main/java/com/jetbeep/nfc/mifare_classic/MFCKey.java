@@ -2,9 +2,17 @@ package com.jetbeep.nfc.mifare_classic;
 
 public class MFCKey {
   public enum Type {
-    NONE,
-    KEY_A,
-    KEY_B;
+    NONE (0),
+    KEY_A(1),
+    KEY_B(2);
+
+    private final int value;
+    private Type(int value) {
+        this.value = value;
+    }
+    public int getValue() {
+        return value;
+    }
   }
 
   public static final int SIZE = 6;
@@ -13,7 +21,7 @@ public class MFCKey {
 
   public byte[] value;
 
-  MFCKey(MFCKey.Type type, byte[] value) {
+  public MFCKey(MFCKey.Type type, byte[] value) {
     this.type = type;
     if (value.length != MFCKey.SIZE) {
       throw new Error("Invalid key size");
