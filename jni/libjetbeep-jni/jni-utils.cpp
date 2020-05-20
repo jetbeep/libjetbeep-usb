@@ -40,13 +40,13 @@ void JniUtils::throwNullPointerException(JNIEnv* env, const std::string& message
   }
 }
 
-void JniUtils::throwIOException(JNIEnv* env, const std::string& message) {
+void JniUtils::throwRuntimeException(JNIEnv* env, const std::string& message) {
   jclass exClass;
-  const char* className = "java/io/IOException";
+  const char* className = "java/lang/RuntimeException";
 
   exClass = env->FindClass(className);
   if (exClass == NULL) {
-    m_log.e() << "unable to find IOException exception" << Logger::endl;
+    m_log.e() << "unable to find RuntimeException exception" << Logger::endl;
     return;
   }
 
@@ -56,42 +56,14 @@ void JniUtils::throwIOException(JNIEnv* env, const std::string& message) {
   }
 }
 
-void JniUtils::throwMFCOperationException(JNIEnv* env, JetBeep::NFC::MifareClassic::MifareIOException& error) {
+void JniUtils::throwIOException(JNIEnv* env, const std::string& message) {
   jclass exClass;
-  const char* className = "com/jetbeep/nfc/mifare_classic/MFCOperationException";
+  const char* className = "java/io/IOException";
 
   exClass = env->FindClass(className);
   if (exClass == NULL) {
     m_log.e() << "unable to find IOException exception" << Logger::endl;
     return;
-  }
-
-  string message = "UNKNOWN";
-  switch (error.getIOErrorReason()) {
-  case NFC::MifareClassic::MifareIOErrorReason::UNKNOWN:
-    message = "UNKNOWN";
-    break;
-  case NFC::MifareClassic::MifareIOErrorReason::PARAMS_INVALID:
-    message = "PARAMS_INVALID";
-    break;
-  case NFC::MifareClassic::MifareIOErrorReason::KEY_PARAM_INVALID:
-    message = "KEY_PARAM_INVALID";
-    break;
-  case NFC::MifareClassic::MifareIOErrorReason::INTERRUPTED:
-    message = "INTERRUPTED";
-    break;
-  case NFC::MifareClassic::MifareIOErrorReason::DATA_SIZE:
-    message = "DATA_SIZE";
-    break;
-  case NFC::MifareClassic::MifareIOErrorReason::UNSUPPORTED_CARD_TYPE:
-    message = "UNSUPPORTED_CARD_TYPE";
-    break;
-  case NFC::MifareClassic::MifareIOErrorReason::AUTH_ERROR:
-    message = "AUTH_ERROR";
-    break;
-  case NFC::MifareClassic::MifareIOErrorReason::CARD_REMOVED:
-    message = "CARD_REMOVED";
-    break;
   }
 
   if (env->ThrowNew(exClass, message.c_str()) != 0) {
@@ -358,7 +330,7 @@ void JniUtils::getMifareClassicKeyFromMFCKey(JNIEnv* env, jobject jMFCKeyObj, NF
   env->ReleaseByteArrayElements((jbyteArray)jKeyValueArrObj, jKeyValueArrP, JNI_ABORT);
 }
 
-jobject JniUtils::getMFCBlockDataFromMifareBlockContent(JNIEnv* env, NFC::MifareClassic::MifareBlockContent * content_p) {
+jobject JniUtils::getMFCBlockDataFromMifareBlockContent(JNIEnv* env, const NFC::MifareClassic::MifareBlockContent * content_p) {
   string mfcBlockDataClassName = "com/jetbeep/nfc/mifare_classic/MFCBlockData";
   jclass mfcBlockDataClass = env->FindClass(mfcBlockDataClassName.c_str());
   jint blockNo = (jint) content_p->blockNo;
@@ -390,3 +362,67 @@ void JniUtils::getMifareBlockContentFromMFCBlockData(JNIEnv* env, jobject jBlock
   env->ReleaseByteArrayElements((jbyteArray)jValueArrObj, jValueArrP, JNI_ABORT);
 }
 
+
+jobject JniUtils::createMFCOperationException(JNIEnv* env, const exception_ptr& ex) {
+  const char* jMFCOperationExceptionClassName = "com/jetbeep/nfc/mifare_classic/MFCOperationException";
+  const char* jIOExceptionClassName = "java/io/IOException";
+
+  try {
+    rethrow_exception(ex);
+  } catch (JetBeep::NFC::MifareClassic::MifareIOException& error) {
+    string message = "UNKNOWN";
+    switch (error.getIOErrorReason()) {
+    case NFC::MifareClassic::MifareIOErrorReason::UNKNOWN:
+      message = "UNKNOWN";
+      break;
+    case NFC::MifareClassic::MifareIOErrorReason::PARAMS_INVALID:
+      message = "PARAMS_INVALID";
+      break;
+    case NFC::MifareClassic::MifareIOErrorReason::KEY_PARAM_INVALID:
+      message = "KEY_PARAM_INVALID";
+      break;
+    case NFC::MifareClassic::MifareIOErrorReason::INTERRUPTED:
+      message = "INTERRUPTED";
+      break;
+    case NFC::MifareClassic::MifareIOErrorReason::DATA_SIZE:
+      message = "DATA_SIZE";
+      break;
+    case NFC::MifareClassic::MifareIOErrorReason::UNSUPPORTED_CARD_TYPE:
+      message = "UNSUPPORTED_CARD_TYPE";
+      break;
+    case NFC::MifareClassic::MifareIOErrorReason::AUTH_ERROR:
+      message = "AUTH_ERROR";
+      break;
+    case NFC::MifareClassic::MifareIOErrorReason::CARD_REMOVED:
+      message = "CARD_REMOVED";
+      break;
+    }
+
+    auto exClass = env->FindClass(jMFCOperationExceptionClassName);
+    if (exClass == NULL) {
+      m_log.e() << "unable to find IOException exception" << Logger::endl;
+      return nullptr;
+    }
+    auto constructorId = env->GetMethodID(exClass, "<init>", "(" JSTRING_SIGNATURE ")V");
+    return env->NewObject(exClass, constructorId, env->NewStringUTF(message.c_str()));
+  }
+  catch (const std::exception &ex) {
+    auto exClass = env->FindClass(jIOExceptionClassName);
+    if (exClass == NULL) {
+      m_log.e() << "unable to find IOException exception" << Logger::endl;
+      return nullptr;
+    }
+    auto constructorId = env->GetMethodID(exClass, "<init>", "(" JSTRING_SIGNATURE ")V");
+    return env->NewObject(exClass, constructorId, env->NewStringUTF(ex.what()));
+  }
+  catch (...) {
+    m_log.e() << "createMFCOperationException unknown exception caught" << Logger::endl;
+    auto exClass = env->FindClass(jIOExceptionClassName);
+    if (exClass == NULL) {
+      m_log.e() << "unable to find IOException exception" << Logger::endl;
+      return nullptr;
+    }
+    auto constructorId = env->GetMethodID(exClass, "<init>", "(" JSTRING_SIGNATURE ")V");
+    return env->NewObject(exClass, constructorId, env->NewStringUTF("Unknown error"));
+  }
+}

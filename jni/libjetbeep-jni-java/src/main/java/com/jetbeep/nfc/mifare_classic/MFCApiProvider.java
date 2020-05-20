@@ -3,9 +3,9 @@ package com.jetbeep.nfc.mifare_classic;
 import java.lang.IllegalStateException;
 import java.io.IOException;
 
-public class MFCApiProvider {
+abstract public class MFCApiProvider {
 
-  public MFCApiProvider(long native_ptr) {
+  protected MFCApiProvider(long native_ptr) {
     saveObj(native_ptr);
     ptr = native_ptr;
   }
@@ -19,23 +19,33 @@ public class MFCApiProvider {
   }
 
   /**
-   * <p>This method is used to read block of Mifare card data.</p>
+  * <p>This callback will be fired once writeBlock operation is completed </p>
+  * @param data - block content in case of success, null in case of error.
+  * @param error - exception (MFCOperationException) instance if any error occurred during operation, null in case of success.
+  */
+  abstract public void onReadResult(MFCBlockData data, final Exception error);
+
+  /**
+  * <p>This callback will be fired once readBlock operation is completed </p>
+  * @param error - exception instance if any error occurred during operation, null in case of success.
+  */
+  abstract public void onWriteResult(final Exception error);
+
+  /**
+   * <p>This method is used to read block of Mifare card data. Will trigger onReadResult.</p>
    * @param blockNo Mifare block number, starting from 0
    * @param key Mifare sector key, for sector where specified block contained
-   * @return MFCBlockData for selected block of Mifare card
-   * @throws MFCOperationException if any operation related error
    * @throws IllegalStateException if no NFC card is detected
    * @throws IOException in case of system error
   */
-  public MFCBlockData readBlock(int blockNo, MFCKey key) throws MFCOperationException, IllegalStateException, IOException {
-      return native_readBlock(ptr, blockNo, key);
+  public void readBlock(int blockNo, MFCKey key) throws MFCOperationException, IllegalStateException, IOException {
+      native_readBlock(ptr, blockNo, key);
   }
 
   /**
-   * <p>This method is used to write block of Mifare card data.</p>
+   * <p>This method is used to write block of Mifare card data. Will trigger onWriteResult.</p>
    * @param blockData data to write and block number starting from 0
    * @param key Mifare sector key, for sector where specified block contained
-   * @throws MFCOperationException if any operation related error
    * @throws IllegalStateException if no NFC card is detected
    * @throws IOException in case of system error
   */
@@ -46,7 +56,7 @@ public class MFCApiProvider {
   private native void free(long ptr);
   private native void saveObj(long ptr);
 
-  private native MFCBlockData native_readBlock(long ptr, int blockNo, MFCKey key);
+  private native void native_readBlock(long ptr, int blockNo, MFCKey key);
   private native void native_writeBlock(long ptr, MFCBlockData blockData, MFCKey key);
 
   private long ptr;

@@ -22,10 +22,12 @@ static final MFCBlockData mfcBlockData = new MFCBlockData(mfcBlockNumber,
 
   public static void main(String[] args) {        
     System.out.println("example started");
+
     com.jetbeep.Logger.setCoutEnabled(true);
     com.jetbeep.Logger.setLogLevel(com.jetbeep.Logger.Level.verbose);    
     DeviceHandler handler = new DeviceHandler();
     Scanner scanner = new Scanner(System.in);
+    MFCApiProvider mfcProvider = null;
 
     loop: while (true) {
       String input;
@@ -200,9 +202,10 @@ static final MFCBlockData mfcBlockData = new MFCBlockData(mfcBlockNumber,
         case "nfc_read_mfc_block":
         case "nfcreadmfcblock":
           try {
-            MFCApiProvider provider = handler.getNFCMifareApiProvider();
-            MFCBlockData data = provider.readBlock(mfcBlockNumber, mfcKey);
-            System.out.println("nfc_read_mfc_block success" + data.toString());
+            if (mfcProvider == null) {
+               mfcProvider = handler.getNFCMifareApiProvider(MFCApiProviderImpl.class.getName());
+            }
+            mfcProvider.readBlock(mfcBlockNumber, mfcKey);
           } catch (Exception e) {
             e.printStackTrace();
           }
@@ -210,9 +213,10 @@ static final MFCBlockData mfcBlockData = new MFCBlockData(mfcBlockNumber,
         case "nfc_write_mfc_block":
         case "nfcwritemfcblock":
         try {
-          MFCApiProvider provider = handler.getNFCMifareApiProvider();
-          provider.writeBlock(mfcBlockData, mfcKey);
-          System.out.println("nfc_write_mfc_block success");
+          if (mfcProvider == null) {
+             mfcProvider = handler.getNFCMifareApiProvider(MFCApiProviderImpl.class.getName());
+          }
+          mfcProvider.writeBlock(mfcBlockData, mfcKey);
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -224,6 +228,9 @@ static final MFCBlockData mfcBlockData = new MFCBlockData(mfcBlockNumber,
     }
 
     scanner.close();
+    if (mfcProvider != null) {
+        mfcProvider.free();
+    }
     handler.free(); // IMPORTANT: it's required to free handler, otherwise there will be a memory-leak
   }
 }

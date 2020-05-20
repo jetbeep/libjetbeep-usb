@@ -347,11 +347,12 @@ abstract public class AutoDevice {
 
   /**
    * <p>This method creates Mifare Classic API provider </p>
+   * @param className - full class name of MFCApiProvider implementation class as MFCApiProviderImpl.class.getName()
    * @return MFCApiProvider
-   * @throws IllegalStateException no Mifare Classic card is detected
+   * @throws IllegalStateException if no Mifare Classic card is detected
    */
-  public MFCApiProvider getNFCMifareApiProvider() throws IllegalStateException{
-     return getNFCMifareApiProvider(ptr);
+  public MFCApiProvider getNFCMifareApiProvider(String className) throws IllegalStateException{
+     return getNFCMifareApiProvider(ptr, className.replace('.', '/'));
   }
 
   /** 
@@ -447,7 +448,7 @@ abstract public class AutoDevice {
   private native void enableNFC(long ptr);
   private native void disableNFC(long ptr);
 
-  private native MFCApiProvider getNFCMifareApiProvider(long ptr);
+  private native MFCApiProvider getNFCMifareApiProvider(long ptr, String className);
 
   private native void enableBluetooth(long ptr);
   private native void disableBluetooth(long ptr);

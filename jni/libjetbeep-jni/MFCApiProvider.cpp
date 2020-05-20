@@ -31,6 +31,7 @@ JNIEXPORT void JNICALL Java_com_jetbeep_nfc_mifare_1classic_MFCApiProvider_saveO
   auto objGlobRef = env->NewGlobalRef(object);
   MifareClassicProvider * provider_p = nullptr;
   if (!getMifareClassicProviderPointer(env, ptr, &provider_p)) {
+    MFCApiProviderJni::log.e() << "unable to getMifareClassicProviderPointer" << Logger::endl;
     return;
   }
   provider_p->opaque = objGlobRef;
@@ -40,6 +41,7 @@ JNIEXPORT void JNICALL Java_com_jetbeep_nfc_mifare_1classic_MFCApiProvider_free(
   std::lock_guard<recursive_mutex> lock(JniUtils::mutex);
   MifareClassicProvider * provider_p = nullptr;
   if (!getMifareClassicProviderPointer(env, ptr, &provider_p)) {
+    MFCApiProviderJni::log.e() << "unable to getMifareClassicProviderPointer" << Logger::endl;
     return;
   }
 
@@ -55,56 +57,101 @@ JNIEXPORT void JNICALL Java_com_jetbeep_nfc_mifare_1classic_MFCApiProvider_free(
   delete provider_p;
 }
 
-JNIEXPORT jobject JNICALL Java_com_jetbeep_nfc_mifare_1classic_MFCApiProvider_native_1readBlock(JNIEnv* env, jobject object, jlong ptr, jint jBlockNo, jobject jKey){
+JNIEXPORT void JNICALL Java_com_jetbeep_nfc_mifare_1classic_MFCApiProvider_native_1readBlock(JNIEnv* env, jobject object, jlong ptr, jint jBlockNo, jobject jKey){
   std::lock_guard<recursive_mutex> lock(JniUtils::mutex);
   MifareClassicProvider * provider_p = nullptr;
   if (!getMifareClassicProviderPointer(env, ptr, &provider_p)) {
-    return nullptr;
+    JniUtils::throwRuntimeException(env, "Unable to getMifareClassicProviderPointer");
+    return;
   }
 
   try {
-    std::promise<void> promiseResolver;
-    auto readyFuture = promiseResolver.get_future();
-
     int blockNo = (int) jBlockNo;
     MifareBlockContent content = {};
     MifareClassicKey key = {};
     key.type = JetBeep::NFC::MifareClassic::MifareClassicKeyType::NONE;
 
     JniUtils::getMifareClassicKeyFromMFCKey(env, jKey, &key);
-    provider_p->readBlock(blockNo,content, &key)
-      .then([&promiseResolver]() {
-        promiseResolver.set_value();
-      })
-      .catchError([&promiseResolver](const exception_ptr& ex) {
-        promiseResolver.set_exception(ex);
-      });
-    readyFuture.wait();
-    readyFuture.get(); //will throw exception if set_exception
-    return JniUtils::getMFCBlockDataFromMifareBlockContent(env, &content);
+    string callBackName = "onReadResult";
+    string callSignature = "(Lcom/jetbeep/nfc/mifare_classic/MFCBlockData;Ljava/lang/Exception;)V";
 
+    provider_p->readBlock(blockNo,content, &key)
+      .then([&, result = content, provider_p, callBackName, callSignature]() {
+        std::lock_guard<recursive_mutex> lock(JniUtils::mutex);
+        auto env = JniUtils::attachCurrentThread();
+        if (env == nullptr) {
+          MFCApiProviderJni::log.e() << "unable to get env" << Logger::endl;
+          return JniUtils::detachCurrentThread();;
+        }
+        auto jMFCProvider = (jobject) provider_p->opaque;
+        if (jMFCProvider == nullptr) {
+          MFCApiProviderJni::log.e() << "jMFCProvider == nullptr" << Logger::endl;
+          return JniUtils::detachCurrentThread();
+        }
+        auto jMFCProviderClass = env->GetObjectClass(jMFCProvider);
+        if (jMFCProviderClass == nullptr) {
+          MFCApiProviderJni::log.e() << "unable to env->GetObjectClass(jMFCProvider)" << Logger::endl;
+          return JniUtils::detachCurrentThread();
+        }
+
+        auto methodId = env->GetMethodID(jMFCProviderClass, callBackName.c_str(), callSignature.c_str());
+        if (methodId == nullptr) {
+          MFCApiProviderJni::log.e() << "unable to find " << callBackName << " method" << Logger::endl;
+          return JniUtils::detachCurrentThread();;
+        }
+        auto jBlockContent = JniUtils::getMFCBlockDataFromMifareBlockContent(env, &result);
+        env->CallVoidMethod(jMFCProvider, methodId, jBlockContent, nullptr);
+
+        return JniUtils::detachCurrentThread();
+      })
+      .catchError([&, provider_p, callBackName, callSignature](const exception_ptr& ex) {
+        std::lock_guard<recursive_mutex> lock(JniUtils::mutex);
+        auto env = JniUtils::attachCurrentThread();
+        if (env == nullptr) {
+          MFCApiProviderJni::log.e() << "unable to get env" << Logger::endl;
+          return JniUtils::detachCurrentThread();;
+        }
+        auto jMFCProvider = (jobject) provider_p->opaque;
+        if (jMFCProvider == nullptr) {
+          MFCApiProviderJni::log.e() << "jMFCProvider == nullptr" << Logger::endl;
+          return JniUtils::detachCurrentThread();
+        }
+        auto jMFCProviderClass = env->GetObjectClass(jMFCProvider);
+        if (jMFCProviderClass == nullptr) {
+          MFCApiProviderJni::log.e() << "unable to env->GetObjectClass(jMFCProvider)" << Logger::endl;
+          return JniUtils::detachCurrentThread();
+        }
+
+        auto methodId = env->GetMethodID(jMFCProviderClass, callBackName.c_str(), callSignature.c_str());
+        if (methodId == nullptr) {
+          MFCApiProviderJni::log.e() << "unable to find " << callBackName << " method" << Logger::endl;
+          return JniUtils::detachCurrentThread();;
+        }
+        auto jExceptionObj = JniUtils::createMFCOperationException(env, ex);
+        env->CallVoidMethod(jMFCProvider, methodId, nullptr, jExceptionObj);
+
+        return JniUtils::detachCurrentThread();
+      });
   } catch (const Errors::InvalidState& ) {
     JniUtils::throwIllegalStateException(env, "invalid device state");
-  } catch (JetBeep::NFC::MifareClassic::MifareIOException& error) {
-    JniUtils::throwMFCOperationException(env, error);
   } catch (...) {
     MFCApiProviderJni::log.e() << "MFCApiProvider_native_1readBlock result in exception" << Logger::endl;
     JniUtils::throwIOException(env, "system error");
   }
-  return nullptr;
 }
 
 JNIEXPORT void JNICALL Java_com_jetbeep_nfc_mifare_1classic_MFCApiProvider_native_1writeBlock(JNIEnv* env, jobject object, jlong ptr, jobject blockData, jobject jKey){
   std::lock_guard<recursive_mutex> lock(JniUtils::mutex);
   MifareClassicProvider * provider_p = nullptr;
   if (!getMifareClassicProviderPointer(env, ptr, &provider_p)) {
+    JniUtils::throwRuntimeException(env, "Unable to getMifareClassicProviderPointer");
     return;
   }
 
-  try {
-    std::promise<void> promiseResolver;
-    auto readyFuture = promiseResolver.get_future();
+  string callBackName = "onWriteResult";
+  string callSignature = "(Ljava/lang/Exception;)V";
 
+  try {
     MifareBlockContent content = {};
     content.blockNo = -1;
     MifareClassicKey key = {};
@@ -114,21 +161,65 @@ JNIEXPORT void JNICALL Java_com_jetbeep_nfc_mifare_1classic_MFCApiProvider_nativ
     JniUtils::getMifareBlockContentFromMFCBlockData(env, blockData, &content);
 
     provider_p->writeBlock(content, &key)
-      .then([&promiseResolver]() {
-        promiseResolver.set_value();
+      .then([&, result = content, provider_p, callBackName, callSignature]() {
+        std::lock_guard<recursive_mutex> lock(JniUtils::mutex);
+        auto env = JniUtils::attachCurrentThread();
+        if (env == nullptr) {
+          MFCApiProviderJni::log.e() << "unable to get env" << Logger::endl;
+          return JniUtils::detachCurrentThread();;
+        }
+        auto jMFCProvider = (jobject) provider_p->opaque;
+        if (jMFCProvider == nullptr) {
+          MFCApiProviderJni::log.e() << "jMFCProvider == nullptr" << Logger::endl;
+          return JniUtils::detachCurrentThread();
+        }
+        auto jMFCProviderClass = env->GetObjectClass(jMFCProvider);
+        if (jMFCProviderClass == nullptr) {
+          MFCApiProviderJni::log.e() << "unable to env->GetObjectClass(jMFCProvider)" << Logger::endl;
+          return JniUtils::detachCurrentThread();
+        }
+
+        auto methodId = env->GetMethodID(jMFCProviderClass, callBackName.c_str(), callSignature.c_str());
+        if (methodId == nullptr) {
+          MFCApiProviderJni::log.e() << "unable to find " << callBackName << " method" << Logger::endl;
+          return JniUtils::detachCurrentThread();;
+        }
+        auto jBlockContent = JniUtils::getMFCBlockDataFromMifareBlockContent(env, &result);
+        env->CallVoidMethod(jMFCProvider, methodId, nullptr);
+
+        return JniUtils::detachCurrentThread();
       })
-      .catchError([&promiseResolver](const exception_ptr& ex) {
-        promiseResolver.set_exception(ex);
+      .catchError([&, provider_p, callBackName, callSignature](const exception_ptr& ex) {
+        std::lock_guard<recursive_mutex> lock(JniUtils::mutex);
+        auto env = JniUtils::attachCurrentThread();
+        if (env == nullptr) {
+          MFCApiProviderJni::log.e() << "unable to get env" << Logger::endl;
+          return JniUtils::detachCurrentThread();;
+        }
+        auto jMFCProvider = (jobject) provider_p->opaque;
+        if (jMFCProvider == nullptr) {
+          MFCApiProviderJni::log.e() << "jMFCProvider == nullptr" << Logger::endl;
+          return JniUtils::detachCurrentThread();
+        }
+        auto jMFCProviderClass = env->GetObjectClass(jMFCProvider);
+        if (jMFCProviderClass == nullptr) {
+          MFCApiProviderJni::log.e() << "unable to env->GetObjectClass(jMFCProvider)" << Logger::endl;
+          return JniUtils::detachCurrentThread();
+        }
+
+        auto methodId = env->GetMethodID(jMFCProviderClass, callBackName.c_str(), callSignature.c_str());
+        if (methodId == nullptr) {
+          MFCApiProviderJni::log.e() << "unable to find " << callBackName << " method" << Logger::endl;
+          return JniUtils::detachCurrentThread();;
+        }
+        auto jExceptionObj = JniUtils::createMFCOperationException(env, ex);
+        env->CallVoidMethod(jMFCProvider, methodId, jExceptionObj);
+
+        return JniUtils::detachCurrentThread();
       });
-
-    readyFuture.wait();
-    readyFuture.get(); //will throw exception if set_exception
-
     return;
   } catch (const Errors::InvalidState& ) {
     JniUtils::throwIllegalStateException(env, "invalid device state");
-  } catch (JetBeep::NFC::MifareClassic::MifareIOException& error) {
-    JniUtils::throwMFCOperationException(env, error);
   } catch (...) {
     MFCApiProviderJni::log.e() << "MFCApiProvider_native_1writeBlock result in exception" << Logger::endl;
     JniUtils::throwIOException(env, "system error");

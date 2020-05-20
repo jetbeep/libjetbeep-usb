@@ -2,6 +2,7 @@
 #include "./include/com_jetbeep_AutoDevice.h"
 #include "jni-utils.hpp"
 #include <unordered_map>
+#include <cstring>
 
 using namespace std;
 using namespace JetBeep;
@@ -532,15 +533,22 @@ JNIEXPORT void JNICALL Java_com_jetbeep_AutoDevice_disableNFC(JNIEnv* env, jobje
   }
 }
 
-JNIEXPORT jobject JNICALL Java_com_jetbeep_AutoDevice_getNFCMifareApiProvider(JNIEnv* env, jobject object, jlong ptr) {
+JNIEXPORT jobject JNICALL Java_com_jetbeep_AutoDevice_getNFCMifareApiProvider(JNIEnv* env, jobject object, jlong ptr, jstring jsProviderClassName) {
   std::lock_guard<recursive_mutex> lock(JniUtils::mutex);
   AutoDevice* device = nullptr;
   if (!JniUtils::getAutoDevicePointer(env, ptr, &device)) {
     return nullptr;
   }
   jobject resultObj = nullptr;
-  string providerClassName = "com/jetbeep/nfc/mifare_classic/MFCApiProvider";
-  jclass jProviderClass = env->FindClass(providerClassName.c_str());
+  const char * providerClassName_p = env->GetStringUTFChars(jsProviderClassName, nullptr);
+  auto strSize = env->GetStringUTFLength(jsProviderClassName);
+  string providerClassNameString = string(providerClassName_p);
+  jclass jProviderClass = env->FindClass(providerClassNameString.c_str());
+  env->ReleaseStringUTFChars(jsProviderClassName, providerClassName_p);
+  if (jProviderClass == nullptr) {
+    JniUtils::throwRuntimeException(env, "Unable to find provided className: " + providerClassNameString);
+    return nullptr;
+  }
 
   try {
     auto provider = device->getNFCMifareApiProvider();

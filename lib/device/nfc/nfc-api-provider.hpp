@@ -11,7 +11,7 @@ namespace JetBeep::NFC {
     DetectionEventData* getNFCCardInfo() {
       return m_cardInfo_p;
     }
-    void* opaque;
+    void* opaque = nullptr;
     NFCApiProvider();
   protected:
 
