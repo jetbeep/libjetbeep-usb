@@ -72,7 +72,6 @@ JNIEXPORT jobject JNICALL Java_com_jetbeep_nfc_mifare_1classic_MFCApiProvider_na
     key.type = JetBeep::NFC::MifareClassic::MifareClassicKeyType::NONE;
 
     JniUtils::getMifareClassicKeyFromMFCKey(env, jKey, &key);
-
     provider_p->readBlock(blockNo,content, &key)
       .then([&promiseResolver]() {
         promiseResolver.set_value();
@@ -80,10 +79,8 @@ JNIEXPORT jobject JNICALL Java_com_jetbeep_nfc_mifare_1classic_MFCApiProvider_na
       .catchError([&promiseResolver](const exception_ptr& ex) {
         promiseResolver.set_exception(ex);
       });
-
     readyFuture.wait();
     readyFuture.get(); //will throw exception if set_exception
-
     return JniUtils::getMFCBlockDataFromMifareBlockContent(env, &content);
 
   } catch (const Errors::InvalidState& ) {

@@ -88,7 +88,7 @@ public class DeviceHandler extends AutoDevice {
         System.out.println("NFC: detected card type is not supported");
       break;
       case MULTIPLE_CARDS: 
-        System.out.println("NFC: Thre is multiple cards in detection field");
+        System.out.println("NFC: There is multiple cards in detection field");
       break;
       case UNKNOWN: //falls through
       default:

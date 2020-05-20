@@ -69,7 +69,7 @@ JNIEXPORT jlong JNICALL Java_com_jetbeep_AutoDevice_init(JNIEnv* env, jobject ob
       return JniUtils::detachCurrentThread();
     }
 
-    jboolean isConnected = (jboolean)(event == SerialMobileEvent::connected);
+    auto isConnected = (jboolean)(event == SerialMobileEvent::connected);
     env->CallVoidMethod(object, onMobileConnectionChange, isConnected);
 
     JniUtils::detachCurrentThread();
@@ -88,13 +88,43 @@ JNIEXPORT jlong JNICALL Java_com_jetbeep_AutoDevice_init(JNIEnv* env, jobject ob
       AutoDeviceJni::log.e() << "unable to get AutoDevice class" << Logger::endl;
       return JniUtils::detachCurrentThread();
     }
-    auto onNFCDetectionEvent = env->GetMethodID(autoDeviceClass, "onNFCDetectionEvent", "(Lcom/jetbeep/nfc/CardInfo;)V");
+    string jDetectionEventClassName = "com/jetbeep/nfc/DetectionEvent";
+    auto onNFCDetectionEvent = env->GetMethodID(autoDeviceClass, "onNFCDetectionEvent", ("(L" + jDetectionEventClassName +";)V").c_str());
     if (onNFCDetectionEvent == nullptr) {
       AutoDeviceJni::log.e() << "unable to get onNFCDetectionEvent method" << Logger::endl;
       return JniUtils::detachCurrentThread();
     }
     auto jCardInfoObj = JniUtils::getJCardInfoObj(env, &eventData);
-    env->CallVoidMethod(object, onNFCDetectionEvent, jCardInfoObj);
+    string DetectionEventTypeClassName = "com/jetbeep/nfc/DetectionEvent$Event";
+    jclass jDetectionEventTypeClass = env->FindClass(DetectionEventTypeClassName.c_str());
+    if (jDetectionEventTypeClass == nullptr) {
+      AutoDeviceJni::log.e() << "unable to FindClass for jDetectionEventTypeClass class" << Logger::endl;
+      return JniUtils::detachCurrentThread();
+    }
+    jfieldID jDetectionEventFieldId = nullptr;
+    switch(event) {
+    case JetBeep::SerialNFCEvent::detected:
+      jDetectionEventFieldId = env->GetStaticFieldID(jDetectionEventTypeClass, "DETECTED", ("L" +DetectionEventTypeClassName+ ";").c_str());
+      break;
+    case JetBeep::SerialNFCEvent::removed:
+      jDetectionEventFieldId = env->GetStaticFieldID(jDetectionEventTypeClass, "REMOVED", ("L" +DetectionEventTypeClassName+ ";").c_str());
+      break;
+    default:
+      AutoDeviceJni::log.e() << "unknown SerialNFCEvent" << Logger::endl;
+      return JniUtils::detachCurrentThread();
+    }
+    if (jDetectionEventTypeClass == nullptr) {
+      AutoDeviceJni::log.e() << "unable to GetStaticFieldID for jDetectionEventTypeClass" << Logger::endl;
+      return JniUtils::detachCurrentThread();
+    }
+    jobject jDetectionEventTypeValueObj = env->GetStaticObjectField(jDetectionEventTypeClass, jDetectionEventFieldId);
+    jclass jDetectionEventClass = env->FindClass(jDetectionEventClassName.c_str());
+    string constructorSignature = "(L" + DetectionEventTypeClassName + ";Lcom/jetbeep/nfc/CardInfo;)V";
+    jmethodID constructorMethodId = env->GetMethodID(jDetectionEventClass, "<init>", constructorSignature.c_str());
+
+    jobject jDetectionEventObj = env->NewObject(jDetectionEventClass, constructorMethodId, jDetectionEventTypeValueObj, jCardInfoObj);
+
+    env->CallVoidMethod(object, onNFCDetectionEvent, jDetectionEventObj);
     JniUtils::detachCurrentThread();
   };
 
@@ -518,7 +548,7 @@ JNIEXPORT jobject JNICALL Java_com_jetbeep_AutoDevice_getNFCMifareApiProvider(JN
     jmethodID constructorMethodId = env->GetMethodID(jProviderClass, "<init>", "(J)V");
     return env->NewObject(jProviderClass, constructorMethodId, (jlong) provider_p);
   } catch (const Errors::InvalidState& ) {
-    JniUtils::throwIllegalStateException(env, "NFC card is not detected");
+    JniUtils::throwIllegalStateException(env, "Mifare Classic card is not detected");
   } catch (...) {
     JniUtils::throwIOException(env, "system error");
   }

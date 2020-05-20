@@ -265,43 +265,54 @@ jobject JniUtils::getJCardInfoObj(JNIEnv* env, const NFC::DetectionEventData* de
     string cardInfoTypeClassName = "com/jetbeep/nfc/CardInfo$Type";
 
     jclass jCardInfo = env->FindClass(cardInfoClassName.c_str());
+    if (jCardInfo == nullptr) {
+      m_log.e() << "unable to get CardInfo class" << Logger::endl;
+      return nullptr;
+    }
     jclass jCardInfoType = env->FindClass(cardInfoTypeClassName.c_str());
+    if (jCardInfoType == nullptr) {
+      m_log.e() << "unable to get CardInfo$Type class" << Logger::endl;
+      return nullptr;
+    }
     jobject jTypeValue = nullptr;
     jfieldID fieldId = nullptr;
     auto objSignatureFun = [&](const string& name) -> string { return "L" + name + ";"; };
 
     switch(detectionEventData->cardType) {
         case JetBeep::NFC::CardType::UNKNOWN:
-            fieldId = env->GetStaticFieldID(jCardInfo, "UNKNOWN", objSignatureFun(cardInfoTypeClassName).c_str());
+            fieldId = env->GetStaticFieldID(jCardInfoType, "UNKNOWN", objSignatureFun(cardInfoTypeClassName).c_str());
             break;
         case JetBeep::NFC::CardType::EMV_CARD:
-            fieldId = env->GetStaticFieldID(jCardInfo, "EMV_CARD", objSignatureFun(cardInfoTypeClassName).c_str());
+            fieldId = env->GetStaticFieldID(jCardInfoType, "EMV_CARD", objSignatureFun(cardInfoTypeClassName).c_str());
             break;
         case JetBeep::NFC::CardType::MIFARE_CLASSIC_1K:
-            fieldId = env->GetStaticFieldID(jCardInfo, "MIFARE_CLASSIC_1K", objSignatureFun(cardInfoTypeClassName).c_str());
+            fieldId = env->GetStaticFieldID(jCardInfoType, "MIFARE_CLASSIC_1K", objSignatureFun(cardInfoTypeClassName).c_str());
             break;
         case JetBeep::NFC::CardType::MIFARE_CLASSIC_4K:
-            fieldId = env->GetStaticFieldID(jCardInfo, "MIFARE_CLASSIC_4K", objSignatureFun(cardInfoTypeClassName).c_str());
+            fieldId = env->GetStaticFieldID(jCardInfoType, "MIFARE_CLASSIC_4K", objSignatureFun(cardInfoTypeClassName).c_str());
             break;
         case JetBeep::NFC::CardType::MIFARE_PLUS_2K:
-            fieldId = env->GetStaticFieldID(jCardInfo, "MIFARE_PLUS_2K", objSignatureFun(cardInfoTypeClassName).c_str());
+            fieldId = env->GetStaticFieldID(jCardInfoType, "MIFARE_PLUS_2K", objSignatureFun(cardInfoTypeClassName).c_str());
             break;
         case JetBeep::NFC::CardType::MIFARE_PLUS_4K:
-            fieldId = env->GetStaticFieldID(jCardInfo, "MIFARE_PLUS_4K", objSignatureFun(cardInfoTypeClassName).c_str());
+            fieldId = env->GetStaticFieldID(jCardInfoType, "MIFARE_PLUS_4K", objSignatureFun(cardInfoTypeClassName).c_str());
             break;
         case JetBeep::NFC::CardType::MIFARE_DESFIRE_2K:
-            fieldId = env->GetStaticFieldID(jCardInfo, "MIFARE_DESFIRE_2K", objSignatureFun(cardInfoTypeClassName).c_str());
+            fieldId = env->GetStaticFieldID(jCardInfoType, "MIFARE_DESFIRE_2K", objSignatureFun(cardInfoTypeClassName).c_str());
             break;
         case JetBeep::NFC::CardType::MIFARE_DESFIRE_4K:
-            fieldId = env->GetStaticFieldID(jCardInfo, "MIFARE_DESFIRE_4K", objSignatureFun(cardInfoTypeClassName).c_str());
+            fieldId = env->GetStaticFieldID(jCardInfoType, "MIFARE_DESFIRE_4K", objSignatureFun(cardInfoTypeClassName).c_str());
             break;
         case JetBeep::NFC::CardType::MIFARE_DESFIRE_8K:
-            fieldId = env->GetStaticFieldID(jCardInfo, "MIFARE_DESFIRE_8K", objSignatureFun(cardInfoTypeClassName).c_str());
+            fieldId = env->GetStaticFieldID(jCardInfoType, "MIFARE_DESFIRE_8K", objSignatureFun(cardInfoTypeClassName).c_str());
             break;
         default:
-            fieldId = env->GetStaticFieldID(jCardInfo, "UNKNOWN", objSignatureFun(cardInfoTypeClassName).c_str());
+            fieldId = env->GetStaticFieldID(jCardInfoType, "UNKNOWN", objSignatureFun(cardInfoTypeClassName).c_str());
     }
-
+    if (fieldId == nullptr) {
+      m_log.e() << "unable to GetStaticFieldID for CardInfo$Type class" << Logger::endl;
+      return nullptr;
+    }
     jTypeValue = env->GetStaticObjectField(jCardInfoType, fieldId);
     jstring jMetaStr = env->NewStringUTF(detectionEventData->meta.c_str());
 

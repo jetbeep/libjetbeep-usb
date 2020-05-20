@@ -14,6 +14,7 @@ MifareClassicProvider::~MifareClassicProvider() {}
 MifareClassicProvider::MifareClassicProvider(const MifareClassicProvider& other) noexcept {
   m_serial_p = other.m_serial_p;
   m_cardInfo_p = other.m_cardInfo_p;
+  m_impl = other.m_impl;
 }
 
 JetBeep::Promise<void> MifareClassicProvider::readBlock(int blockNo, MifareBlockContent & content, const MifareClassicKey *key){
