@@ -33,17 +33,14 @@ public class Library {
 )
 
 add_custom_target(GenerateJavaHeaders COMMAND   
-  javac -h . 
-  ../libjetbeep-jni-java/src/main/java/com/jetbeep/AutoDevice.java 
-  ../libjetbeep-jni-java/src/main/java/com/jetbeep/Barcode.java 
-  ../libjetbeep-jni-java/src/main/java/com/jetbeep/Logger.java 
-  ../libjetbeep-jni-java/src/main/java/com/jetbeep/Barcode.java 
-  ../libjetbeep-jni-java/src/main/java/com/jetbeep/EasyPayBackend.java
-  ../libjetbeep-jni-java/src/main/java/com/jetbeep/Library.java
+  javac -h ./include -d ../libjetbeep-jni-java/bin
+  ../libjetbeep-jni-java/src/main/java/com/jetbeep/*.java
+  ../libjetbeep-jni-java/src/main/java/com/jetbeep/nfc/*.java
+  ../libjetbeep-jni-java/src/main/java/com/jetbeep/nfc/mifare_classic/*.java
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_library(jetbeep-jni SHARED ${JETBEEP_INCLUDES} $<TARGET_OBJECTS:jetbeep_obj> 
-  AutoDevice.cpp Logger.cpp EasyPayBackend.cpp Library.cpp jni-utils.cpp)
+  AutoDevice.cpp Logger.cpp EasyPayBackend.cpp MFCApiProvider.cpp Library.cpp jni-utils.cpp)
 
 set_target_properties(jetbeep-jni PROPERTIES
   VERSION ${PROJECT_VERSION}

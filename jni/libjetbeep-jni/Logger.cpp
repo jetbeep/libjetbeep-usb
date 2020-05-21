@@ -1,4 +1,4 @@
-#include "com_jetbeep_Logger.h"
+#include "./include/com_jetbeep_Logger.h"
 #include "jni-utils.hpp"
 
 using namespace JetBeep;

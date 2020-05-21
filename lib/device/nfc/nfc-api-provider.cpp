@@ -4,7 +4,9 @@
 using namespace std;
 using namespace JetBeep::NFC;
 
-NFCApiProvider::NFCApiProvider(std::shared_ptr<SerialDevice> &device_p, DetectionEventData& cardInfo): m_cardInfo_p(cardInfo) {
+NFCApiProvider::NFCApiProvider():m_cardInfo_p(nullptr) {};
+
+NFCApiProvider::NFCApiProvider(std::shared_ptr<SerialDevice> &device_p, DetectionEventData* cardInfo): m_cardInfo_p(cardInfo) {
   m_serial_p = std::weak_ptr<SerialDevice>(device_p);
 }
 

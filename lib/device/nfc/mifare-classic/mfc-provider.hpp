@@ -77,6 +77,7 @@ namespace JetBeep::NFC {
       JetBeep::Promise<void> readBlock(int blockNo, MifareBlockContent & content, const MifareClassicKey *key = nullptr);
       JetBeep::Promise<void> writeBlock(const MifareBlockContent & content, const MifareClassicKey *key = nullptr) const;
       MifareClassicProvider(std::shared_ptr<SerialDevice> &, DetectionEventData &cardInfo);
+      MifareClassicProvider(const MifareClassicProvider& other) noexcept;
     private:
       class Impl;
       std::shared_ptr<Impl> m_impl;

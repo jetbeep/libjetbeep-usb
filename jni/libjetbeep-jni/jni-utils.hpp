@@ -3,11 +3,14 @@
 #include <mutex>
 #include <string>
 
+#define JSTRING_SIGNATURE "Ljava/lang/String;"
+
 namespace JetBeep {
   class JniUtils {
   public:
     static void throwIllegalStateException(JNIEnv* env, const std::string& message);
     static void throwNullPointerException(JNIEnv* env, const std::string& message);
+    static void throwRuntimeException(JNIEnv* env, const std::string& message);
     static void throwIOException(JNIEnv* env, const std::string& message);
     static std::string getString(JNIEnv* env, jstring string);
     static void storeJvm(JNIEnv* env);
@@ -26,7 +29,13 @@ namespace JetBeep {
     static void releaseEasyPayBackendJObject(JNIEnv* env, EasyPayBackend* backend);
     static jobject getEasyPayBackendJObject(EasyPayBackend* backend);
 
-    static jfieldID getPtrField(JNIEnv *env, jobject object);
+    static jobject getJCardInfoObj(JNIEnv* env, const NFC::DetectionEventData * detectionEventData);
+    static void getMifareClassicKeyFromMFCKey(JNIEnv* env, jobject jMFCKeyObj, NFC::MifareClassic::MifareClassicKey* key_p);
+    static jobject getMFCBlockDataFromMifareBlockContent(JNIEnv* env, const NFC::MifareClassic::MifareBlockContent * content_p);
+    static void getMifareBlockContentFromMFCBlockData(JNIEnv* env, jobject jBlockDataObj, NFC::MifareClassic::MifareBlockContent * content_p);
+    static jobject createMFCOperationException(JNIEnv* env, const exception_ptr& ex);
+
+    static jfieldID getPtrField(JNIEnv *env, jobject object, std::string classAlias = "AutoDevice");
     static std::recursive_mutex mutex;
 
   private:

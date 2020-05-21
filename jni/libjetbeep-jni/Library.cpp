@@ -1,4 +1,4 @@
-#include "com_jetbeep_Library.h"
+#include "./include/com_jetbeep_Library.h"
 #include "../../lib/libjetbeep.hpp"
 
 using namespace JetBeep;

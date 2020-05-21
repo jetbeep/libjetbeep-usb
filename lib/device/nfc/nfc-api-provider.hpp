@@ -8,13 +8,16 @@ namespace JetBeep::NFC {
   class NFCApiProvider {
   public:
     virtual ~NFCApiProvider();
-    DetectionEventData& getNFCCardInfo() {
+    DetectionEventData* getNFCCardInfo() {
       return m_cardInfo_p;
     }
+    void* opaque = nullptr;
+    NFCApiProvider();
   protected:
-    NFCApiProvider(std::shared_ptr<SerialDevice> &, DetectionEventData&);
+
+    NFCApiProvider(std::shared_ptr<SerialDevice> &, DetectionEventData*);
     std::weak_ptr<SerialDevice> m_serial_p;
-    DetectionEventData& m_cardInfo_p;
+    DetectionEventData * m_cardInfo_p;
   };
 } // namespace JetBeep::NFC
 

@@ -44,6 +44,12 @@ Avaliable commands:
   * `%metadata%` - (String, Optional). Additional fields for the transaction in key-value format. Example: `key1:value1;key2:value2;`
 * `cancel_payment` - cancels pending "create_payment_token" command
 * `refund %easypayTransactionId%` - makes refund operation, where easypayTransactionId identifier received after successful result of `create_payment_token` command
+* `enable_nfc` - turn NFC detection field ON, enabling NFC detection events. Must be called before session open
+* `disable_nfc` - turn NFC detection field OFF. Must be called before session open
+* `enable_bluetooth` - turn Bluetooth detection field ON, enabling mobile connection events.  Must be called before session open
+* `disable_bluetooth` - turn Bluetooth detection field OFF. Must be called before session open
+* `nfc_read_mfc_block` - read data from specified block of Mifare Classic card (parameters are hardcoded in example Main.java)
+* `nfc_write_mfc_block` - write data to specified block of Mifare Classic card (parameters are hardcoded in example Main.java)
 
 ## Integrating libjetbeep-jni-java into your project
 

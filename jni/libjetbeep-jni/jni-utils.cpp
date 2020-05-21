@@ -1,4 +1,5 @@
 #include "jni-utils.hpp"
+#include  <cstring>
 
 using namespace std;
 using namespace JetBeep;
@@ -30,6 +31,22 @@ void JniUtils::throwNullPointerException(JNIEnv* env, const std::string& message
   exClass = env->FindClass(className);
   if (exClass == NULL) {
     m_log.e() << "unable to find NullPointerException exception" << Logger::endl;
+    return;
+  }
+
+  if (env->ThrowNew(exClass, message.c_str()) != 0) {
+    m_log.e() << "unable to throwNew" << Logger::endl;
+    return;
+  }
+}
+
+void JniUtils::throwRuntimeException(JNIEnv* env, const std::string& message) {
+  jclass exClass;
+  const char* className = "java/lang/RuntimeException";
+
+  exClass = env->FindClass(className);
+  if (exClass == NULL) {
+    m_log.e() << "unable to find RuntimeException exception" << Logger::endl;
     return;
   }
 
@@ -200,17 +217,212 @@ jobject JniUtils::getEasyPayBackendJObject(EasyPayBackend* backend) {
   return (jobject)(backend->opaque);
 }
 
-jfieldID JniUtils::getPtrField(JNIEnv* env, jobject object) {
-  auto autoDeviceClass = env->GetObjectClass(object);
-  if (autoDeviceClass == nullptr) {
-    m_log.e() << "unable to get AutoDevice class" << Logger::endl;
+jfieldID JniUtils::getPtrField(JNIEnv* env, jobject object, std::string classAlias) {
+  auto jClass = env->GetObjectClass(object);
+  if (jClass == nullptr) {
+    m_log.e() << "unable to get " << classAlias <<" class" << Logger::endl;
     return nullptr;
   }
 
-  auto ptrField = env->GetFieldID(autoDeviceClass, "ptr", "J");
+  auto ptrField = env->GetFieldID(jClass, "ptr", "J");
   if (ptrField == nullptr) {
     m_log.e() << "unable to get ptr field" << Logger::endl;
     return nullptr;
   }
   return ptrField;
+}
+
+jobject JniUtils::getJCardInfoObj(JNIEnv* env, const NFC::DetectionEventData* detectionEventData) {
+    string cardInfoClassName = "com/jetbeep/nfc/CardInfo";
+    string cardInfoTypeClassName = "com/jetbeep/nfc/CardInfo$Type";
+
+    jclass jCardInfo = env->FindClass(cardInfoClassName.c_str());
+    if (jCardInfo == nullptr) {
+      m_log.e() << "unable to get CardInfo class" << Logger::endl;
+      return nullptr;
+    }
+    jclass jCardInfoType = env->FindClass(cardInfoTypeClassName.c_str());
+    if (jCardInfoType == nullptr) {
+      m_log.e() << "unable to get CardInfo$Type class" << Logger::endl;
+      return nullptr;
+    }
+    jobject jTypeValue = nullptr;
+    jfieldID fieldId = nullptr;
+    auto objSignatureFun = [&](const string& name) -> string { return "L" + name + ";"; };
+
+    switch(detectionEventData->cardType) {
+        case JetBeep::NFC::CardType::UNKNOWN:
+            fieldId = env->GetStaticFieldID(jCardInfoType, "UNKNOWN", objSignatureFun(cardInfoTypeClassName).c_str());
+            break;
+        case JetBeep::NFC::CardType::EMV_CARD:
+            fieldId = env->GetStaticFieldID(jCardInfoType, "EMV_CARD", objSignatureFun(cardInfoTypeClassName).c_str());
+            break;
+        case JetBeep::NFC::CardType::MIFARE_CLASSIC_1K:
+            fieldId = env->GetStaticFieldID(jCardInfoType, "MIFARE_CLASSIC_1K", objSignatureFun(cardInfoTypeClassName).c_str());
+            break;
+        case JetBeep::NFC::CardType::MIFARE_CLASSIC_4K:
+            fieldId = env->GetStaticFieldID(jCardInfoType, "MIFARE_CLASSIC_4K", objSignatureFun(cardInfoTypeClassName).c_str());
+            break;
+        case JetBeep::NFC::CardType::MIFARE_PLUS_2K:
+            fieldId = env->GetStaticFieldID(jCardInfoType, "MIFARE_PLUS_2K", objSignatureFun(cardInfoTypeClassName).c_str());
+            break;
+        case JetBeep::NFC::CardType::MIFARE_PLUS_4K:
+            fieldId = env->GetStaticFieldID(jCardInfoType, "MIFARE_PLUS_4K", objSignatureFun(cardInfoTypeClassName).c_str());
+            break;
+        case JetBeep::NFC::CardType::MIFARE_DESFIRE_2K:
+            fieldId = env->GetStaticFieldID(jCardInfoType, "MIFARE_DESFIRE_2K", objSignatureFun(cardInfoTypeClassName).c_str());
+            break;
+        case JetBeep::NFC::CardType::MIFARE_DESFIRE_4K:
+            fieldId = env->GetStaticFieldID(jCardInfoType, "MIFARE_DESFIRE_4K", objSignatureFun(cardInfoTypeClassName).c_str());
+            break;
+        case JetBeep::NFC::CardType::MIFARE_DESFIRE_8K:
+            fieldId = env->GetStaticFieldID(jCardInfoType, "MIFARE_DESFIRE_8K", objSignatureFun(cardInfoTypeClassName).c_str());
+            break;
+        default:
+            fieldId = env->GetStaticFieldID(jCardInfoType, "UNKNOWN", objSignatureFun(cardInfoTypeClassName).c_str());
+    }
+    if (fieldId == nullptr) {
+      m_log.e() << "unable to GetStaticFieldID for CardInfo$Type class" << Logger::endl;
+      return nullptr;
+    }
+    jTypeValue = env->GetStaticObjectField(jCardInfoType, fieldId);
+    jstring jMetaStr = env->NewStringUTF(detectionEventData->meta.c_str());
+
+    string constructorSignature = "(" + objSignatureFun(cardInfoTypeClassName) + JSTRING_SIGNATURE + ")V";
+    jmethodID constructorMethodId = env->GetMethodID(jCardInfo, "<init>", constructorSignature.c_str());
+
+    return env->NewObject(jCardInfo, constructorMethodId, jTypeValue, jMetaStr);
+    //DO WE NEED NEW GLOBAL REF?
+}
+
+void JniUtils::getMifareClassicKeyFromMFCKey(JNIEnv* env, jobject jMFCKeyObj, NFC::MifareClassic::MifareClassicKey* key_p) {
+  string mfcKeyTypeClassName = "com/jetbeep/nfc/mifare_classic/MFCKey$Type";
+  jclass mfcKeyTypeClass = env->FindClass(mfcKeyTypeClassName.c_str());
+  jclass mfcKeyClass = env->GetObjectClass(jMFCKeyObj);
+
+  if (mfcKeyClass == nullptr) {
+    m_log.e() << "unable to get MFCKey class" << Logger::endl;
+    return;
+  }
+
+  //set key type
+  jfieldID jKeyTypeValueFieldId = env->GetFieldID(mfcKeyClass, "type", ("L" + mfcKeyTypeClassName + ";").c_str());
+  jobject jKeyTypeValueObj = env->GetObjectField(jMFCKeyObj, jKeyTypeValueFieldId);
+  jint keyInt = env->CallIntMethod(jKeyTypeValueObj, env->GetMethodID(mfcKeyTypeClass, "getValue", "()I"));
+
+  switch ((int)keyInt) {
+  case 0:
+    key_p->type = NFC::MifareClassic::MifareClassicKeyType::NONE;
+    break;
+  case 1:
+    key_p->type = NFC::MifareClassic::MifareClassicKeyType::KEY_A;
+    break;
+  case 2:
+    key_p->type = NFC::MifareClassic::MifareClassicKeyType::KEY_B;
+    break;
+  }
+
+  //set key data
+  jfieldID jKeyValueArrFieldId = env->GetFieldID(mfcKeyClass, "value", "[B");
+  auto jKeyValueArrObj = env->GetObjectField(jMFCKeyObj, jKeyValueArrFieldId);
+  jbyte * jKeyValueArrP = env->GetByteArrayElements((jbyteArray)jKeyValueArrObj, 0);
+  std::memcpy(key_p->key_data, jKeyValueArrP, MFC_KEY_SIZE);
+  env->ReleaseByteArrayElements((jbyteArray)jKeyValueArrObj, jKeyValueArrP, JNI_ABORT);
+}
+
+jobject JniUtils::getMFCBlockDataFromMifareBlockContent(JNIEnv* env, const NFC::MifareClassic::MifareBlockContent * content_p) {
+  string mfcBlockDataClassName = "com/jetbeep/nfc/mifare_classic/MFCBlockData";
+  jclass mfcBlockDataClass = env->FindClass(mfcBlockDataClassName.c_str());
+  jint blockNo = (jint) content_p->blockNo;
+
+  //create value field
+  jbyteArray jByteArr = env->NewByteArray(MFC_BLOCK_SIZE);
+  env->SetByteArrayRegion(jByteArr, 0, MFC_BLOCK_SIZE, (jbyte *) content_p->data);
+
+  //create new MFCBlockData
+  jmethodID constructorMethodId = env->GetMethodID(mfcBlockDataClass, "<init>", "(I[B)V");
+  jobject returnObj = env->NewObject(mfcBlockDataClass, constructorMethodId, blockNo, jByteArr);
+
+  return returnObj;
+}
+
+void JniUtils::getMifareBlockContentFromMFCBlockData(JNIEnv* env, jobject jBlockDataObj, NFC::MifareClassic::MifareBlockContent * content_p) {
+  jclass jBlockDataClass = env->GetObjectClass(jBlockDataObj);
+  if (jBlockDataClass == nullptr) {
+    m_log.e() << "unable to get jBlockDataObj class" << Logger::endl;
+    return;
+  }
+  jfieldID jBlockNoFieldId = env->GetFieldID(jBlockDataClass, "blockNo", "I");
+  content_p->blockNo = env->GetIntField(jBlockDataObj, jBlockNoFieldId);
+
+  jfieldID jValueArrFieldId = env->GetFieldID(jBlockDataClass, "value", "[B");
+  auto jValueArrObj = env->GetObjectField(jBlockDataObj, jValueArrFieldId);
+  jbyte * jValueArrP = env->GetByteArrayElements((jbyteArray)jValueArrObj, 0);
+  std::memcpy(content_p->data, jValueArrP, MFC_BLOCK_SIZE);
+  env->ReleaseByteArrayElements((jbyteArray)jValueArrObj, jValueArrP, JNI_ABORT);
+}
+
+
+jobject JniUtils::createMFCOperationException(JNIEnv* env, const exception_ptr& ex) {
+  const char* jMFCOperationExceptionClassName = "com/jetbeep/nfc/mifare_classic/MFCOperationException";
+  const char* jIOExceptionClassName = "java/io/IOException";
+
+  try {
+    rethrow_exception(ex);
+  } catch (JetBeep::NFC::MifareClassic::MifareIOException& error) {
+    string message = "UNKNOWN";
+    switch (error.getIOErrorReason()) {
+    case NFC::MifareClassic::MifareIOErrorReason::UNKNOWN:
+      message = "UNKNOWN";
+      break;
+    case NFC::MifareClassic::MifareIOErrorReason::PARAMS_INVALID:
+      message = "PARAMS_INVALID";
+      break;
+    case NFC::MifareClassic::MifareIOErrorReason::KEY_PARAM_INVALID:
+      message = "KEY_PARAM_INVALID";
+      break;
+    case NFC::MifareClassic::MifareIOErrorReason::INTERRUPTED:
+      message = "INTERRUPTED";
+      break;
+    case NFC::MifareClassic::MifareIOErrorReason::DATA_SIZE:
+      message = "DATA_SIZE";
+      break;
+    case NFC::MifareClassic::MifareIOErrorReason::UNSUPPORTED_CARD_TYPE:
+      message = "UNSUPPORTED_CARD_TYPE";
+      break;
+    case NFC::MifareClassic::MifareIOErrorReason::AUTH_ERROR:
+      message = "AUTH_ERROR";
+      break;
+    case NFC::MifareClassic::MifareIOErrorReason::CARD_REMOVED:
+      message = "CARD_REMOVED";
+      break;
+    }
+
+    auto exClass = env->FindClass(jMFCOperationExceptionClassName);
+    if (exClass == NULL) {
+      m_log.e() << "unable to find IOException exception" << Logger::endl;
+      return nullptr;
+    }
+    auto constructorId = env->GetMethodID(exClass, "<init>", "(" JSTRING_SIGNATURE ")V");
+    return env->NewObject(exClass, constructorId, env->NewStringUTF(message.c_str()));
+  }
+  catch (const std::exception &ex) {
+    auto exClass = env->FindClass(jIOExceptionClassName);
+    if (exClass == NULL) {
+      m_log.e() << "unable to find IOException exception" << Logger::endl;
+      return nullptr;
+    }
+    auto constructorId = env->GetMethodID(exClass, "<init>", "(" JSTRING_SIGNATURE ")V");
+    return env->NewObject(exClass, constructorId, env->NewStringUTF(ex.what()));
+  }
+  catch (...) {
+    m_log.e() << "createMFCOperationException unknown exception caught" << Logger::endl;
+    auto exClass = env->FindClass(jIOExceptionClassName);
+    if (exClass == NULL) {
+      m_log.e() << "unable to find IOException exception" << Logger::endl;
+      return nullptr;
+    }
+    auto constructorId = env->GetMethodID(exClass, "<init>", "(" JSTRING_SIGNATURE ")V");
+    return env->NewObject(exClass, constructorId, env->NewStringUTF("Unknown error"));
+  }
 }
