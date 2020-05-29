@@ -83,7 +83,6 @@ namespace JetBeep {
     Logger m_log;
     AutoDeviceState m_state;
     DeviceDetection m_detection;
-    SerialDevice m_device;
     std::shared_ptr<SerialDevice> m_device_sp;
     boost::asio::deadline_timer m_timer;
     std::recursive_mutex m_mutex;

@@ -3,6 +3,8 @@
 #include "mfc-provider_impl.hpp"
 
 using namespace std;
+using namespace JetBeep;
+using namespace JetBeep::NFC;
 using namespace JetBeep::NFC::MifareClassic;
 
 MifareClassicProvider::MifareClassicProvider(std::shared_ptr<SerialDevice>& device_p, DetectionEventData& cardInfo)

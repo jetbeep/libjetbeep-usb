@@ -29,15 +29,15 @@ AutoDevice::Impl::Impl(AutoDeviceStateCallback* stateCallback,
     m_mobileConnected(false),
     m_started(false),
     m_deviceId(0) {
-  m_device_sp = std::shared_ptr<SerialDevice>(&m_device);
+  m_device_sp = std::shared_ptr<SerialDevice>(new SerialDevice());
   m_detection.callback = std::bind(&AutoDevice::Impl::onDeviceEvent, this, std::placeholders::_1, std::placeholders::_2);
-  m_device.barcodesCallback = std::bind(&AutoDevice::Impl::onBarcodes, this, std::placeholders::_1);
-  m_device.paymentErrorCallback = std::bind(&AutoDevice::Impl::onPaymentError, this, std::placeholders::_1);
-  m_device.paymentSuccessCallback = std::bind(&AutoDevice::Impl::onPaymentSuccess, this);
-  m_device.paymentTokenCallback = std::bind(&AutoDevice::Impl::onPaymentToken, this, std::placeholders::_1);
-  m_device.mobileCallback = std::bind(&AutoDevice::Impl::onMobileConnectionChange, this, std::placeholders::_1);
-  m_device.nfcEventCallback = std::bind(&AutoDevice::Impl::onNFCEvent, this, std::placeholders::_1, std::placeholders::_2);
-  m_device.nfcDetectionErrorCallback = std::bind(&AutoDevice::Impl::onNFCDetectionError, this, std::placeholders::_1);
+  m_device_sp->barcodesCallback = std::bind(&AutoDevice::Impl::onBarcodes, this, std::placeholders::_1);
+  m_device_sp->paymentErrorCallback = std::bind(&AutoDevice::Impl::onPaymentError, this, std::placeholders::_1);
+  m_device_sp->paymentSuccessCallback = std::bind(&AutoDevice::Impl::onPaymentSuccess, this);
+  m_device_sp->paymentTokenCallback = std::bind(&AutoDevice::Impl::onPaymentToken, this, std::placeholders::_1);
+  m_device_sp->mobileCallback = std::bind(&AutoDevice::Impl::onMobileConnectionChange, this, std::placeholders::_1);
+  m_device_sp->nfcEventCallback = std::bind(&AutoDevice::Impl::onNFCEvent, this, std::placeholders::_1, std::placeholders::_2);
+  m_device_sp->nfcDetectionErrorCallback = std::bind(&AutoDevice::Impl::onNFCDetectionError, this, std::placeholders::_1);
 
 }
 
@@ -67,7 +67,7 @@ void AutoDevice::Impl::stop() {
 
   m_detection.stop();
   try {
-    m_device.close();
+    m_device_sp->close();
   } catch (...) {
   }
   m_candidate = DeviceCandidate();
@@ -88,7 +88,7 @@ void AutoDevice::Impl::onDeviceEvent(DeviceDetectionEvent event, DeviceCandidate
 
     try {
       m_log.d() << "Opening device path: " << candidate.path << Logger::endl;
-      m_device.open(candidate.path);
+      m_device_sp->open(candidate.path);
       m_candidate = candidate;
       initDevice();
     } catch (std::exception &error) {
@@ -101,7 +101,7 @@ void AutoDevice::Impl::onDeviceEvent(DeviceDetectionEvent event, DeviceCandidate
     }
 
     try {
-      m_device.close();
+      m_device_sp->close();
     } catch (...) {
       m_log.e() << "unable to close device!" << Logger::endl;
     }
@@ -114,17 +114,17 @@ void AutoDevice::Impl::onDeviceEvent(DeviceDetectionEvent event, DeviceCandidate
 void AutoDevice::Impl::initDevice() {
   m_pendingOperations.clear();
   rejectPendingOperations();
-  m_device.get(DeviceParameter::version)
+  m_device_sp->get(DeviceParameter::version)
     .thenPromise<std::string, Promise>([&](std::string version) {
       if (Utils::deviceFWVerToNumber(version) < Utils::deviceFWVerToNumber(JETBEEP_DEVICE_MIN_FW_VER)) {
         throw Errors::FirmwareVersionNotSupported();
       }
       m_version = version;
-      return m_device.get(DeviceParameter::deviceId);
+      return m_device_sp->get(DeviceParameter::deviceId);
     })
     .thenPromise([&](std::string strDeviceId) {
       m_deviceId = std::strtoul(strDeviceId.c_str(), nullptr, 16);
-      return m_device.resetState();
+      return m_device_sp->resetState();
     })
     .then([&](...) { changeState(AutoDeviceState::sessionClosed, nullptr); })
     .catchError([&](const std::exception_ptr error) {
@@ -136,7 +136,7 @@ void AutoDevice::Impl::initDevice() {
           changeState(AutoDeviceState::firmwareVersionNotSupported, make_exception_ptr(fwError));
         }
         try {
-          m_device.close();
+          m_device_sp->close();
         } catch (...) {
         }
       } catch (...) {
@@ -154,7 +154,7 @@ void AutoDevice::Impl::resetState() {
   m_pendingOperations.clear();
   rejectPendingOperations();
 
-  m_device.resetState().then([&]() { changeState(AutoDeviceState::sessionClosed, nullptr); }).catchError([&](exception_ptr exception) {
+  m_device_sp->resetState().then([&]() { changeState(AutoDeviceState::sessionClosed, nullptr); }).catchError([&](exception_ptr exception) {
     m_log.e() << "unable to reset state!" << Logger::endl;
     if (m_state != AutoDeviceState::invalid) {
       changeState(AutoDeviceState::invalid, exception);
@@ -192,7 +192,7 @@ void AutoDevice::Impl::openSession() {
   }
   changeState(AutoDeviceState::sessionOpened);
   auto lambda = [&] {
-    m_device.openSession().then([&] { executeNextOperation(); }).catchError([&](exception_ptr) {
+    m_device_sp->openSession().then([&] { executeNextOperation(); }).catchError([&](exception_ptr) {
       m_log.e() << "open session error" << Logger::endl;
       resetState();
     });
@@ -209,7 +209,7 @@ void AutoDevice::Impl::closeSession() {
   }
   changeState(AutoDeviceState::sessionClosed);
   auto lambda = [&] {
-    m_device.closeSession().then([&] { executeNextOperation(); }).catchError([&](exception_ptr) {
+    m_device_sp->closeSession().then([&] { executeNextOperation(); }).catchError([&](exception_ptr) {
       m_log.e() << "close session error" << Logger::endl;
       resetState();
     });
@@ -225,7 +225,7 @@ void AutoDevice::Impl::enableBluetooth() {
     throw Errors::InvalidState();
   }
   auto operation = [&] {
-    m_device.set(DeviceParameter::bluetooth, INTERFACE_ENABLED).then([&] { executeNextOperation(); }).catchError([&](exception_ptr) {
+    m_device_sp->set(DeviceParameter::bluetooth, INTERFACE_ENABLED).then([&] { executeNextOperation(); }).catchError([&](exception_ptr) {
       m_log.e() << "bluetooth enabling error" << Logger::endl;
     });
   };
@@ -240,7 +240,7 @@ void AutoDevice::Impl::disableBluetooth() {
     throw Errors::InvalidState();
   }
   auto operation = [&] {
-    m_device.set(DeviceParameter::bluetooth, INTERFACE_DISABLED).then([&] { executeNextOperation(); }).catchError([&](exception_ptr) {
+    m_device_sp->set(DeviceParameter::bluetooth, INTERFACE_DISABLED).then([&] { executeNextOperation(); }).catchError([&](exception_ptr) {
       m_log.e() << "bluetooth disabling error" << Logger::endl;
     });
   };
@@ -255,7 +255,7 @@ void AutoDevice::Impl::enableNFC() {
     throw Errors::InvalidState();
   }
   auto operation = [&] {
-    m_device.set(DeviceParameter::nfc, INTERFACE_ENABLED).then([&] { executeNextOperation(); }).catchError([&](exception_ptr) {
+    m_device_sp->set(DeviceParameter::nfc, INTERFACE_ENABLED).then([&] { executeNextOperation(); }).catchError([&](exception_ptr) {
       m_log.e() << "NFC enabling error" << Logger::endl;
     });
   };
@@ -271,7 +271,7 @@ void AutoDevice::Impl::disableNFC() {
     throw Errors::InvalidState();
   }
   auto operation = [&] {
-    m_device.set(DeviceParameter::nfc, INTERFACE_DISABLED).then([&] { executeNextOperation(); }).catchError([&](exception_ptr) {
+    m_device_sp->set(DeviceParameter::nfc, INTERFACE_DISABLED).then([&] { executeNextOperation(); }).catchError([&](exception_ptr) {
       m_log.e() << "NFC disabling error" << Logger::endl;
     });
   };
@@ -289,7 +289,7 @@ Promise<std::vector<Barcode>> AutoDevice::Impl::requestBarcodes() {
   m_barcodesPromise = Promise<std::vector<Barcode>>();
 
   auto lambda = [&] {
-    m_device.requestBarcodes().then([&] { executeNextOperation(); }).catchError([&](exception_ptr) {
+    m_device_sp->requestBarcodes().then([&] { executeNextOperation(); }).catchError([&](exception_ptr) {
       m_log.e() << "close session error" << Logger::endl;
       resetState();
     });
@@ -307,7 +307,7 @@ void AutoDevice::Impl::cancelBarcodes() {
   }
   changeState(AutoDeviceState::sessionOpened);
   auto lambda = [&] {
-    m_device.cancelBarcodes().then([&] { executeNextOperation(); }).catchError([&](exception_ptr) {
+    m_device_sp->cancelBarcodes().then([&] { executeNextOperation(); }).catchError([&](exception_ptr) {
       m_log.e() << "cancel barcodes error" << Logger::endl;
       resetState();
     });
@@ -330,7 +330,7 @@ Promise<void> AutoDevice::Impl::createPayment(uint32_t amount,
   m_paymentPromise = Promise<void>();
 
   auto lambda = [&, amount, transactionId, cashierId, metadata] {
-    m_device.createPayment(amount, transactionId, cashierId, metadata).then([&] { executeNextOperation(); }).catchError([&](exception_ptr) {
+    m_device_sp->createPayment(amount, transactionId, cashierId, metadata).then([&] { executeNextOperation(); }).catchError([&](exception_ptr) {
       m_log.e() << "create payment error" << Logger::endl;
       resetState();
     });
@@ -354,7 +354,7 @@ Promise<std::string> AutoDevice::Impl::createPaymentToken(uint32_t amount,
   m_paymentTokenPromise = Promise<string>();
 
   auto lambda = [&, amount, transactionId, cashierId, metadata] {
-    m_device.createPaymentToken(amount, transactionId, cashierId, metadata).then([&] { executeNextOperation(); }).catchError([&](exception_ptr) {
+    m_device_sp->createPaymentToken(amount, transactionId, cashierId, metadata).then([&] { executeNextOperation(); }).catchError([&](exception_ptr) {
       m_log.e() << "create payment token error" << Logger::endl;
       resetState();
     });
@@ -373,7 +373,7 @@ void AutoDevice::Impl::confirmPayment() {
 
   changeState(AutoDeviceState::sessionClosed);
   auto lambda = [&] {
-    m_device.confirmPayment().then([&] { executeNextOperation(); }).catchError([&](exception_ptr) {
+    m_device_sp->confirmPayment().then([&] { executeNextOperation(); }).catchError([&](exception_ptr) {
       m_log.e() << "confirm payment error" << Logger::endl;
       resetState();
     });
@@ -392,7 +392,7 @@ void AutoDevice::Impl::cancelPayment() {
 
   changeState(AutoDeviceState::sessionOpened);
   auto lambda = [&] {
-    m_device.cancelPayment().then([&] { executeNextOperation(); }).catchError([&](exception_ptr) {
+    m_device_sp->cancelPayment().then([&] { executeNextOperation(); }).catchError([&](exception_ptr) {
       m_log.e() << "cancel payment error" << Logger::endl;
       resetState();
     });
