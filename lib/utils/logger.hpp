@@ -10,9 +10,12 @@
 
 #include <iostream>
 #include <string>
+#include <functional>
 
 namespace JetBeep {
-  enum class LoggerLevel: int { verbose = 0, debug, info, warning, error, silent };
+  enum class LoggerLevel : int { verbose = 0, debug, info, warning, error, silent };
+
+  typedef std::function<void(const std::string&)> LoggerLineCallback;
 
   class Logger {
   public:
@@ -29,6 +32,9 @@ namespace JetBeep {
 
     static bool coutEnabled;
     static bool cerrEnabled;
+    static bool externalOutputEnabled;
+
+    static LoggerLineCallback outputCallback;
 
     typedef Logger& (*logger_manipulator)(Logger&);
     Logger& operator<<(logger_manipulator manip) {
@@ -48,6 +54,8 @@ namespace JetBeep {
 
   private:
     std::string m_module_name;
+    static std::ostringstream m_str;
+
     Logger& output();
 
     static thread_local LoggerLevel m_threadLevel;
@@ -68,6 +76,15 @@ namespace JetBeep {
       }
 
       std::cerr << t;
+    }
+
+    template <class T>
+    void externalOutputValue(T t) {
+      if (!externalOutputEnabled) {
+        return;
+      }
+
+      m_str << t;
     }
   };
 } // namespace JetBeep

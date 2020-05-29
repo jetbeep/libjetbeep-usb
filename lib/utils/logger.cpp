@@ -20,12 +20,16 @@ using namespace boost;
 
 bool Logger::cerrEnabled = false;
 bool Logger::coutEnabled = false;
+bool Logger::externalOutputEnabled = false;
+std::ostringstream Logger::m_str;
+LoggerLineCallback Logger::outputCallback;
+
 LoggerLevel Logger::level = LoggerLevel::silent;
 thread_local LoggerLevel Logger::m_threadLevel = LoggerLevel::silent;
 
 Logger& Logger::endl(Logger& a) {
   if (Logger::m_threadLevel < Logger::level) {
-       return a;
+    return a;
   }
   if (Logger::coutEnabled) {
     cout << std::endl;
@@ -35,6 +39,14 @@ Logger& Logger::endl(Logger& a) {
   if (Logger::cerrEnabled) {
     cerr << std::endl;
     cerr.flush();
+  }
+
+  if (Logger::externalOutputEnabled) {
+    m_str << std::endl;
+    if (outputCallback) {
+      outputCallback(m_str.str());
+    }
+    m_str.clear();
   }
 
   return a;
@@ -95,24 +107,20 @@ Logger& Logger::v() {
 
 Logger& Logger::d() {
   Logger::m_threadLevel = LoggerLevel::debug;
-
   return output();
 }
 
 Logger& Logger::i() {
   Logger::m_threadLevel = LoggerLevel::info;
-
   return output();
 }
 
 Logger& Logger::w() {
   Logger::m_threadLevel = LoggerLevel::warning;
-
   return output();
 }
 
 Logger& Logger::e() {
   Logger::m_threadLevel = LoggerLevel::error;
-
   return output();
 }
