@@ -17,6 +17,7 @@ type
     procedure DeviceStateChanged(state: TJetBeepDeviceState);
     procedure PaymentResultReceived(result: TEasyPayPaymentResult);
     procedure RefundResultReceived(result: TEasyPayRefundResult);
+    procedure LogLine(line: String);
   end;
 
 implementation
@@ -62,7 +63,7 @@ begin
     JETBEEP_STATE_WAITING_FOR_CONFIRMATION:
       result := 'State: waiting for confirmation';
     JETBEEP_STATE_WAITING_FOR_PAYMENT_TOKEN:
-      result := 'State: waiting for paymen token';
+      result := 'State: waiting for payment token';
   else
     result := 'Unknown state';
   end;
@@ -96,6 +97,11 @@ begin
   begin
     Writeln('Refund error: ', result.errorString)
   end;
+end;
+
+procedure TDeviceHandler.LogLine(line: String);
+begin
+  Writeln(line);
 end;
 
 end.

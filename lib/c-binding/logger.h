@@ -7,7 +7,7 @@ extern "C" {
 
 #include "api.h"
 
-typedef void (*jetbeep_logger_line_callback_t)(const char* line);
+typedef void (*jetbeep_logger_line_callback_t)(const char* line, void *data);
 
 typedef enum {
   JETBEEP_LOGGER_VERBOSE = 0,
@@ -27,7 +27,7 @@ JETBEEP_API void jetbeep_logger_set_cout_enabled(bool enabled);
 JETBEEP_API void jetbeep_logger_set_cerr_enabled(bool enabled);
 JETBEEP_API void jetbeep_logger_set_external_output_enabled(bool enabled);
 
-JETBEEP_API void jetbeep_logger_set_external_output_callback(jetbeep_logger_line_callback_t callback);
+JETBEEP_API void jetbeep_logger_set_external_output_callback(jetbeep_logger_line_callback_t callback, void *data);
 
 #ifdef __cplusplus
 }

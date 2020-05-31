@@ -4,6 +4,8 @@
 *.dll
 *.local
 
+*.identcache
+*.tvsconfig
 doc
 libjetbeep-delphi
 *.zip

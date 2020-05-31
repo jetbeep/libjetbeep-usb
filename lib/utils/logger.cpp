@@ -42,11 +42,10 @@ Logger& Logger::endl(Logger& a) {
   }
 
   if (Logger::externalOutputEnabled) {
-    m_str << std::endl;
     if (outputCallback) {
       outputCallback(m_str.str());
     }
-    m_str.clear();
+    m_str = ostringstream();
   }
 
   return a;

@@ -10,6 +10,7 @@
 
 #include <iostream>
 #include <string>
+#include <sstream>
 #include <functional>
 
 namespace JetBeep {
@@ -47,6 +48,7 @@ namespace JetBeep {
       if (Logger::m_threadLevel >= Logger::level) {
         coutValue(t);
         cerrValue(t);
+        externalOutputValue(t);
       }
 
       return *this;
@@ -84,7 +86,7 @@ namespace JetBeep {
         return;
       }
 
-      m_str << t;
+      Logger::m_str << t;
     }
   };
 } // namespace JetBeep

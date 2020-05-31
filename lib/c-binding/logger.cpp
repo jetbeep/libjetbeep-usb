@@ -29,6 +29,6 @@ JETBEEP_API void jetbeep_logger_set_external_output_enabled(bool enabled) {
   Logger::externalOutputEnabled = enabled;
 }
 
-JETBEEP_API void jetbeep_logger_set_external_output_callback(jetbeep_logger_line_callback_t callback) {
-  Logger::outputCallback = [callback](const std::string& line) { callback(line.c_str()); };
+JETBEEP_API void jetbeep_logger_set_external_output_callback(jetbeep_logger_line_callback_t callback, void *data) {
+  Logger::outputCallback = [callback, data](const std::string& line) { callback(line.c_str(), data); };
 }

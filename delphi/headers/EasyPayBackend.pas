@@ -105,7 +105,7 @@ begin
     Exit;
   end;
 
-  ConvertedResult.errorString := String(result.errorString);
+  ConvertedResult.errorString := System.Utf8ToUnicodeString(result.errorString);
   ConvertedResult.easyPayTransactionId := result.easyPayTransactionId;
   ConvertedResult.easyPayPaymentRequestUid :=
     String(result.easyPayPaymentRequestUid);
@@ -124,7 +124,7 @@ begin
     Exit;
   end;
 
-  ConvertedResult.errorString := String(result.errorString);
+  ConvertedResult.errorString := System.Utf8ToUnicodeString(result.errorString);
   EasyPayBackend.refundResultHandler(ConvertedResult);
 end;
 
