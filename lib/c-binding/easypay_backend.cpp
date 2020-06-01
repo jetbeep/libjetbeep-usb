@@ -42,10 +42,26 @@ JETBEEP_API jetbeep_error_t jetbeep_easypay_make_payment(jetbeep_easypay_handle_
         }
         callback(payment_result, data);
       })
-      .catchError([callback, data](const exception_ptr&) {
+      .catchError([callback, data](const exception_ptr& error) {
         jetbeep_easypay_payment_result_t payment_result;
+        string errorMessage = "Невідома системна помилка";
+
+        try {
+          rethrow_exception(error);
+        } catch (const HttpErrors::RequestError& e) {
+          errorMessage = e.what();
+        } catch (const HttpErrors::APIError&) {
+          errorMessage = "Помилка роботи API серверу";
+        } catch (const HttpErrors::ServerError&) {
+          errorMessage = "Помилка роботи серверу";
+        } catch (const HttpErrors::NetworkError&) {
+          errorMessage = "Мережеве з'єднання недоступне";
+        } catch (...) {
+          errorMessage = "Невідома системна помилка";
+        }
+
         memset(&payment_result, 0, sizeof(payment_result));
-        payment_result.error_string = "Network error";
+        payment_result.error_string = errorMessage.c_str();
         callback(payment_result, data);
       });
   } catch (...) {
@@ -90,10 +106,26 @@ JETBEEP_API jetbeep_error_t jetbeep_easypay_make_payment_partials(jetbeep_easypa
         }
         callback(payment_result, data);
       })
-      .catchError([callback, data](const exception_ptr&) {
+      .catchError([callback, data](const exception_ptr& error) {
         jetbeep_easypay_payment_result_t payment_result;
+        string errorMessage = "Невідома системна помилка";
+
+        try {
+          rethrow_exception(error);
+        } catch (const HttpErrors::RequestError& e) {
+          errorMessage = e.what();
+        } catch (const HttpErrors::APIError&) {
+          errorMessage = "Помилка роботи API серверу";
+        } catch (const HttpErrors::ServerError&) {
+          errorMessage = "Помилка роботи серверу";
+        } catch (const HttpErrors::NetworkError&) {
+          errorMessage = "Мережеве з'єднання недоступне";
+        } catch (...) {
+          errorMessage = "Невідома системна помилка";
+        }
+
         memset(&payment_result, 0, sizeof(payment_result));
-        payment_result.error_string = "Network error";
+        payment_result.error_string = errorMessage.c_str();
         callback(payment_result, data);
       });
   } catch (...) {
@@ -121,10 +153,25 @@ JETBEEP_API jetbeep_error_t jetbeep_easypay_make_refund(jetbeep_easypay_handle_t
         }
         callback(refund_result, data);
       })
-      .catchError([callback, data](exception_ptr) {
+      .catchError([callback, data](exception_ptr error) {
         jetbeep_easypay_refund_result_t refund_result;
 
-        refund_result.error_string = "Network error";
+        string errorMessage = "Невідома системна помилка";
+        try {
+          rethrow_exception(error);
+        } catch (const HttpErrors::RequestError& e) {
+          errorMessage = e.what();
+        } catch (const HttpErrors::APIError&) {
+          errorMessage = "Помилка роботи API серверу";
+        } catch (const HttpErrors::ServerError&) {
+          errorMessage = "Помилка роботи серверу";
+        } catch (const HttpErrors::NetworkError&) {
+          errorMessage = "Мережеве з'єднання недоступне";
+        } catch (...) {
+          errorMessage = "Невідома системна помилка";
+        }
+
+        refund_result.error_string = errorMessage.c_str();
         callback(refund_result, data);
       });
   } catch (...) {

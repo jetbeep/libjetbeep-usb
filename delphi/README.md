@@ -22,7 +22,7 @@
 mkdir -p ../build
 cd ../build
 cmake -A Win32 ..
-cmake --build .
+cmake --build . --config Release
 ```
 
 64-bit version:
@@ -30,7 +30,7 @@ cmake --build .
 mkdir -p ../build
 cd ../build
 cmake ..
-cmake --build .
+cmake --build . --config Release
 ```
 
 #### After successful build

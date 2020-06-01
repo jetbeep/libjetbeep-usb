@@ -3,6 +3,8 @@
 #include <boost/beast/core/detail/base64.hpp>
 
 using namespace std;
+using namespace JetBeep;
+using namespace JetBeep::NFC;
 using namespace JetBeep::NFC::MifareClassic;
 
 MifareClassicProvider::Impl::Impl(DetectionEventData& cardInfo) : m_cardInfo(cardInfo){};

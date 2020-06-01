@@ -15,8 +15,11 @@ function jetbeep_logger_get_level: TJetBeepLogLevel; cdecl;
 procedure jetbeep_logger_set_level(level: TJetBeepLogLevel); cdecl;
 function jetbeep_logger_is_cout_enabled: Boolean; cdecl;
 function jetbeep_logger_is_cerr_enabled: Boolean; cdecl;
+function jetbeep_logger_is_external_output_enabled: Boolean; cdecl;
 procedure jetbeep_logger_set_cout_enabled(isEnabled: Boolean); cdecl;
 procedure jetbeep_logger_set_cerr_enabled(isEnabled: Boolean); cdecl;
+procedure jetbeep_logger_set_external_output_enabled(isEnabled: Boolean); cdecl;
+procedure jetbeep_logger_set_external_output_callback(callback: TCJetBeepExternalOutputCallback; data: THandle); cdecl;
 
 implementation
 
@@ -32,7 +35,10 @@ function jetbeep_logger_get_level; external DLLName;
 procedure jetbeep_logger_set_level; external DLLName;
 function jetbeep_logger_is_cout_enabled; external DLLName;
 function jetbeep_logger_is_cerr_enabled; external DLLName;
+function jetbeep_logger_is_external_output_enabled; external DLLName;
 procedure jetbeep_logger_set_cout_enabled; external DLLName;
 procedure jetbeep_logger_set_cerr_enabled; external DLLName;
+procedure jetbeep_logger_set_external_output_enabled; external DLLName;
+procedure jetbeep_logger_set_external_output_callback; external DLLName;
 
 end.

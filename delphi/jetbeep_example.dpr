@@ -1,10 +1,11 @@
-program jetbeep_example;
+﻿program jetbeep_example;
 
 {$APPTYPE CONSOLE}
 {$R *.res}
 
 uses
   System.SysUtils,
+  Windows,
   AutoDeviceImport in 'headers\AutoDeviceImport.pas',
   JetBeepTypes in 'headers\JetBeepTypes.pas',
   AutoDevice in 'headers\AutoDevice.pas',
@@ -24,8 +25,11 @@ var
   AmountInCoins: Cardinal;
 
 begin
-  // TLogger.cerrEnabled := true; // uncomment this if you need additional logs
-  // TLogger.level := JETBEEP_LOGGER_DEBUG;
+  SetConsoleOutputCP(CP_UTF8);
+  // uncomment this if you need additional logs
+  TLogger.externalOutputEnabled := true;
+  TLogger.level := JETBEEP_LOGGER_DEBUG;
+  TLogger.loggerLineOutputHandler := DeviceHandler.LogLine;
   AmountInCoins := 100;
   AutoDevice := TAutoDevice.Create;
   EasyPayBackend := TEasyPayBackend.Create(EASYPAY_BACKEND_DEVELOPMENT,

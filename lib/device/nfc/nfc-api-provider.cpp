@@ -2,6 +2,7 @@
 #include "nfc-api-provider.hpp"
 
 using namespace std;
+using namespace JetBeep;
 using namespace JetBeep::NFC;
 
 NFCApiProvider::NFCApiProvider():m_cardInfo_p(nullptr) {};

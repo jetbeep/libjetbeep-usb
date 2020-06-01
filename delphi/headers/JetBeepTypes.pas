@@ -62,6 +62,8 @@ type
     data: THandle); cdecl;
   TEasyPayRefundResultCallback = procedure(result: TCEasyPayRefundResult;
     data: THandle); cdecl;
+  TCJetBeepExternalOutputCallback = procedure(line: PAnsiChar;
+    data: THandle); cdecl;
 
   TMetadata = record
     key: string;
