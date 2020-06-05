@@ -106,7 +106,7 @@ void DeviceDetection::Impl::deviceAdded(void* refCon, io_iterator_t iterator) {
 
       detection->m_trackedDevices[device.path] = make_pair(device, remove_service);
 
-      detection->m_context.m_impl->ioService.post([&, device] {
+      detection->m_context.m_impl->ioService.post([=] {
         auto callback = *detection->m_callback;
         if (callback != nullptr) {
           callback(DeviceDetectionEvent::added, device);
@@ -140,7 +140,7 @@ void DeviceDetection::Impl::deviceRemoved(void* refCon, io_service_t service, na
     return;
   }
 
-  detection->m_context.m_impl->ioService.post([&, device] {
+  detection->m_context.m_impl->ioService.post([=] {
     auto callback = *detection->m_callback;
 
     if (callback != nullptr) {
@@ -182,13 +182,16 @@ void DeviceDetection::Impl::start() {
 }
 
 void DeviceDetection::Impl::runLoop() {
-  deviceAdded(this, m_iterator);
   CFRunLoopSourceRef runLoopSource = nullptr;
 
   runLoopSource = IONotificationPortGetRunLoopSource(m_notifyPort);
 
   m_loop = CFRunLoopGetCurrent();
   CFRunLoopAddSource(m_loop, runLoopSource, kCFRunLoopDefaultMode);
+
+  CFRunLoopPerformBlock(m_loop, kCFRunLoopCommonModes, ^(void) {
+    deviceAdded(this, m_iterator);
+  });
 
   CFRunLoopRun();
 }
